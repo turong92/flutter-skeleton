@@ -1,0 +1,20 @@
+name: skeleton_social_login_google
+description: Google sign-in for skeleton_social_login with google_sign_in 7 (ID token, checked by the kotlin-skeleton auth-social-google module).
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.13.0
+  flutter: 3.47.9
+
+dependencies:
+  flutter:
+    sdk: flutter
+  google_sign_in: ^7.2.0
+  skeleton_social_login: any # workspace sibling
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  google_sign_in_platform_interface: ^3.1.0
+  plugin_platform_interface: ^2.1.8

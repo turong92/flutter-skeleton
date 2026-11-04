@@ -1,0 +1,22 @@
+name: skeleton_social_login_apple
+description: Sign in with Apple for skeleton_social_login with sign_in_with_apple 8 (iOS app; ID token with a hashed nonce, and the token revoke before account deletion).
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.13.0
+  flutter: 3.47.9
+
+dependencies:
+  crypto: ^3.0.8
+  flutter:
+    sdk: flutter
+  sign_in_with_apple: ^8.2.0
+  skeleton_api_client: any # workspace sibling
+  skeleton_social_login: any # workspace sibling
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  plugin_platform_interface: ^2.1.8
+  sign_in_with_apple_platform_interface: ^2.0.0

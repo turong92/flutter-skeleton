@@ -106,7 +106,8 @@ IntentLaunch? intentToLaunch(String intentUrl) {
   final body = intentUrl.substring(prefix.length, marker);
   String? scheme;
   String? package;
-  for (final part in intentUrl.substring(marker + '#Intent;'.length).split(';')) {
+  for (final part
+      in intentUrl.substring(marker + '#Intent;'.length).split(';')) {
     if (part.startsWith('scheme=')) scheme = part.substring(7);
     if (part.startsWith('package=')) package = part.substring(8);
   }

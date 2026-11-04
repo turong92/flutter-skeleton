@@ -21,7 +21,9 @@ class BoardConfig {
   });
 
   factory BoardConfig.fromJson(Map<String, Object?> json) => BoardConfig(
-    reactionTypes: [for (final t in json['reactionTypes']! as List) t as String],
+    reactionTypes: [
+      for (final t in json['reactionTypes']! as List) t as String,
+    ],
     maxCommentDepth: json['maxCommentDepth']! as int,
     titleMaxLength: json['titleMaxLength']! as int,
     bodyMaxLength: json['bodyMaxLength']! as int,
@@ -84,7 +86,8 @@ BoardAuthor _author(Map<String, Object?> json) => BoardAuthor(
 );
 
 Map<String, int> _counts(Object? raw) => {
-  for (final e in (raw! as Map).entries) e.key as String: (e.value as num).toInt(),
+  for (final e in (raw! as Map).entries)
+    e.key as String: (e.value as num).toInt(),
 };
 
 /// A row of the post list.

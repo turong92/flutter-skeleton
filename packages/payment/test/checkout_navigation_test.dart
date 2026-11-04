@@ -32,17 +32,11 @@ void main() {
         'paymentKey=pk_1&amount=3000',
         'orderId=ord_1&amount=3000',
       ]) {
-        final nav = classify(
-          'https://checkout.example.com/pay/success?$query',
-        );
+        final nav = classify('https://checkout.example.com/pay/success?$query');
 
         expect(
           (nav as NavigationReturn).result,
-          isA<CheckoutFailed>().having(
-            (r) => r.code,
-            'code',
-            'INVALID_RETURN',
-          ),
+          isA<CheckoutFailed>().having((r) => r.code, 'code', 'INVALID_RETURN'),
           reason: query,
         );
       }
@@ -64,7 +58,9 @@ void main() {
 
     test('another host or path with the same query is not a return', () {
       expect(
-        classify('https://evil.example.org/pay/success?paymentKey=a&orderId=b&amount=1'),
+        classify(
+          'https://evil.example.org/pay/success?paymentKey=a&orderId=b&amount=1',
+        ),
         isA<NavigationLoad>(),
       );
       expect(
@@ -131,47 +127,52 @@ void main() {
         launch.appUri.toString(),
         'shinhan-sr-ansimclick://pay?srCode=123&packageName=net.ib.android.smcard',
       );
-      expect(launch.marketUri.toString(), 'market://details?id=com.shcard.smartpay');
+      expect(
+        launch.marketUri.toString(),
+        'market://details?id=com.shcard.smartpay',
+      );
     });
 
     test('an intent with an empty body keeps the scheme alone', () {
-      final launch =
-          (classify(
-                    'intent://#Intent;scheme=ispmobile;package=kvp.jjy.MispAndroid320;end',
-                  )
-                  as NavigationOpenIntent)
-              .launch;
+      final launch = (classify(
+        'intent://#Intent;scheme=ispmobile;package=kvp.jjy.MispAndroid320;end',
+      ) as NavigationOpenIntent).launch;
 
       expect(launch.appUri.toString(), 'ispmobile://');
-      expect(launch.marketUri.toString(), 'market://details?id=kvp.jjy.MispAndroid320');
+      expect(
+        launch.marketUri.toString(),
+        'market://details?id=kvp.jjy.MispAndroid320',
+      );
     });
 
     test('extras after the scheme and package are ignored', () {
-      final launch =
-          (classify(
-                    'intent://kb?x=1#Intent;scheme=kb-acp;'
-                    'S.browser_fallback_url=https%3A%2F%2Fexample.com;'
-                    'package=com.kbcard.cxh.appcard;end',
-                  )
-                  as NavigationOpenIntent)
-              .launch;
+      final launch = (classify(
+        'intent://kb?x=1#Intent;scheme=kb-acp;'
+        'S.browser_fallback_url=https%3A%2F%2Fexample.com;'
+        'package=com.kbcard.cxh.appcard;end',
+      ) as NavigationOpenIntent).launch;
 
       expect(launch.appUri.toString(), 'kb-acp://kb?x=1');
-      expect(launch.marketUri.toString(), 'market://details?id=com.kbcard.cxh.appcard');
+      expect(
+        launch.marketUri.toString(),
+        'market://details?id=com.kbcard.cxh.appcard',
+      );
     });
 
     test('without a package there is no market address', () {
-      final launch =
-          (classify('intent://x#Intent;scheme=kakaotalk;end')
-                  as NavigationOpenIntent)
-              .launch;
+      final launch = (classify(
+        'intent://x#Intent;scheme=kakaotalk;end',
+      ) as NavigationOpenIntent).launch;
 
       expect(launch.appUri.toString(), 'kakaotalk://x');
       expect(launch.marketUri, isNull);
     });
 
     test('an intent that is not http-like and has no scheme is blocked', () {
-      expect(classify('intent://x#Intent;package=a.b;end'), isA<NavigationBlock>());
+      expect(
+        classify('intent://x#Intent;package=a.b;end'),
+        isA<NavigationBlock>(),
+      );
       expect(classify('intent://x'), isA<NavigationBlock>());
     });
 

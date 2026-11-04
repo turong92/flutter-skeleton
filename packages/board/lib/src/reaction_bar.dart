@@ -18,10 +18,7 @@ const defaultBoardReactionStyles = <String, BoardReactionStyle>{
     label: 'Dislike',
     icon: Icons.thumb_down_outlined,
   ),
-  'EMPATHY': BoardReactionStyle(
-    label: 'Empathy',
-    icon: Icons.favorite_border,
-  ),
+  'EMPATHY': BoardReactionStyle(label: 'Empathy', icon: Icons.favorite_border),
 };
 
 /// One button per reaction type. Every button has an outline (picked ones are
@@ -50,9 +47,7 @@ class ReactionBar extends StatelessWidget {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: [
-        for (final type in types) _button(context, type),
-      ],
+      children: [for (final type in types) _button(context, type)],
     );
   }
 

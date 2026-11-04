@@ -75,7 +75,9 @@ class PaymentApi {
           for (final v in values)
             PaymentOrder.fromJson(v as Map<String, Object?>),
         ],
-        nextCursor: cursorMeta is Map ? cursorMeta['nextCursor'] as String? : null,
+        nextCursor: cursorMeta is Map
+            ? cursorMeta['nextCursor'] as String?
+            : null,
       );
     } on DioException catch (e, stackTrace) {
       final error = ApiRequestError.fromDioException(e);

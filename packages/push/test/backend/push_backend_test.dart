@@ -27,18 +27,21 @@ void main() {
       : null;
 
   Future<PushApi> signedIn() async {
-    final login = await Dio(BaseOptions(baseUrl: _baseUrl!)).post<Map<String, Object?>>(
-      '/auth/login',
-      data: {
-        'email': _env['API_SEED_EMAIL'] ?? 'user@example.com',
-        'password': _env['API_SEED_PASSWORD'] ?? 'password',
-      },
-    );
+    final login = await Dio(BaseOptions(baseUrl: _baseUrl!))
+        .post<Map<String, Object?>>(
+          '/auth/login',
+          data: {
+            'email': _env['API_SEED_EMAIL'] ?? 'user@example.com',
+            'password': _env['API_SEED_PASSWORD'] ?? 'password',
+          },
+        );
     final token = (login.data!['value']! as Map)['accessToken']! as String;
     return PushApi(
       ApiClient(
         baseUrl: _baseUrl!,
-        headerProviders: [() => {'Authorization': 'Bearer $token'}],
+        headerProviders: [
+          () => {'Authorization': 'Bearer $token'},
+        ],
       ),
     );
   }
@@ -58,30 +61,34 @@ void main() {
     expect(on.push, first.push);
   }, skip: skip);
 
-  test('the device PUT is 200 with fcm on and 400 KIND_DISABLED without', () async {
-    final api = await signedIn();
-    final config = await api.config();
-    const id = 'flutter-contract-test-0001';
+  test(
+    'the device PUT is 200 with fcm on and 400 KIND_DISABLED without',
+    () async {
+      final api = await signedIn();
+      final config = await api.config();
+      const id = 'flutter-contract-test-0001';
 
-    final register = api.registerDevice(
-      id,
-      token: 'contract-test-token',
-      platform: 'android',
-    );
-
-    if (config.fcm) {
-      await register;
-      await api.removeDevice(id);
-    } else {
-      await expectLater(
-        register,
-        throwsA(
-          isA<ApiRequestError>()
-              .having((e) => e.status, 'status', 400)
-              .having((e) => e.code, 'code', PushErrorCodes.kindDisabled),
-        ),
+      final register = api.registerDevice(
+        id,
+        token: 'contract-test-token',
+        platform: 'android',
       );
-    }
-    await api.removeDevice(id); // 204 even when unknown
-  }, skip: skip);
+
+      if (config.fcm) {
+        await register;
+        await api.removeDevice(id);
+      } else {
+        await expectLater(
+          register,
+          throwsA(
+            isA<ApiRequestError>()
+                .having((e) => e.status, 'status', 400)
+                .having((e) => e.code, 'code', PushErrorCodes.kindDisabled),
+          ),
+        );
+      }
+      await api.removeDevice(id); // 204 even when unknown
+    },
+    skip: skip,
+  );
 }

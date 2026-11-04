@@ -27,13 +27,11 @@ void main() {
       ? 'Set API_BASE_URL, API_DELETE_EMAIL and API_DELETE_PASSWORD to run against a backend'
       : null;
 
-  AccountApi plainApi() =>
-      AccountApi(ApiClient(baseUrl: _baseUrl!));
+  AccountApi plainApi() => AccountApi(ApiClient(baseUrl: _baseUrl!));
 
   Future<List<ConsentClaim>> requiredConsents() async {
-    final response = await Dio(
-      BaseOptions(baseUrl: _baseUrl!),
-    ).get<Map<String, Object?>>('/legal/documents');
+    final response = await Dio(BaseOptions(baseUrl: _baseUrl!))
+        .get<Map<String, Object?>>('/legal/documents');
     final claims = <String, ConsentClaim>{};
     for (final doc in response.data!['values']! as List) {
       doc as Map<String, Object?>;
@@ -54,16 +52,27 @@ void main() {
     expect(policy.maxBytes, greaterThanOrEqualTo(policy.minLength));
   }, skip: skip);
 
-  test('sign-up without the required consents is 400 LEGAL.CONSENT_REQUIRED', () async {
-    await expectLater(
-      plainApi().signUp(email: 'f9-noconsent@example.com', password: 'secret-pass-1'),
-      throwsA(
-        isA<ApiRequestError>()
-            .having((e) => e.status, 'status', 400)
-            .having((e) => e.code, 'code', AccountErrorCodes.legalConsentRequired),
-      ),
-    );
-  }, skip: skip);
+  test(
+    'sign-up without the required consents is 400 LEGAL.CONSENT_REQUIRED',
+    () async {
+      await expectLater(
+        plainApi().signUp(
+          email: 'f9-noconsent@example.com',
+          password: 'secret-pass-1',
+        ),
+        throwsA(
+          isA<ApiRequestError>()
+              .having((e) => e.status, 'status', 400)
+              .having(
+                (e) => e.code,
+                'code',
+                AccountErrorCodes.legalConsentRequired,
+              ),
+        ),
+      );
+    },
+    skip: skip,
+  );
 
   test('sign-up with the consents is 202 and gives an attempt; a wrong code lists the tries left', () async {
     final api = plainApi();
@@ -107,7 +116,10 @@ void main() {
     final api = AccountApi(client);
 
     await expectLater(
-      api.deleteAccount(currentPassword: 'wrong-password', idempotencyKey: newIdempotencyKey()),
+      api.deleteAccount(
+        currentPassword: 'wrong-password',
+        idempotencyKey: newIdempotencyKey(),
+      ),
       throwsA(isA<ApiRequestError>().having((e) => e.status, 'status', 400)),
     );
 

@@ -6,5 +6,7 @@ import 'package:skeleton_legal/skeleton_legal.dart';
 /// gives `legal` the one `ApiClient` that `auth` builds, so its calls carry the
 /// token and a `403 LEGAL.RECONSENT_REQUIRED` reaches the interceptor.
 final starterWiring = <Override>[
-  legalApiProvider.overrideWith((ref) => LegalApi(ref.watch(apiClientProvider))),
+  legalApiProvider.overrideWith(
+    (ref) => LegalApi(ref.watch(apiClientProvider)),
+  ),
 ];

@@ -24,7 +24,9 @@ class FakePushServer {
     }
     if (o.method == 'PUT' && o.path.startsWith('/push/preferences/')) {
       final type = o.path.split('/').last;
-      return valueBody(preferenceJson(type, push: (o.data as Map)['enabled'] as bool));
+      return valueBody(
+        preferenceJson(type, push: (o.data as Map)['enabled'] as bool),
+      );
     }
     if (o.method == 'PUT') return valueBody(deviceJson('x'));
     if (o.method == 'DELETE') return FakeAdapter.empty(204);
@@ -44,7 +46,9 @@ Future<FakePushServer> pumpPush(
   final container = ProviderContainer(
     overrides: [
       pushApiProvider.overrideWithValue(PushApi(clientWith(fake.adapter))),
-      pushTokenSourceProvider.overrideWithValue(source ?? FakePushTokenSource()),
+      pushTokenSourceProvider.overrideWithValue(
+        source ?? FakePushTokenSource(),
+      ),
       pushSignedInProvider.overrideWithValue(true),
     ],
   );
@@ -53,7 +57,9 @@ Future<FakePushServer> pumpPush(
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
-      child: MaterialApp(home: Scaffold(body: SingleChildScrollView(child: child))),
+      child: MaterialApp(
+        home: Scaffold(body: SingleChildScrollView(child: child)),
+      ),
     ),
   );
   await tester.pumpAndSettle(const Duration(milliseconds: 50));
@@ -69,14 +75,21 @@ void main() {
       expect(find.text('Turn on notifications'), findsOneWidget);
       expect(source.permissionRequests, 0);
 
-      await tester.tap(find.widgetWithText(FilledButton, 'Turn on notifications'));
+      await tester.tap(
+        find.widgetWithText(FilledButton, 'Turn on notifications'),
+      );
       await tester.pumpAndSettle(const Duration(milliseconds: 50));
 
       expect(source.permissionRequests, 1);
-      expect(find.text('Turn on notifications'), findsNothing); // registered: band gone
+      expect(
+        find.text('Turn on notifications'),
+        findsNothing,
+      ); // registered: band gone
     });
 
-    testWidgets('after a refusal only explains where the setting is', (tester) async {
+    testWidgets('after a refusal only explains where the setting is', (
+      tester,
+    ) async {
       await pumpPush(
         tester,
         const PushPrompt(),
@@ -97,7 +110,9 @@ void main() {
       expect(find.text('알림 켜기'), findsOneWidget);
     });
 
-    testWidgets('is hidden while open is false or when push cannot work', (tester) async {
+    testWidgets('is hidden while open is false or when push cannot work', (
+      tester,
+    ) async {
       await pumpPush(tester, const PushPrompt(open: false));
       expect(find.byType(FilledButton), findsNothing);
 
@@ -111,7 +126,9 @@ void main() {
   });
 
   group('PushSettingsView', () {
-    testWidgets('shows the device switch, the kinds and the test button', (tester) async {
+    testWidgets('shows the device switch, the kinds and the test button', (
+      tester,
+    ) async {
       await pumpPush(
         tester,
         const PushSettingsView(),
@@ -121,27 +138,37 @@ void main() {
       expect(tester.widget<Switch>(find.byType(Switch).first).value, isTrue);
       expect(find.text('COMMENT'), findsOneWidget);
       expect(find.text('NEWS'), findsOneWidget);
-      expect(find.widgetWithText(OutlinedButton, 'Send a test notification'), findsOneWidget);
-    });
-
-    testWidgets('a kind switch puts that kind; one muted in all channels is read only', (tester) async {
-      final server = await pumpPush(
-        tester,
-        const PushSettingsView(),
-        source: FakePushTokenSource(permission: PushPermission.granted),
+      expect(
+        find.widgetWithText(OutlinedButton, 'Send a test notification'),
+        findsOneWidget,
       );
-
-      final switches = find.byType(Switch);
-      expect(tester.widget<Switch>(switches.at(2)).onChanged, isNull); // NEWS
-
-      await tester.tap(switches.at(1)); // COMMENT
-      await tester.pumpAndSettle(const Duration(milliseconds: 50));
-
-      final put = server.adapter.requests.singleWhere((r) => r.path == '/push/preferences/COMMENT');
-      expect(put.data, {'enabled': false});
     });
 
-    testWidgets('the device switch off deletes the registration', (tester) async {
+    testWidgets(
+      'a kind switch puts that kind; one muted in all channels is read only',
+      (tester) async {
+        final server = await pumpPush(
+          tester,
+          const PushSettingsView(),
+          source: FakePushTokenSource(permission: PushPermission.granted),
+        );
+
+        final switches = find.byType(Switch);
+        expect(tester.widget<Switch>(switches.at(2)).onChanged, isNull); // NEWS
+
+        await tester.tap(switches.at(1)); // COMMENT
+        await tester.pumpAndSettle(const Duration(milliseconds: 50));
+
+        final put = server.adapter.requests.singleWhere(
+          (r) => r.path == '/push/preferences/COMMENT',
+        );
+        expect(put.data, {'enabled': false});
+      },
+    );
+
+    testWidgets('the device switch off deletes the registration', (
+      tester,
+    ) async {
       final server = await pumpPush(
         tester,
         const PushSettingsView(),
@@ -151,27 +178,39 @@ void main() {
       await tester.tap(find.byType(Switch).first);
       await tester.pumpAndSettle(const Duration(milliseconds: 50));
 
-      expect(server.adapter.requests.where((r) => r.method == 'DELETE'), hasLength(1));
+      expect(
+        server.adapter.requests.where((r) => r.method == 'DELETE'),
+        hasLength(1),
+      );
       expect(tester.widget<Switch>(find.byType(Switch).first).value, isFalse);
     });
 
-    testWidgets('the test button posts the test and says it was sent', (tester) async {
+    testWidgets('the test button posts the test and says it was sent', (
+      tester,
+    ) async {
       final server = await pumpPush(
         tester,
         const PushSettingsView(),
         source: FakePushTokenSource(permission: PushPermission.granted),
       );
 
-      await tester.tap(find.widgetWithText(OutlinedButton, 'Send a test notification'));
+      await tester.tap(
+        find.widgetWithText(OutlinedButton, 'Send a test notification'),
+      );
       await tester.pumpAndSettle(const Duration(milliseconds: 50));
 
-      expect(server.adapter.requests.where((r) => r.path.endsWith('/test')), hasLength(1));
+      expect(
+        server.adapter.requests.where((r) => r.path.endsWith('/test')),
+        hasLength(1),
+      );
       expect(find.text('Sent. It should arrive in a moment.'), findsOneWidget);
     });
 
     testWidgets('a second test within a minute says to wait', (tester) async {
       final server = FakePushServer()
-        ..respond = (o) => o.path.endsWith('/test') ? errorBody(429, PushErrorCodes.testTooSoon) : null;
+        ..respond = (o) => o.path.endsWith('/test')
+            ? errorBody(429, PushErrorCodes.testTooSoon)
+            : null;
       await pumpPush(
         tester,
         const PushSettingsView(),
@@ -179,24 +218,36 @@ void main() {
         server: server,
       );
 
-      await tester.tap(find.widgetWithText(OutlinedButton, 'Send a test notification'));
+      await tester.tap(
+        find.widgetWithText(OutlinedButton, 'Send a test notification'),
+      );
       await tester.pumpAndSettle(const Duration(milliseconds: 50));
 
-      expect(find.text('One test a minute. Try again shortly.'), findsOneWidget);
+      expect(
+        find.text('One test a minute. Try again shortly.'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('unavailable push shows the reason and no switches', (tester) async {
+    testWidgets('unavailable push shows the reason and no switches', (
+      tester,
+    ) async {
       await pumpPush(
         tester,
         const PushSettingsView(),
         source: FakePushTokenSource(available: false),
       );
 
-      expect(find.text('Notifications are not available in this app.'), findsOneWidget);
+      expect(
+        find.text('Notifications are not available in this app.'),
+        findsOneWidget,
+      );
       expect(find.byType(Switch), findsNothing);
     });
 
-    testWidgets('denied: the device switch is off, locked and explains', (tester) async {
+    testWidgets('denied: the device switch is off, locked and explains', (
+      tester,
+    ) async {
       await pumpPush(
         tester,
         const PushSettingsView(),

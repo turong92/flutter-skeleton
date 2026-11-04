@@ -11,7 +11,11 @@ const _title = ValueKey('editor-title');
 const _body = ValueKey('editor-body');
 const _submit = ValueKey('editor-submit');
 
-Future<void> fill(WidgetTester tester, {String title = 'T', String body = 'B'}) async {
+Future<void> fill(
+  WidgetTester tester, {
+  String title = 'T',
+  String body = 'B',
+}) async {
   await tester.enterText(find.byKey(_title), title);
   await tester.enterText(find.byKey(_body), body);
   await tester.pump();
@@ -39,7 +43,11 @@ void main() {
     await submit(tester);
 
     final request = server.where('POST', '/boards/general/posts').single;
-    expect(request.data, {'title': 'Hello', 'body': 'World', 'authorId': 'prf_3'});
+    expect(request.data, {
+      'title': 'Hello',
+      'body': 'World',
+      'authorId': 'prf_3',
+    });
     expect(request.headers['Idempotency-Key'], isNotEmpty);
     expect(saved?.title, 'Hello');
   });

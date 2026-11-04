@@ -61,8 +61,6 @@ class PushApi {
       _client.noContent('/push/devices/$installationId', method: 'DELETE');
 
   /// `POST /push/devices/{installationId}/test`: one a minute per account.
-  Future<void> sendTest(String installationId) => _client.noContent(
-    '/push/devices/$installationId/test',
-    method: 'POST',
-  );
+  Future<void> sendTest(String installationId) =>
+      _client.noContent('/push/devices/$installationId/test', method: 'POST');
 }

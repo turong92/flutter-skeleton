@@ -33,7 +33,11 @@ class CommentThreads extends ConsumerWidget {
   final int maxDepth;
   final bool busy;
   final void Function(Comment comment) onReply;
-  final Future<void> Function(Comment comment, String type, {required bool picked})
+  final Future<void> Function(
+    Comment comment,
+    String type, {
+    required bool picked,
+  })
   onToggleReaction;
   final void Function(Comment comment) onDelete;
 

@@ -15,25 +15,32 @@ void main() {
     expect(config.testMode, isTrue);
   });
 
-  test('createOrder sends the item and the key, reads order and checkout', () async {
-    final server = FakePayment();
+  test(
+    'createOrder sends the item and the key, reads order and checkout',
+    () async {
+      final server = FakePayment();
 
-    final created = await server.api.createOrder(
-      itemType: 'cheer',
-      itemRef: 'cheer-3000',
-      quantity: 2,
-      idempotencyKey: 'key-key-key-key-1',
-    );
+      final created = await server.api.createOrder(
+        itemType: 'cheer',
+        itemRef: 'cheer-3000',
+        quantity: 2,
+        idempotencyKey: 'key-key-key-key-1',
+      );
 
-    final request = server.where('POST', '/payments/orders').single;
-    expect(request.data, {'itemType': 'cheer', 'itemRef': 'cheer-3000', 'quantity': 2});
-    expect(request.headers['Idempotency-Key'], 'key-key-key-key-1');
-    expect(created.order.id, 'ord_1');
-    expect(created.order.amount.amount, 3000);
-    expect(created.order.amount.currency, 'KRW');
-    expect(created.checkout?.kind, 'TOSS_PAYMENT_WINDOW');
-    expect(created.checkout?.clientKey, 'test_ck_public_docs_key');
-  });
+      final request = server.where('POST', '/payments/orders').single;
+      expect(request.data, {
+        'itemType': 'cheer',
+        'itemRef': 'cheer-3000',
+        'quantity': 2,
+      });
+      expect(request.headers['Idempotency-Key'], 'key-key-key-key-1');
+      expect(created.order.id, 'ord_1');
+      expect(created.order.amount.amount, 3000);
+      expect(created.order.amount.currency, 'KRW');
+      expect(created.checkout?.kind, 'TOSS_PAYMENT_WINDOW');
+      expect(created.checkout?.clientKey, 'test_ck_public_docs_key');
+    },
+  );
 
   test('order reads the order out of the detail', () async {
     final server = FakePayment()..pollStatuses = ['PAID'];
@@ -67,7 +74,13 @@ void main() {
 
     await expectLater(
       server.api.myOrders(),
-      throwsA(isA<ApiRequestError>().having((e) => e.code, 'code', 'LEGAL.RECONSENT_REQUIRED')),
+      throwsA(
+        isA<ApiRequestError>().having(
+          (e) => e.code,
+          'code',
+          'LEGAL.RECONSENT_REQUIRED',
+        ),
+      ),
     );
   });
 }

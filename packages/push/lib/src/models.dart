@@ -41,5 +41,6 @@ class PushPreference {
 }
 
 List<String> _strings(Object? value) => [
-  if (value is List) for (final v in value) v as String,
+  if (value is List)
+    for (final v in value) v as String,
 ];

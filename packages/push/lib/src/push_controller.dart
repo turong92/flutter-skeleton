@@ -31,8 +31,7 @@ final pushSignedInProvider = Provider<bool>((ref) => false);
 
 /// Where a tapped notification's in-app path goes (the app's router).
 final pushOpenLinkProvider = Provider<void Function(String link)>(
-  (ref) =>
-      (_) {},
+  (ref) => (_) {},
 );
 
 /// Messages that arrive while the app is in front (Android shows no system
@@ -202,8 +201,7 @@ class PushController extends Notifier<PushState> {
 
   /// `POST /push/devices/{id}/test`. Throws [ApiRequestError] (429
   /// [PushErrorCodes.testTooSoon]).
-  Future<void> sendTest() async =>
-      _api.sendTest(await _store.installationId());
+  Future<void> sendTest() async => _api.sendTest(await _store.installationId());
 }
 
 final pushControllerProvider = NotifierProvider<PushController, PushState>(

@@ -126,7 +126,9 @@ class DeletionScheduled {
   const DeletionScheduled({required this.purgeAfter});
 
   factory DeletionScheduled.fromJson(Map<String, Object?> json) =>
-      DeletionScheduled(purgeAfter: DateTime.parse(json['purgeAfter']! as String));
+      DeletionScheduled(
+        purgeAfter: DateTime.parse(json['purgeAfter']! as String),
+      );
 
   final DateTime purgeAfter;
 }
@@ -187,7 +189,8 @@ class PasswordPolicy {
   /// breached passwords and stays the judge).
   List<PasswordViolation> violations(String password, {String? email}) {
     final found = <PasswordViolation>[];
-    if (password.runes.length < minLength) found.add(PasswordViolation.tooShort);
+    if (password.runes.length < minLength)
+      found.add(PasswordViolation.tooShort);
     if (utf8.encode(password).length > maxBytes) {
       found.add(PasswordViolation.tooLong);
     }
@@ -226,10 +229,7 @@ List<PasswordViolation> violationsOf(ApiRequestError error) {
   final data = error.apiError.data;
   final list = data is Map ? data['violations'] : null;
   if (list is! List) return const [];
-  return [
-    for (final name in list)
-      ?PasswordViolation.fromServer(name),
-  ];
+  return [for (final name in list) ?PasswordViolation.fromServer(name)];
 }
 
 DateTime? _time(Object? value) =>

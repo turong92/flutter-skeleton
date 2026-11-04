@@ -28,10 +28,8 @@ class BoardApi {
       );
 
   /// `GET /boards/{board}/posts/{id}`. The server counts a view per call.
-  Future<PostDetail> post(String board, int id) => _client.value(
-    '/boards/$board/posts/$id',
-    decode: PostDetail.fromJson,
-  );
+  Future<PostDetail> post(String board, int id) =>
+      _client.value('/boards/$board/posts/$id', decode: PostDetail.fromJson);
 
   /// `POST /boards/{board}/posts`. [authorId] is required by servers with
   /// `authorRequired`.

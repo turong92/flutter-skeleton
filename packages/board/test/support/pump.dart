@@ -20,6 +20,7 @@ class FakeBoard {
   List<Map<String, Object?>> comments = [];
   ResponseBody? Function(RequestOptions options)? respond;
   int nextId = 100;
+
   /// While set, POSTs wait for it (a slow network).
   Completer<void>? holdPosts;
   late final FakeAdapter adapter = FakeAdapter((o) async {
@@ -79,13 +80,15 @@ class FakeBoard {
           'myReactions': [(o.data as Map)['type']],
         });
       case 'DELETE' when path.endsWith('/reactions'):
-        return valueBody({'counts': <String, int>{}, 'myReactions': <String>[]});
+        return valueBody({
+          'counts': <String, int>{},
+          'myReactions': <String>[],
+        });
     }
     return errorBody(404, 'COMMON.NOT_FOUND');
   }
 
-  BoardApi get api =>
-      BoardApi(clientWith(adapter));
+  BoardApi get api => BoardApi(clientWith(adapter));
 }
 
 /// Mounts [child] with the fake server behind `boardApiProvider`.

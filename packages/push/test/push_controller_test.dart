@@ -53,7 +53,8 @@ class _Rig {
   PushController get controller =>
       container.read(pushControllerProvider.notifier);
   PushStatus get status => container.read(pushControllerProvider).status;
-  void signIn(bool value) => container.read(_signedInSwitch.notifier).set(value);
+  void signIn(bool value) =>
+      container.read(_signedInSwitch.notifier).set(value);
 
   List<RequestOptions> puts() => [
     for (final r in adapter.requests)
@@ -82,49 +83,75 @@ void main() {
     expect(rig.puts(), isEmpty);
   });
 
-  test('no initialized Firebase: unavailable and the server is not asked', () async {
-    final rig = _Rig(source: FakePushTokenSource(available: false));
-    await rig.settle();
+  test(
+    'no initialized Firebase: unavailable and the server is not asked',
+    () async {
+      final rig = _Rig(source: FakePushTokenSource(available: false));
+      await rig.settle();
 
-    expect(rig.status, PushStatus.unavailable);
-    expect(rig.adapter.requests, isEmpty);
-  });
+      expect(rig.status, PushStatus.unavailable);
+      expect(rig.adapter.requests, isEmpty);
+    },
+  );
 
-  test('signed in, fcm on, permission given: registers with the token', () async {
-    final rig = _Rig(source: FakePushTokenSource(permission: PushPermission.granted, token: 'tok-1'));
-    await rig.settle();
+  test(
+    'signed in, fcm on, permission given: registers with the token',
+    () async {
+      final rig = _Rig(
+        source: FakePushTokenSource(
+          permission: PushPermission.granted,
+          token: 'tok-1',
+        ),
+      );
+      await rig.settle();
 
-    expect(rig.status, PushStatus.enabled);
-    final put = rig.puts().single;
-    expect(put.data, {'kind': 'FCM', 'token': 'tok-1', 'platform': 'android'});
-    expect(put.path, '/push/devices/${await PushDeviceStore().installationId()}');
-  });
+      expect(rig.status, PushStatus.enabled);
+      final put = rig.puts().single;
+      expect(put.data, {
+        'kind': 'FCM',
+        'token': 'tok-1',
+        'platform': 'android',
+      });
+      expect(
+        put.path,
+        '/push/devices/${await PushDeviceStore().installationId()}',
+      );
+    },
+  );
 
   test('a PUSH.KIND_DISABLED answer means unavailable', () async {
-    final rig = _Rig(source: FakePushTokenSource(permission: PushPermission.granted));
-    rig.respond = (o) => o.method == 'PUT' ? errorBody(400, PushErrorCodes.kindDisabled) : null;
+    final rig = _Rig(
+      source: FakePushTokenSource(permission: PushPermission.granted),
+    );
+    rig.respond = (o) =>
+        o.method == 'PUT' ? errorBody(400, PushErrorCodes.kindDisabled) : null;
     await rig.settle();
 
     expect(rig.status, PushStatus.unavailable);
   });
 
-  test('not asked yet: waits for the person, then registers once allowed', () async {
-    final rig = _Rig();
-    await rig.settle();
-    expect(rig.status, PushStatus.notAsked);
-    expect(rig.puts(), isEmpty);
-    expect(rig.source.permissionRequests, 0);
+  test(
+    'not asked yet: waits for the person, then registers once allowed',
+    () async {
+      final rig = _Rig();
+      await rig.settle();
+      expect(rig.status, PushStatus.notAsked);
+      expect(rig.puts(), isEmpty);
+      expect(rig.source.permissionRequests, 0);
 
-    await rig.controller.requestPermission();
-    await rig.settle();
+      await rig.controller.requestPermission();
+      await rig.settle();
 
-    expect(rig.source.permissionRequests, 1);
-    expect(rig.status, PushStatus.enabled);
-    expect(rig.puts(), hasLength(1));
-  });
+      expect(rig.source.permissionRequests, 1);
+      expect(rig.status, PushStatus.enabled);
+      expect(rig.puts(), hasLength(1));
+    },
+  );
 
   test('refused: denied, nothing registered', () async {
-    final rig = _Rig(source: FakePushTokenSource(requestResult: PushPermission.denied));
+    final rig = _Rig(
+      source: FakePushTokenSource(requestResult: PushPermission.denied),
+    );
     await rig.settle();
 
     await rig.controller.requestPermission();
@@ -135,7 +162,9 @@ void main() {
   });
 
   test('already denied in the system: denied without asking again', () async {
-    final rig = _Rig(source: FakePushTokenSource(permission: PushPermission.denied));
+    final rig = _Rig(
+      source: FakePushTokenSource(permission: PushPermission.denied),
+    );
     await rig.settle();
 
     expect(rig.status, PushStatus.denied);
@@ -143,7 +172,10 @@ void main() {
   });
 
   test('signing in later registers then', () async {
-    final rig = _Rig(signedIn: false, source: FakePushTokenSource(permission: PushPermission.granted));
+    final rig = _Rig(
+      signedIn: false,
+      source: FakePushTokenSource(permission: PushPermission.granted),
+    );
     await rig.settle();
     expect(rig.puts(), isEmpty);
 
@@ -155,7 +187,9 @@ void main() {
   });
 
   test('signing out drops back to unavailable', () async {
-    final rig = _Rig(source: FakePushTokenSource(permission: PushPermission.granted));
+    final rig = _Rig(
+      source: FakePushTokenSource(permission: PushPermission.granted),
+    );
     await rig.settle();
 
     rig.signIn(false);
@@ -165,7 +199,12 @@ void main() {
   });
 
   test('every token refresh is sent again', () async {
-    final rig = _Rig(source: FakePushTokenSource(permission: PushPermission.granted, token: 'tok-1'));
+    final rig = _Rig(
+      source: FakePushTokenSource(
+        permission: PushPermission.granted,
+        token: 'tok-1',
+      ),
+    );
     await rig.settle();
 
     rig.source.refreshToken('tok-2');
@@ -174,30 +213,42 @@ void main() {
     expect(rig.puts().map((r) => (r.data as Map)['token']), ['tok-1', 'tok-2']);
   });
 
-  test('turned off on this device: deleted, remembered, not registered at start', () async {
-    final rig = _Rig(source: FakePushTokenSource(permission: PushPermission.granted));
-    await rig.settle();
+  test(
+    'turned off on this device: deleted, remembered, not registered at start',
+    () async {
+      final rig = _Rig(
+        source: FakePushTokenSource(permission: PushPermission.granted),
+      );
+      await rig.settle();
 
-    await rig.controller.setDeviceEnabled(false);
-    await rig.settle();
+      await rig.controller.setDeviceEnabled(false);
+      await rig.settle();
 
-    expect(rig.status, PushStatus.off);
-    expect(rig.adapter.requests.where((r) => r.method == 'DELETE'), hasLength(1));
+      expect(rig.status, PushStatus.off);
+      expect(
+        rig.adapter.requests.where((r) => r.method == 'DELETE'),
+        hasLength(1),
+      );
 
-    final again = _Rig(source: FakePushTokenSource(permission: PushPermission.granted));
-    await again.settle();
-    expect(again.status, PushStatus.off);
-    expect(again.puts(), isEmpty);
+      final again = _Rig(
+        source: FakePushTokenSource(permission: PushPermission.granted),
+      );
+      await again.settle();
+      expect(again.status, PushStatus.off);
+      expect(again.puts(), isEmpty);
 
-    await again.controller.setDeviceEnabled(true);
-    await again.settle();
-    expect(again.status, PushStatus.enabled);
-    expect(again.puts(), hasLength(1));
-  });
+      await again.controller.setDeviceEnabled(true);
+      await again.settle();
+      expect(again.status, PushStatus.enabled);
+      expect(again.puts(), hasLength(1));
+    },
+  );
 
   group('tapped notifications', () {
     test('a link tapped while the app runs opens at once', () async {
-      final rig = _Rig(source: FakePushTokenSource(permission: PushPermission.granted));
+      final rig = _Rig(
+        source: FakePushTokenSource(permission: PushPermission.granted),
+      );
       await rig.settle();
 
       rig.source.tap(PushMessage(link: '/posts/7'));
@@ -207,7 +258,9 @@ void main() {
     });
 
     test('a link to outside the app is dropped', () async {
-      final rig = _Rig(source: FakePushTokenSource(permission: PushPermission.granted));
+      final rig = _Rig(
+        source: FakePushTokenSource(permission: PushPermission.granted),
+      );
       await rig.settle();
 
       rig.source.tap(PushMessage(link: 'https://evil.example.com'));
@@ -218,22 +271,33 @@ void main() {
       expect(rig.opened, isEmpty);
     });
 
-    test('the tap that started the app waits until the session is back', () async {
-      final rig = _Rig(
-        signedIn: false,
-        source: FakePushTokenSource(permission: PushPermission.granted, initial: PushMessage(link: '/inbox/3')),
-      );
-      await rig.settle();
-      expect(rig.opened, isEmpty);
+    test(
+      'the tap that started the app waits until the session is back',
+      () async {
+        final rig = _Rig(
+          signedIn: false,
+          source: FakePushTokenSource(
+            permission: PushPermission.granted,
+            initial: PushMessage(link: '/inbox/3'),
+          ),
+        );
+        await rig.settle();
+        expect(rig.opened, isEmpty);
 
-      rig.signIn(true);
-      await rig.settle();
+        rig.signIn(true);
+        await rig.settle();
 
-      expect(rig.opened, ['/inbox/3']);
-    });
+        expect(rig.opened, ['/inbox/3']);
+      },
+    );
 
     test('the tap that started the app is opened once', () async {
-      final rig = _Rig(source: FakePushTokenSource(permission: PushPermission.granted, initial: PushMessage(link: '/inbox/3')));
+      final rig = _Rig(
+        source: FakePushTokenSource(
+          permission: PushPermission.granted,
+          initial: PushMessage(link: '/inbox/3'),
+        ),
+      );
       await rig.settle();
       rig.signIn(false);
       await rig.settle();
@@ -245,9 +309,14 @@ void main() {
   });
 
   test('foreground messages come out of pushMessagesProvider', () async {
-    final rig = _Rig(source: FakePushTokenSource(permission: PushPermission.granted));
+    final rig = _Rig(
+      source: FakePushTokenSource(permission: PushPermission.granted),
+    );
     final seen = <String?>[];
-    rig.container.listen(pushMessagesProvider, (_, next) => seen.add(next.value?.title));
+    rig.container.listen(
+      pushMessagesProvider,
+      (_, next) => seen.add(next.value?.title),
+    );
     await rig.settle();
 
     rig.source.receive(PushMessage(title: 'Hello'));

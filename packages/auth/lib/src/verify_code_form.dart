@@ -185,8 +185,7 @@ class _VerifyCodeFormState extends ConsumerState<VerifyCodeForm> {
               LengthLimitingTextInputFormatter(6),
             ],
             onFieldSubmitted: (_) => _verify(),
-            validator: (v) =>
-                v != null && RegExp(r'^\d{6}$').hasMatch(v.trim())
+            validator: (v) => v != null && RegExp(r'^\d{6}$').hasMatch(v.trim())
                 ? null
                 : labels.codeFormat,
           ),

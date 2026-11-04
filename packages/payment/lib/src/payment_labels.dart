@@ -18,8 +18,7 @@ class PaymentLabels {
     this.declined = const {
       'LIMIT_OR_BALANCE':
           'The card limit or balance is too low. Try another card.',
-      'CARD_DECLINED':
-          'The card company did not accept the payment. Ask the card company or try another card.',
+      'CARD_DECLINED': 'The card company did not accept the payment. Ask the card company or try another card.',
       'TEMPORARY': 'Something went wrong for a moment. Try again later.',
       'OTHER': 'The payment did not finish. Try again.',
     },

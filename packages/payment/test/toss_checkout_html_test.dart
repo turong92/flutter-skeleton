@@ -16,7 +16,11 @@ void main() {
   final fail = Uri.parse('https://checkout.example.com/pay/fail');
 
   test('loads the v2 SDK and asks for the payment of the order', () {
-    final html = tossCheckoutHtml(checkout(), successUrl: success, failUrl: fail);
+    final html = tossCheckoutHtml(
+      checkout(),
+      successUrl: success,
+      failUrl: fail,
+    );
 
     expect(html, contains('https://js.tosspayments.com/v2/standard'));
     expect(html, contains('"test_ck_public_docs_key"'));

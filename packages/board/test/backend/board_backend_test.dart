@@ -28,17 +28,20 @@ void main() {
       : null;
 
   Future<ApiClient> signedIn() async {
-    final login = await Dio(BaseOptions(baseUrl: _baseUrl!)).post<Map<String, Object?>>(
-      '/auth/login',
-      data: {
-        'email': _env['API_SEED_EMAIL'] ?? 'user@example.com',
-        'password': _env['API_SEED_PASSWORD'] ?? 'password',
-      },
-    );
+    final login = await Dio(BaseOptions(baseUrl: _baseUrl!))
+        .post<Map<String, Object?>>(
+          '/auth/login',
+          data: {
+            'email': _env['API_SEED_EMAIL'] ?? 'user@example.com',
+            'password': _env['API_SEED_PASSWORD'] ?? 'password',
+          },
+        );
     final token = (login.data!['value']! as Map)['accessToken']! as String;
     return ApiClient(
       baseUrl: _baseUrl!,
-      headerProviders: [() => {'Authorization': 'Bearer $token'}],
+      headerProviders: [
+        () => {'Authorization': 'Bearer $token'},
+      ],
     );
   }
 

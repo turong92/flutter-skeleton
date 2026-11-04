@@ -9,4 +9,5 @@ export 'src/models.dart';
 export 'src/post_detail_view.dart';
 export 'src/post_editor.dart';
 export 'src/post_list_view.dart';
-export 'src/reaction_bar.dart' show BoardReactionStyle, defaultBoardReactionStyles;
+export 'src/reaction_bar.dart'
+    show BoardReactionStyle, defaultBoardReactionStyles;

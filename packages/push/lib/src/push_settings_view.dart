@@ -52,7 +52,9 @@ class _PushSettingsViewState extends ConsumerState<PushSettingsView> {
 
   Future<void> _setKind(PushPreference pref, bool enabled) async {
     try {
-      await ref.read(pushApiProvider).setPreference(pref.type, enabled: enabled);
+      await ref
+          .read(pushApiProvider)
+          .setPreference(pref.type, enabled: enabled);
     } on ApiRequestError {
       // the list is read again below and shows what the server still has
     }
@@ -137,7 +139,9 @@ class _PushSettingsViewState extends ConsumerState<PushSettingsView> {
         for (final pref in items)
           SwitchListTile(
             title: Text(labels.typeName(pref.type)),
-            subtitle: pref.allChannelsMuted ? Text(labels.allChannelsMuted) : null,
+            subtitle: pref.allChannelsMuted
+                ? Text(labels.allChannelsMuted)
+                : null,
             value: pref.push && !pref.allChannelsMuted,
             onChanged: pref.allChannelsMuted
                 ? null

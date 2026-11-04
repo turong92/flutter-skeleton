@@ -32,11 +32,8 @@ Map<String, Object?> deviceJson(String id) => {
 ResponseBody valueBody(Object? value, {int status = 200}) =>
     FakeAdapter.json(status, {'value': value, 'meta': meta});
 
-ResponseBody errorBody(int status, String code) => FakeAdapter.json(status, {
-  'code': code,
-  'title': 'x',
-  'status': status,
-});
+ResponseBody errorBody(int status, String code) =>
+    FakeAdapter.json(status, {'code': code, 'title': 'x', 'status': status});
 
 ApiClient clientWith(FakeAdapter adapter) =>
     ApiClient(baseUrl: 'http://x/api/v1', adapter: adapter);

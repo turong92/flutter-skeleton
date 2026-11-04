@@ -26,17 +26,20 @@ void main() {
       : null;
 
   Future<ApiClient> signedIn() async {
-    final login = await Dio(BaseOptions(baseUrl: _baseUrl!)).post<Map<String, Object?>>(
-      '/auth/login',
-      data: {
-        'email': _env['API_SEED_EMAIL'] ?? 'user@example.com',
-        'password': _env['API_SEED_PASSWORD'] ?? 'password',
-      },
-    );
+    final login = await Dio(BaseOptions(baseUrl: _baseUrl!))
+        .post<Map<String, Object?>>(
+          '/auth/login',
+          data: {
+            'email': _env['API_SEED_EMAIL'] ?? 'user@example.com',
+            'password': _env['API_SEED_PASSWORD'] ?? 'password',
+          },
+        );
     final token = (login.data!['value']! as Map)['accessToken']! as String;
     return ApiClient(
       baseUrl: _baseUrl!,
-      headerProviders: [() => {'Authorization': 'Bearer $token'}],
+      headerProviders: [
+        () => {'Authorization': 'Bearer $token'},
+      ],
     );
   }
 
@@ -86,21 +89,29 @@ void main() {
         idempotencyKey: newIdempotencyKey(),
       ),
       throwsA(
-        isA<ApiRequestError>().having((e) => e.code, 'code', 'PAYMENT.ITEM_NOT_PURCHASABLE'),
+        isA<ApiRequestError>().having(
+          (e) => e.code,
+          'code',
+          'PAYMENT.ITEM_NOT_PURCHASABLE',
+        ),
       ),
     );
   }, skip: skip);
 
-  test('the history reads, and an attempt that was never paid is not in it', () async {
-    final api = PaymentApi(await signedIn());
-    final created = await api.createOrder(
-      itemType: 'cheer',
-      itemRef: 'cheer-3000',
-      idempotencyKey: newIdempotencyKey(),
-    );
+  test(
+    'the history reads, and an attempt that was never paid is not in it',
+    () async {
+      final api = PaymentApi(await signedIn());
+      final created = await api.createOrder(
+        itemType: 'cheer',
+        itemRef: 'cheer-3000',
+        idempotencyKey: newIdempotencyKey(),
+      );
 
-    final page = await api.myOrders(size: 5);
+      final page = await api.myOrders(size: 5);
 
-    expect(page.items.map((o) => o.id), isNot(contains(created.order.id)));
-  }, skip: skip);
+      expect(page.items.map((o) => o.id), isNot(contains(created.order.id)));
+    },
+    skip: skip,
+  );
 }

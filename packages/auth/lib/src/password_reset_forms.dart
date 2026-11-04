@@ -12,7 +12,8 @@ class ForgotPasswordLabels {
     this.email = 'Email',
     this.submit = 'Send reset link',
     this.required = 'Required',
-    this.sent = 'If an account exists for this address, a reset link is on its way.',
+    this.sent =
+        'If an account exists for this address, a reset link is on its way.',
     this.networkError = 'Cannot reach the server. Check your connection.',
     this.genericError = 'Something went wrong. Please try again.',
   });
@@ -104,7 +105,11 @@ class _ForgotPasswordFormState extends ConsumerState<ForgotPasswordForm> {
             validator: (v) =>
                 v == null || v.trim().isEmpty ? labels.required : null,
           ),
-          if (_sent) Padding(padding: const EdgeInsets.only(top: 12), child: Text(labels.sent)),
+          if (_sent)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text(labels.sent),
+            ),
           if (_error != null) ErrorText(_error!),
           const SizedBox(height: 16),
           SubmitButton(label: labels.submit, busy: _busy, onPressed: _submit),
@@ -188,10 +193,7 @@ class _ResetPasswordFormState extends ConsumerState<ResetPasswordForm> {
       _error = null;
     });
     try {
-      await api.resetPassword(
-        token: widget.token,
-        newPassword: _password.text,
-      );
+      await api.resetPassword(token: widget.token, newPassword: _password.text);
       await session.signOutLocally();
       widget.onReset?.call();
     } catch (e) {

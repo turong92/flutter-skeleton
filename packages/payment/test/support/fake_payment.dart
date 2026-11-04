@@ -125,9 +125,10 @@ class FakePayment {
         return onConfirm?.call(o) ??
             valueBody(orderJson(orderId, status: 'PAID'));
       case 'GET' when path == '/payments/orders/$orderId':
-        final status = pollStatuses[polls < pollStatuses.length
-            ? polls
-            : pollStatuses.length - 1];
+        final status =
+            pollStatuses[polls < pollStatuses.length
+                ? polls
+                : pollStatuses.length - 1];
         polls++;
         return valueBody({
           'order': orderJson(orderId, status: status, amount: orderAmount),

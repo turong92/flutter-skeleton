@@ -24,7 +24,9 @@ PaymentOrder order(String status) =>
 
 void main() {
   group('PaymentGate', () {
-    testWidgets('shows the child and the test banner while in test mode', (tester) async {
+    testWidgets('shows the child and the test banner while in test mode', (
+      tester,
+    ) async {
       final server = FakePayment()..testMode = true;
 
       await pump(tester, server, const PaymentGate(child: Text('buy')));
@@ -42,7 +44,9 @@ void main() {
       expect(find.text(const PaymentLabels().testBanner), findsNothing);
     });
 
-    testWidgets('says payments are unavailable and hides the child', (tester) async {
+    testWidgets('says payments are unavailable and hides the child', (
+      tester,
+    ) async {
       final server = FakePayment()..available = false;
 
       await pump(tester, server, const PaymentGate(child: Text('buy')));
@@ -71,14 +75,20 @@ void main() {
     testWidgets('lists my orders and hands one over on tap', (tester) async {
       final server = FakePayment()
         ..orderPages = [
-          [orderJson('a', status: 'PAID', orderName: 'First'), orderJson('b', status: 'REFUNDED', orderName: 'Second')],
+          [
+            orderJson('a', status: 'PAID', orderName: 'First'),
+            orderJson('b', status: 'REFUNDED', orderName: 'Second'),
+          ],
         ];
       PaymentOrder? opened;
 
       await pump(tester, server, OrderListView(onOpen: (o) => opened = o));
       expect(find.text('First'), findsOneWidget);
       expect(find.text('Second'), findsOneWidget);
-      expect(find.text(const PaymentLabels().statuses['PAID']!), findsOneWidget);
+      expect(
+        find.text(const PaymentLabels().statuses['PAID']!),
+        findsOneWidget,
+      );
 
       await tester.tap(find.text('Second'));
 
@@ -108,7 +118,9 @@ void main() {
       expect(find.text(const PaymentLabels().empty), findsOneWidget);
     });
 
-    testWidgets('a failed read shows a message and a retry that reads again', (tester) async {
+    testWidgets('a failed read shows a message and a retry that reads again', (
+      tester,
+    ) async {
       var failing = true;
       final server = FakePayment()
         ..orderPages = [
@@ -131,12 +143,19 @@ void main() {
   group('PaymentResultView', () {
     const labels = PaymentLabels();
 
-    Future<void> show(WidgetTester tester, PurchaseResult result, {VoidCallback? onShowOrders}) =>
-        pump(
-          tester,
-          FakePayment(),
-          PaymentResultView(result: result, onDone: () {}, onShowOrders: onShowOrders),
-        );
+    Future<void> show(
+      WidgetTester tester,
+      PurchaseResult result, {
+      VoidCallback? onShowOrders,
+    }) => pump(
+      tester,
+      FakePayment(),
+      PaymentResultView(
+        result: result,
+        onDone: () {},
+        onShowOrders: onShowOrders,
+      ),
+    );
 
     testWidgets('paid', (tester) async {
       await show(tester, PurchasePaid(order('PAID')));
@@ -146,7 +165,11 @@ void main() {
 
     testWidgets('still confirming points to the order history', (tester) async {
       var shown = false;
-      await show(tester, PurchaseConfirming(order('CONFIRMING')), onShowOrders: () => shown = true);
+      await show(
+        tester,
+        PurchaseConfirming(order('CONFIRMING')),
+        onShowOrders: () => shown = true,
+      );
 
       expect(find.text(labels.confirming), findsOneWidget);
       await tester.tap(find.text(labels.viewOrders));
@@ -166,16 +189,23 @@ void main() {
       );
 
       expect(find.text(labels.declined['LIMIT_OR_BALANCE']!), findsOneWidget);
-      expect(find.textContaining('X'), findsNothing); // the provider code is not shown
+      expect(
+        find.textContaining('X'),
+        findsNothing,
+      ); // the provider code is not shown
     });
 
-    testWidgets('a category it does not know falls back to OTHER', (tester) async {
+    testWidgets('a category it does not know falls back to OTHER', (
+      tester,
+    ) async {
       await show(tester, const PurchaseDeclined(category: 'SOMETHING_NEW'));
 
       expect(find.text(labels.declined['OTHER']!), findsOneWidget);
     });
 
-    testWidgets('unavailable, unsupported and failed have their texts', (tester) async {
+    testWidgets('unavailable, unsupported and failed have their texts', (
+      tester,
+    ) async {
       await show(tester, const PurchaseUnavailable());
       expect(find.text(labels.unavailable), findsOneWidget);
 

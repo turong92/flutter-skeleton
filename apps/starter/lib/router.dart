@@ -64,7 +64,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/sign-up',
         builder: (context, state) => const SignUpScreen(),
       ),
-      GoRoute(path: '/verify', builder: (context, state) => const VerifyScreen()),
+      GoRoute(
+        path: '/verify',
+        builder: (context, state) => const VerifyScreen(),
+      ),
       GoRoute(
         path: '/forgot-password',
         builder: (context, state) => const ForgotPasswordScreen(),

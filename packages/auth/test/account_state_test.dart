@@ -19,23 +19,28 @@ void main() {
       forbidEmailLocalPart: true,
     );
 
-    test('the upper limit counts UTF-8 bytes, the lower limit counts characters', () {
-      // 8 characters, 15 bytes: long enough, but over the byte limit.
-      final tooLong = 'é' * 7 + '1';
-      expect(policy.violations(tooLong), contains(PasswordViolation.tooLong));
-      expect(policy.violations(tooLong), isNot(contains(PasswordViolation.tooShort)));
-      // 8 ASCII characters are fine.
-      expect(policy.violations('abcdefg1'), isEmpty);
-      expect(policy.violations('abc1'), [PasswordViolation.tooShort]);
-    });
+    test(
+      'the upper limit counts UTF-8 bytes, the lower limit counts characters',
+      () {
+        // 8 characters, 15 bytes: long enough, but over the byte limit.
+        final tooLong = 'é' * 7 + '1';
+        expect(policy.violations(tooLong), contains(PasswordViolation.tooLong));
+        expect(
+          policy.violations(tooLong),
+          isNot(contains(PasswordViolation.tooShort)),
+        );
+        // 8 ASCII characters are fine.
+        expect(policy.violations('abcdefg1'), isEmpty);
+        expect(policy.violations('abc1'), [PasswordViolation.tooShort]);
+      },
+    );
 
     test('letters, digits and the email local part', () {
       expect(policy.violations('12345678'), [PasswordViolation.needsLetter]);
       expect(policy.violations('abcdefgh'), [PasswordViolation.needsDigit]);
-      expect(
-        policy.violations('mynameis1', email: 'myname@example.com'),
-        [PasswordViolation.containsEmail],
-      );
+      expect(policy.violations('mynameis1', email: 'myname@example.com'), [
+        PasswordViolation.containsEmail,
+      ]);
     });
   });
 
@@ -45,7 +50,10 @@ void main() {
     test('a live attempt comes back after the app was killed', () async {
       final store = MemorySignUpAttemptStore();
       await store.save(
-        SignUpAttempt(signUpId: 'su_1', expiresAt: now.add(const Duration(minutes: 5))),
+        SignUpAttempt(
+          signUpId: 'su_1',
+          expiresAt: now.add(const Duration(minutes: 5)),
+        ),
       );
 
       final restored = await restoreSignUpAttempt(store, now: now);
@@ -56,7 +64,10 @@ void main() {
     test('an expired attempt is gone and the store is emptied', () async {
       final store = MemorySignUpAttemptStore();
       await store.save(
-        SignUpAttempt(signUpId: 'su_1', expiresAt: now.subtract(const Duration(seconds: 1))),
+        SignUpAttempt(
+          signUpId: 'su_1',
+          expiresAt: now.subtract(const Duration(seconds: 1)),
+        ),
       );
 
       expect(await restoreSignUpAttempt(store, now: now), isNull);
@@ -110,25 +121,30 @@ void main() {
       }
     }
 
-    test('signInWith stores the tokens and signs in (the code check is the login)', () async {
-      container = make();
-      await settle(container);
-      final result = AuthResult(
-        tokens: const TokenPair(accessToken: 'a', refreshToken: 'r'),
-        principal: const Principal(accountId: 'acc_new'),
-      );
+    test(
+      'signInWith stores the tokens and signs in (the code check is the login)',
+      () async {
+        container = make();
+        await settle(container);
+        final result = AuthResult(
+          tokens: const TokenPair(accessToken: 'a', refreshToken: 'r'),
+          principal: const Principal(accountId: 'acc_new'),
+        );
 
-      await container.read(authSessionProvider.notifier).signInWith(result);
+        await container.read(authSessionProvider.notifier).signInWith(result);
 
-      expect(
-        container.read(authSessionProvider),
-        isA<SignedIn>().having((s) => s.principal.accountId, 'id', 'acc_new'),
-      );
-      expect((await store.read())!.refreshToken, 'r');
-    });
+        expect(
+          container.read(authSessionProvider),
+          isA<SignedIn>().having((s) => s.principal.accountId, 'id', 'acc_new'),
+        );
+        expect((await store.read())!.refreshToken, 'r');
+      },
+    );
 
     test('sign-out hooks run before the server is told, and see the tokens still stored', () async {
-      await store.save(const TokenPair(accessToken: 'access-1', refreshToken: 'refresh-1'));
+      await store.save(
+        const TokenPair(accessToken: 'access-1', refreshToken: 'refresh-1'),
+      );
       final hooks = SignOutHooks();
       final order = <String>[];
       hooks.add(() async {
@@ -143,11 +159,16 @@ void main() {
 
       await container.read(authSessionProvider.notifier).logout();
 
-      expect(order.where((e) => e != '/auth/me'), ['hook:true', '/auth/logout']);
+      expect(order.where((e) => e != '/auth/me'), [
+        'hook:true',
+        '/auth/logout',
+      ]);
     });
 
     test('a hook that throws or hangs does not stop the sign-out', () async {
-      await store.save(const TokenPair(accessToken: 'access-1', refreshToken: 'refresh-1'));
+      await store.save(
+        const TokenPair(accessToken: 'access-1', refreshToken: 'refresh-1'),
+      );
       final hooks = SignOutHooks(timeout: const Duration(milliseconds: 50));
       hooks.add(() async => throw StateError('push backend down'));
       hooks.add(() => Completer<void>().future); // never finishes
@@ -175,18 +196,23 @@ void main() {
       expect(calls, 0);
     });
 
-    test('signOutLocally clears the store and does not call the server', () async {
-      await store.save(const TokenPair(accessToken: 'access-1', refreshToken: 'refresh-1'));
-      container = make();
-      await settle(container);
-      backend.requests.clear();
+    test(
+      'signOutLocally clears the store and does not call the server',
+      () async {
+        await store.save(
+          const TokenPair(accessToken: 'access-1', refreshToken: 'refresh-1'),
+        );
+        container = make();
+        await settle(container);
+        backend.requests.clear();
 
-      await container.read(authSessionProvider.notifier).signOutLocally();
+        await container.read(authSessionProvider.notifier).signOutLocally();
 
-      expect(container.read(authSessionProvider), isA<SignedOut>());
-      expect(await store.read(), isNull);
-      expect(backend.requests, isEmpty);
-    });
+        expect(container.read(authSessionProvider), isA<SignedOut>());
+        expect(await store.read(), isNull);
+        expect(backend.requests, isEmpty);
+      },
+    );
   });
 
   group('redirect with public paths', () {
@@ -194,20 +220,33 @@ void main() {
     String? go(AuthState s, String location) => authRedirectFor(
       s,
       location,
-      publicPaths: const {'/sign-up', '/verify', '/forgot-password', '/reset-password'},
+      publicPaths: const {
+        '/sign-up',
+        '/verify',
+        '/forgot-password',
+        '/reset-password',
+      },
     );
 
     test('signed out may open the account pages, anything else still goes to login', () {
-      for (final path in ['/sign-up', '/verify', '/forgot-password', '/reset-password']) {
+      for (final path in [
+        '/sign-up',
+        '/verify',
+        '/forgot-password',
+        '/reset-password',
+      ]) {
         expect(go(const SignedOut(), path), isNull, reason: path);
       }
       expect(go(const SignedOut(), '/me'), '/login');
     });
 
-    test('a reset link survives the splash while the session is being checked', () {
-      expect(go(const AuthChecking(), '/reset-password'), isNull);
-      expect(go(const AuthChecking(), '/me'), '/splash');
-    });
+    test(
+      'a reset link survives the splash while the session is being checked',
+      () {
+        expect(go(const AuthChecking(), '/reset-password'), isNull);
+        expect(go(const AuthChecking(), '/me'), '/splash');
+      },
+    );
 
     test('signed in still leaves login and splash', () {
       expect(go(const SignedIn(principal), '/login'), '/me');

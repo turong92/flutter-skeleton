@@ -87,7 +87,8 @@ class _TossCheckoutPageState extends State<TossCheckoutPage> {
 
   @override
   Widget build(BuildContext context) {
-    final base = widget.baseUrl ?? widget.successUrl.replace(path: '/', query: '');
+    final base =
+        widget.baseUrl ?? widget.successUrl.replace(path: '/', query: '');
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.checkout.orderName),
@@ -99,7 +100,8 @@ class _TossCheckoutPageState extends State<TossCheckoutPage> {
       ),
       body: Column(
         children: [
-          if (widget.checkout.testMode) TestPaymentBanner(labels: widget.labels),
+          if (widget.checkout.testMode)
+            TestPaymentBanner(labels: widget.labels),
           Expanded(
             child: InAppWebView(
               initialData: InAppWebViewInitialData(

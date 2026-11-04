@@ -106,9 +106,7 @@ class _PostDetailViewState extends ConsumerState<PostDetailView> {
     if (!await confirmDelete(context, labels, labels.confirmDeletePost)) return;
     var deleted = false;
     await _run(() async {
-      await ref
-          .read(boardApiProvider)
-          .deletePost(widget.board, widget.postId);
+      await ref.read(boardApiProvider).deletePost(widget.board, widget.postId);
       ref.invalidate(boardPostListProvider(widget.board));
       deleted = true;
     });

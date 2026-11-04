@@ -8,15 +8,13 @@ import 'package:skeleton_board/skeleton_board.dart';
 import 'support/fake_board.dart';
 import 'support/pump.dart';
 
-Widget detail({
-  void Function(PostDetail)? onEdit,
-  VoidCallback? onDeleted,
-}) => PostDetailView(
-  board: 'general',
-  postId: 1,
-  onEdit: onEdit ?? (_) {},
-  onDeleted: onDeleted ?? () {},
-);
+Widget detail({void Function(PostDetail)? onEdit, VoidCallback? onDeleted}) =>
+    PostDetailView(
+      board: 'general',
+      postId: 1,
+      onEdit: onEdit ?? (_) {},
+      onDeleted: onDeleted ?? () {},
+    );
 
 Future<void> send(WidgetTester tester, String text) async {
   await tester.enterText(find.byKey(const ValueKey('comment-field')), text);
@@ -28,7 +26,10 @@ Future<void> send(WidgetTester tester, String text) async {
 void main() {
   testWidgets('the body is drawn as plain text, not as markup', (tester) async {
     final server = FakeBoard()
-      ..detail = postJson(1, body: '<b>bold</b> **x** <script>alert(1)</script>');
+      ..detail = postJson(
+        1,
+        body: '<b>bold</b> **x** <script>alert(1)</script>',
+      );
     await pumpBoard(tester, server, detail());
 
     expect(
@@ -43,9 +44,20 @@ void main() {
       (tester) async {
         final server = FakeBoard()
           ..comments = [
-            commentJson(10, body: null, status: 'DELETED', replies: [
-              commentJson(11, body: 'still here', depth: 1, parentId: 10, rootId: 10),
-            ]),
+            commentJson(
+              10,
+              body: null,
+              status: 'DELETED',
+              replies: [
+                commentJson(
+                  11,
+                  body: 'still here',
+                  depth: 1,
+                  parentId: 10,
+                  rootId: 10,
+                ),
+              ],
+            ),
             commentJson(20, body: null, status: 'HIDDEN'),
           ];
         await pumpBoard(tester, server, detail());
@@ -55,22 +67,32 @@ void main() {
         expect(find.text('still here'), findsOneWidget);
         expect(
           tester.getTopLeft(find.text('still here')).dx,
-          greaterThan(tester.getTopLeft(find.text('This comment was deleted.')).dx),
+          greaterThan(
+            tester.getTopLeft(find.text('This comment was deleted.')).dx,
+          ),
         );
         // nothing to reply to or react on in a removed comment
         expect(find.byKey(const ValueKey('reply-10')), findsNothing);
-        expect(find.byKey(const ValueKey('comment-10-react-LIKE')), findsNothing);
+        expect(
+          find.byKey(const ValueKey('comment-10-react-LIKE')),
+          findsNothing,
+        );
       },
     );
 
-    testWidgets('a comment at the depth cap has no reply button', (tester) async {
+    testWidgets('a comment at the depth cap has no reply button', (
+      tester,
+    ) async {
       final server = FakeBoard()
         ..config = configJson(maxCommentDepth: 2)
         ..comments = [
-          commentJson(10, replies: [
-            commentJson(11, depth: 1, parentId: 10, rootId: 10),
-            commentJson(12, depth: 2, parentId: 11, rootId: 10),
-          ]),
+          commentJson(
+            10,
+            replies: [
+              commentJson(11, depth: 1, parentId: 10, rootId: 10),
+              commentJson(12, depth: 2, parentId: 11, rootId: 10),
+            ],
+          ),
         ];
       await pumpBoard(tester, server, detail());
 
@@ -103,7 +125,10 @@ void main() {
       // reading the post again would count another view
       expect(server.where('GET', '/boards/general/posts/1'), hasLength(1));
       expect(
-        tester.widget<TextField>(find.byKey(const ValueKey('comment-field'))).controller!.text,
+        tester
+            .widget<TextField>(find.byKey(const ValueKey('comment-field')))
+            .controller!
+            .text,
         isEmpty,
       );
     });
@@ -126,29 +151,33 @@ void main() {
       expect(find.textContaining('Replying to'), findsNothing);
     });
 
-    testWidgets('the send button is locked while sending: one request, one key', (
-      tester,
-    ) async {
-      final server = FakeBoard()..holdPosts = Completer<void>();
-      await pumpBoard(tester, server, detail());
+    testWidgets(
+      'the send button is locked while sending: one request, one key',
+      (tester) async {
+        final server = FakeBoard()..holdPosts = Completer<void>();
+        await pumpBoard(tester, server, detail());
 
-      await tester.enterText(find.byKey(const ValueKey('comment-field')), 'x');
-      await tester.pump();
-      await tester.tap(find.byKey(const ValueKey('comment-send')));
-      await tester.pump(const Duration(milliseconds: 50));
-      await tester.tap(
-        find.byKey(const ValueKey('comment-send')),
-        warnIfMissed: false,
-      );
-      await tester.pump(const Duration(milliseconds: 50));
+        await tester.enterText(
+          find.byKey(const ValueKey('comment-field')),
+          'x',
+        );
+        await tester.pump();
+        await tester.tap(find.byKey(const ValueKey('comment-send')));
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.tap(
+          find.byKey(const ValueKey('comment-send')),
+          warnIfMissed: false,
+        );
+        await tester.pump(const Duration(milliseconds: 50));
 
-      expect(
-        server.where('POST', '/boards/general/posts/1/comments'),
-        hasLength(1),
-      );
-      server.holdPosts!.complete();
-      await tester.pumpAndSettle();
-    });
+        expect(
+          server.where('POST', '/boards/general/posts/1/comments'),
+          hasLength(1),
+        );
+        server.holdPosts!.complete();
+        await tester.pumpAndSettle();
+      },
+    );
 
     testWidgets('403 ACCOUNT.EMAIL_REQUIRED shows its own message', (
       tester,
@@ -196,35 +225,38 @@ void main() {
       await pumpBoard(tester, server, detail());
 
       expect(
-        tester.widget<TextField>(find.byKey(const ValueKey('comment-field'))).maxLength,
+        tester
+            .widget<TextField>(find.byKey(const ValueKey('comment-field')))
+            .maxLength,
         7,
       );
     });
 
-    testWidgets('deleting my comment asks the server and re-reads the comments', (
-      tester,
-    ) async {
-      final server = FakeBoard()..comments = [commentJson(10, mine: true)];
-      server.respond = (o) =>
-          o.method == 'DELETE' && o.path.endsWith('/comments/10')
-          ? FakeAdapter.empty(204)
-          : null;
-      await pumpBoard(tester, server, detail());
+    testWidgets(
+      'deleting my comment asks the server and re-reads the comments',
+      (tester) async {
+        final server = FakeBoard()..comments = [commentJson(10, mine: true)];
+        server.respond = (o) =>
+            o.method == 'DELETE' && o.path.endsWith('/comments/10')
+            ? FakeAdapter.empty(204)
+            : null;
+        await pumpBoard(tester, server, detail());
 
-      await tester.tap(find.byKey(const ValueKey('delete-comment-10')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('delete-comment-10')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+        await tester.pumpAndSettle();
 
-      expect(
-        server.where('DELETE', '/boards/general/posts/1/comments/10'),
-        hasLength(1),
-      );
-      expect(
-        server.where('GET', '/boards/general/posts/1/comments'),
-        hasLength(2),
-      );
-    });
+        expect(
+          server.where('DELETE', '/boards/general/posts/1/comments/10'),
+          hasLength(1),
+        );
+        expect(
+          server.where('GET', '/boards/general/posts/1/comments'),
+          hasLength(2),
+        );
+      },
+    );
   });
 
   group('reactions', () {
@@ -264,11 +296,16 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('post-react-LIKE')));
       await tester.pumpAndSettle();
 
-      final delete = server.where('DELETE', '/boards/general/posts/1/reactions');
+      final delete = server.where(
+        'DELETE',
+        '/boards/general/posts/1/reactions',
+      );
       expect(delete.single.queryParameters, {'type': 'LIKE'});
     });
 
-    testWidgets('on a comment: only the comments are read again', (tester) async {
+    testWidgets('on a comment: only the comments are read again', (
+      tester,
+    ) async {
       final server = FakeBoard()..comments = [commentJson(10)];
       await pumpBoard(tester, server, detail());
 
@@ -289,29 +326,33 @@ void main() {
       expect(server.where('GET', '/boards/general/posts/1'), hasLength(1));
     });
 
-    testWidgets('labels and icons come from the map; unknown types still show', (
-      tester,
-    ) async {
-      final server = FakeBoard()
-        ..config = configJson(reactionTypes: ['CHEER', 'MYSTERY']);
-      await pumpBoard(
-        tester,
-        server,
-        PostDetailView(
-          board: 'general',
-          postId: 1,
-          onEdit: (_) {},
-          onDeleted: () {},
-          reactionStyles: const {
-            'CHEER': BoardReactionStyle(label: 'Cheer!', icon: Icons.celebration),
-          },
-        ),
-      );
+    testWidgets(
+      'labels and icons come from the map; unknown types still show',
+      (tester) async {
+        final server = FakeBoard()
+          ..config = configJson(reactionTypes: ['CHEER', 'MYSTERY']);
+        await pumpBoard(
+          tester,
+          server,
+          PostDetailView(
+            board: 'general',
+            postId: 1,
+            onEdit: (_) {},
+            onDeleted: () {},
+            reactionStyles: const {
+              'CHEER': BoardReactionStyle(
+                label: 'Cheer!',
+                icon: Icons.celebration,
+              ),
+            },
+          ),
+        );
 
-      expect(find.text('Cheer!'), findsOneWidget);
-      expect(find.byIcon(Icons.celebration), findsOneWidget);
-      expect(find.text('MYSTERY'), findsOneWidget);
-    });
+        expect(find.text('Cheer!'), findsOneWidget);
+        expect(find.byIcon(Icons.celebration), findsOneWidget);
+        expect(find.text('MYSTERY'), findsOneWidget);
+      },
+    );
   });
 
   group('my post', () {

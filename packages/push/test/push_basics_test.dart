@@ -96,9 +96,8 @@ void main() {
         (_) => valueBody(preferenceJson('NEWS', push: false)),
       );
 
-      final pref = await PushApi(
-        clientWith(adapter),
-      ).setPreference('NEWS', enabled: false);
+      final pref = await PushApi(clientWith(adapter))
+          .setPreference('NEWS', enabled: false);
 
       final request = adapter.requests.single;
       expect(request.method, 'PUT');
@@ -110,16 +109,17 @@ void main() {
     test('registerDevice sends the FCM token and platform', () async {
       final adapter = FakeAdapter((_) => valueBody(deviceJson('id-1')));
 
-      await PushApi(clientWith(adapter)).registerDevice(
-        'id-1',
-        token: 'tok',
-        platform: 'android',
-      );
+      await PushApi(clientWith(adapter))
+          .registerDevice('id-1', token: 'tok', platform: 'android');
 
       final request = adapter.requests.single;
       expect(request.method, 'PUT');
       expect(request.path, '/push/devices/id-1');
-      expect(request.data, {'kind': 'FCM', 'token': 'tok', 'platform': 'android'});
+      expect(request.data, {
+        'kind': 'FCM',
+        'token': 'tok',
+        'platform': 'android',
+      });
     });
 
     test('removeDevice and sendTest hit the device paths', () async {

@@ -91,11 +91,7 @@ class _Backend {
         final body = options.data as Map<String, Object?>;
         return body['code'] == '123456'
             ? _signedIn()
-            : _error(
-                400,
-                'ACCOUNT.CODE_INVALID',
-                data: {'attemptsLeft': 4},
-              );
+            : _error(400, 'ACCOUNT.CODE_INVALID', data: {'attemptsLeft': 4});
       case ('POST', '/auth/login'):
         return _signedIn();
       case ('GET', '/auth/me'):
@@ -122,7 +118,10 @@ class _Backend {
       case ('GET', final p) when p.startsWith('/legal/documents/'):
         return FakeAdapter.json(200, {
           'value': {
-            ..._doc(p.split('/').last, options.queryParameters['version'] as String? ?? '1'),
+            ..._doc(
+              p.split('/').last,
+              options.queryParameters['version'] as String? ?? '1',
+            ),
             'markdown': 'text',
           },
           'meta': _meta,
@@ -215,10 +214,7 @@ void main() {
 
     await tester.tap(find.text('Create account'));
     await tester.pumpAndSettle();
-    await tester.enterText(
-      find.byKey(SignUpForm.emailKey),
-      'new@example.com',
-    );
+    await tester.enterText(find.byKey(SignUpForm.emailKey), 'new@example.com');
     await tester.enterText(find.byKey(SignUpForm.passwordKey), _goodPassword);
     await tester.tap(find.byKey(SignUpConsents.checkKey('terms')));
     await tester.tap(find.byKey(SignUpConsents.checkKey('privacy')));
@@ -280,7 +276,9 @@ void main() {
       expect(h.backend.documentReads, greaterThan(readsBefore));
       expect(find.byKey(VerifyCodeForm.codeKey), findsNothing);
       expect(
-        tester.widget<Checkbox>(find.byKey(SignUpConsents.checkKey('terms'))).value,
+        tester
+            .widget<Checkbox>(find.byKey(SignUpConsents.checkKey('terms')))
+            .value,
         isFalse,
       );
     },
@@ -309,10 +307,10 @@ void main() {
     await tester.tap(find.text('Set new password'));
     await tester.pumpAndSettle();
 
-    expect(
-      h.backend.bodies['/account/password/reset'],
-      {'token': 'tok-1', 'newPassword': _goodPassword},
-    );
+    expect(h.backend.bodies['/account/password/reset'], {
+      'token': 'tok-1',
+      'newPassword': _goodPassword,
+    });
     expect(find.byKey(LoginForm.emailKey), findsOneWidget);
   });
 
@@ -336,11 +334,16 @@ void main() {
 
     await tester.tap(find.text('Account settings'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byKey(DeleteAccountForm.passwordKey), 'password');
+    await tester.enterText(
+      find.byKey(DeleteAccountForm.passwordKey),
+      'password',
+    );
     await tester.tap(find.text('Delete my account'));
     await tester.pumpAndSettle();
 
-    expect(h.backend.bodies['/account/delete'], {'currentPassword': 'password'});
+    expect(h.backend.bodies['/account/delete'], {
+      'currentPassword': 'password',
+    });
     expect(find.byKey(LoginForm.emailKey), findsOneWidget);
     expect(await h.tokens.read(), isNull);
   });
@@ -369,22 +372,23 @@ void main() {
     },
   );
 
-  testWidgets('signing out forgets a pending consent, so the next sign-in is not blocked', (
-    tester,
-  ) async {
-    final (h, container) = await _start(tester);
-    await _signIn(tester);
-    h.backend.reconsentRequired = true;
-    await _callGatedApi(tester, container);
-    expect(container.read(reconsentProvider), isNotEmpty);
+  testWidgets(
+    'signing out forgets a pending consent, so the next sign-in is not blocked',
+    (tester) async {
+      final (h, container) = await _start(tester);
+      await _signIn(tester);
+      h.backend.reconsentRequired = true;
+      await _callGatedApi(tester, container);
+      expect(container.read(reconsentProvider), isNotEmpty);
 
-    unawaited(container.read(authSessionProvider.notifier).logout());
-    await tester.pumpAndSettle();
-    expect(container.read(reconsentProvider), isEmpty);
+      unawaited(container.read(authSessionProvider.notifier).logout());
+      await tester.pumpAndSettle();
+      expect(container.read(reconsentProvider), isEmpty);
 
-    h.backend.reconsentRequired = false;
-    await _signIn(tester);
-    expect(find.text('user@example.com'), findsOneWidget);
-    expect(find.byKey(ReconsentScreen.agreeKey), findsNothing);
-  });
+      h.backend.reconsentRequired = false;
+      await _signIn(tester);
+      expect(find.text('user@example.com'), findsOneWidget);
+      expect(find.byKey(ReconsentScreen.agreeKey), findsNothing);
+    },
+  );
 }

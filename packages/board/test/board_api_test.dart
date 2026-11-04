@@ -65,9 +65,8 @@ void main() {
       (_) => valueBody(postJson(9, body: 'b'), status: 201),
     );
 
-    await apiWith(
-      adapter,
-    ).createPost('general', title: 'T', body: 'b', idempotencyKey: 'k');
+    await apiWith(adapter)
+        .createPost('general', title: 'T', body: 'b', idempotencyKey: 'k');
 
     expect(adapter.requests.single.data, {'title': 'T', 'body': 'b'});
   });
@@ -116,9 +115,12 @@ void main() {
   test('a removed comment keeps its place with a null body', () async {
     final adapter = FakeAdapter(
       (_) => pageBody([
-        commentJson(10, body: null, status: 'DELETED', replies: [
-          commentJson(11, depth: 1, parentId: 10, rootId: 10),
-        ]),
+        commentJson(
+          10,
+          body: null,
+          status: 'DELETED',
+          replies: [commentJson(11, depth: 1, parentId: 10, rootId: 10)],
+        ),
       ]),
     );
 

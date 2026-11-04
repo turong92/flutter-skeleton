@@ -69,6 +69,9 @@ class SampleApp extends ConsumerWidget {
       final text = message.title ?? message.body;
       if (text == null) return;
       final link = message.link;
+      // The messenger's context sits below MaterialApp, so it carries the app theme.
+      final scheme = Theme.of(_messengerKey.currentContext ?? context)
+          .colorScheme;
       _messengerKey.currentState?.showSnackBar(
         SnackBar(
           content: Text(text),
@@ -76,6 +79,8 @@ class SampleApp extends ConsumerWidget {
               ? null
               : SnackBarAction(
                   label: 'Open',
+                  backgroundColor: scheme.primary,
+                  textColor: scheme.onPrimary,
                   onPressed: () => ref.read(routerProvider).go(link),
                 ),
         ),

@@ -1,0 +1,25 @@
+name: starter
+description: Starter app of flutter-skeleton. Sign in, see who you are, sign out.
+publish_to: none
+version: 1.0.0+1
+resolution: workspace
+
+environment:
+  sdk: ^3.13.0
+  flutter: 3.47.9
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^3.4.3
+  go_router: ^18.1.2
+  skeleton_auth: any # workspace sibling
+  skeleton_ui: any # workspace sibling
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  skeleton_api_client: any # workspace sibling; its testing.dart has the fake HTTP adapter
+
+flutter:
+  uses-material-design: true

@@ -26,3 +26,11 @@ jobs:
       - run: dart format --output=none --set-exit-if-changed .
       - run: melos run analyze
       - run: melos run test
+      # Catches a broken Gradle setup or manifest. Not run on the machine this
+      # skeleton was written on (no Android SDK there): first verified by CI.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - run: flutter build apk --debug
+        working-directory: apps/starter

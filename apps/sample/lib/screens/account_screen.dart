@@ -3,20 +3,58 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_iap/skeleton_iap.dart';
+import 'package:skeleton_social_login/skeleton_social_login.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
+import '../social_support.dart';
 import 'form_page.dart';
 
 /// Account settings: deleting the account (the store rules ask for it inside
-/// the app). The password is typed again; on success the device is signed out.
-/// A store subscription outlives the account (the server cannot end it), so
-/// the person is told to cancel it in the store first.
-class AccountScreen extends ConsumerWidget {
+/// the app). The proof is the password, a mailed code or, for an account with
+/// no address, a fresh sign-in with a linked provider; on success the device is
+/// signed out. A store subscription outlives the account (the server cannot end
+/// it), so the person is told to cancel it in the store first. An account with
+/// Sign in with Apple first has Apple told to drop its access (App Review).
+class AccountScreen extends ConsumerStatefulWidget {
   const AccountScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AccountScreen> createState() => _AccountScreenState();
+}
+
+class _AccountScreenState extends ConsumerState<AccountScreen> {
+  var _revoked = false;
+  var _revoking = false;
+  String? _revokeError;
+
+  Future<void> _revokeApple() async {
+    final apple = ref.read(sampleAccountProvider).value?.appleToRevoke;
+    if (apple == null) return;
+    final client = ref.read(apiClientProvider);
+    setState(() {
+      _revoking = true;
+      _revokeError = null;
+    });
+    try {
+      await apple.revokeBeforeDelete(client);
+      if (mounted) setState(() => _revoked = true);
+    } on SocialCancelled {
+      // Backed out: nothing is deleted and nothing is shown.
+    } catch (_) {
+      if (mounted) {
+        setState(() => _revokeError = 'Apple could not be reached. Try again.');
+      }
+    } finally {
+      if (mounted) setState(() => _revoking = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final store = ref.watch(iapStoreSubscriptionToCancelProvider);
+    final needsAppleStep =
+        !_revoked &&
+        ref.watch(sampleAccountProvider).value?.appleToRevoke != null;
     final notice = store.when(
       loading: () => null,
       // Not knowing is not "none": the person is asked to check.
@@ -47,7 +85,29 @@ class AccountScreen extends ConsumerWidget {
           ),
           const SizedBox(height: SkeletonSpace.sm),
         ],
-        DeleteAccountForm(onDeleted: (_) => context.go('/login')),
+        if (needsAppleStep) ...[
+          const Text(
+            'This account signs in with Apple. Apple has to drop its access '
+            'before the account can be deleted.',
+          ),
+          const SizedBox(height: SkeletonSpace.sm),
+          FilledButton(
+            key: const ValueKey('account.revokeApple'),
+            onPressed: _revoking ? null : _revokeApple,
+            child: const Text('Remove Apple access'),
+          ),
+          if (_revokeError != null) ...[
+            const SizedBox(height: SkeletonSpace.sm),
+            Text(
+              _revokeError!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ],
+        ] else
+          DeleteAccountForm(
+            onDeleted: (_) => context.go('/login'),
+            socialReauth: () => reauthWithLinkedProvider(ref),
+          ),
         const SizedBox(height: SkeletonSpace.md),
         OutlinedButton(
           onPressed: () => context.go('/settings'),

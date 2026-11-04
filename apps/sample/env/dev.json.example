@@ -1,9 +1,12 @@
 {
-  "_note": "Copy to dev.json (git-ignored) and run: flutter run --dart-define-from-file=env/dev.json. API_BASE_URL includes /api/v1. The Android emulator reaches the host machine as 10.0.2.2, the iOS simulator as localhost; a real device needs the machine's LAN address and its own debug exception (plain http is allowed for localhost and 10.0.2.2 only). The FIREBASE_* values come from your own Firebase project and stay empty here: with any of them empty Firebase is not started and push shows as unavailable.",
+  "_note": "Copy to dev.json (git-ignored) and run: flutter run --dart-define-from-file=env/dev.json. API_BASE_URL includes /api/v1. The Android emulator reaches the host machine as 10.0.2.2, the iOS simulator as localhost; a real device needs the machine's LAN address and its own debug exception (plain http is allowed for localhost and 10.0.2.2 only). The FIREBASE_* values come from your own Firebase project and stay empty here: with any of them empty Firebase is not started and push shows as unavailable. The social values are examples: an empty GOOGLE_SERVER_CLIENT_ID or KAKAO_NATIVE_APP_KEY hides that button (Apple and Naver are shown when the server lists them). The native files need the same values, see README.",
   "API_BASE_URL": "http://10.0.2.2:8080/api/v1",
   "FIREBASE_API_KEY": "",
   "FIREBASE_PROJECT_ID": "",
   "FIREBASE_MESSAGING_SENDER_ID": "",
   "FIREBASE_ANDROID_APP_ID": "",
-  "FIREBASE_IOS_APP_ID": ""
+  "FIREBASE_IOS_APP_ID": "",
+  "GOOGLE_SERVER_CLIENT_ID": "",
+  "GOOGLE_IOS_CLIENT_ID": "",
+  "KAKAO_NATIVE_APP_KEY": ""
 }

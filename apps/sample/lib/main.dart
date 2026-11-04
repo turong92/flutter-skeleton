@@ -1,15 +1,18 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_iap/skeleton_iap.dart';
 import 'package:skeleton_push/skeleton_push.dart';
+import 'package:skeleton_social_login/skeleton_social_login.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
 import 'config.dart';
 import 'firebase_setup.dart';
 import 'router.dart';
 import 'screens/store_screen.dart';
+import 'social_support.dart';
 import 'wiring.dart';
 
 Future<void> main() async {
@@ -23,6 +26,11 @@ Future<void> main() async {
   }
   // No Firebase values: nothing starts and push stays "unavailable".
   await initFirebaseIfConfigured();
+  // The Kakao SDK is started by the app, and only with a key (no key = no
+  // Kakao button).
+  if (AppConfig.kakaoNativeAppKey.isNotEmpty) {
+    await KakaoSdk.init(nativeAppKey: AppConfig.kakaoNativeAppKey);
+  }
   runApp(
     ProviderScope(
       overrides: [
@@ -34,6 +42,10 @@ Future<void> main() async {
           SecureSignUpAttemptStore(),
         ),
         ...sampleWiring,
+        // Which providers this build has; the server's /auth/methods then
+        // narrows them to the ones shown. Not in sampleWiring: tests bring
+        // their own, since a provider SDK cannot run in a widget test.
+        socialProvidersProvider.overrideWith((ref) => buildSocialProviders()),
       ],
       child: const SampleApp(),
     ),
@@ -54,6 +66,14 @@ final _pushSetupProvider = Provider<void>((ref) {
   }
 });
 
+/// Sign-out also ends the providers' own SDK sessions.
+final _socialSetupProvider = Provider<void>((ref) {
+  final remove = ref
+      .read(signOutHooksProvider)
+      .add(ref.read(socialSignOutHookProvider));
+  ref.onDispose(remove);
+});
+
 final _messengerKey = GlobalKey<ScaffoldMessengerState>();
 
 class SampleApp extends ConsumerWidget {
@@ -62,6 +82,7 @@ class SampleApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(_pushSetupProvider);
+    ref.watch(_socialSetupProvider);
     // Watched from the root so the store's left-over purchases are picked up
     // at start; what the server said to each purchase is shown wherever the
     // person is.

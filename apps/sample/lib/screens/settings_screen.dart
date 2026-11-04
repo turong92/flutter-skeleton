@@ -5,8 +5,8 @@ import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_push/skeleton_push.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
-/// Who is signed in, the push settings of this device, the account page
-/// (deletion) and sign-out. Sign-out is the only path that runs the
+/// Who is signed in, the push settings of this device, social sign-in links,
+/// the account page (deletion) and sign-out. Sign-out is the only path that runs the
 /// sign-out hooks, so this device's push registration is removed first.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -26,6 +26,11 @@ class SettingsScreen extends ConsumerWidget {
           const Divider(),
           const PushSettingsView(),
           const Divider(),
+          const SizedBox(height: SkeletonSpace.sm),
+          OutlinedButton(
+            onPressed: () => context.go('/social'),
+            child: const Text('Social sign-in'),
+          ),
           const SizedBox(height: SkeletonSpace.sm),
           OutlinedButton(
             onPressed: () => context.go('/account'),

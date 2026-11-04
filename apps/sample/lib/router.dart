@@ -14,6 +14,7 @@ import 'screens/reset_password_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/shell_screen.dart';
 import 'screens/sign_up_screen.dart';
+import 'screens/social_link_screen.dart';
 import 'screens/store_screen.dart';
 import 'screens/verify_screen.dart';
 
@@ -87,6 +88,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/account',
         builder: (context, state) => const AccountScreen(),
+      ),
+      GoRoute(
+        path: '/social',
+        builder: (context, state) => const SocialLinkScreen(),
       ),
       GoRoute(
         path: '/consent',

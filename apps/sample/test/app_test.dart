@@ -11,6 +11,7 @@ import 'package:skeleton_board/skeleton_board.dart';
 import 'package:skeleton_iap/skeleton_iap.dart';
 import 'package:skeleton_push/skeleton_push.dart';
 import 'package:skeleton_push/testing.dart';
+import 'package:skeleton_social_login/skeleton_social_login.dart';
 
 const _meta = {'timestamp': '2026-01-01T00:00:00Z'};
 const _principal = {
@@ -152,6 +153,8 @@ Widget _app(
     signUpAttemptStoreProvider.overrideWithValue(MemorySignUpAttemptStore()),
     httpAdapterProvider.overrideWithValue(backend.adapter),
     ...sampleWiring,
+    // no provider SDK in a widget test (their sign-out would reach a missing plugin)
+    socialProvidersProvider.overrideWithValue(const []),
     // no store in a widget test: the real one would try to reach billing
     iapPlatformProvider.overrideWithValue(null),
     if (pushSource != null)
@@ -180,6 +183,7 @@ void main() {
         tokenStoreProvider.overrideWithValue(MemoryTokenStore()),
         httpAdapterProvider.overrideWithValue(_Backend().adapter),
         ...sampleWiring,
+        socialProvidersProvider.overrideWithValue(const []),
         iapPlatformProvider.overrideWithValue(null),
       ],
     );

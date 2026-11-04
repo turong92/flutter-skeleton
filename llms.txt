@@ -33,6 +33,10 @@
   - take: `--packages push`; needs: api-client
   - backend: modules `notification-push` · `notification-push-jdbc` · `notification-fcm` · more when present `notification-push-legal` · paths `/api/v1/push`; react twin: push
   - keywords: 푸시, 알림, FCM, 기기 등록, 알림 권한 / push, notifications, fcm, device token, notification permission
+- `iap`: In-app purchase through the App Store and Google Play: the server's product list as the store prices it, buy and restore with the server's account token, every purchase checked by the server before anything opens or finishes, left-over purchases at start, a web checkout address opened in the outside browser (only when the server's channel has the web), and the lookup that tells a person to cancel a store subscription before deleting the account. No screens.
+  - take: `--packages iap`; needs: api-client
+  - backend: modules `payment` · `payment-iap` · one of `payment-appstore` | `payment-googleplay` · more when present `auth-web-handoff` · `payment-jdbc` · paths `/api/v1/payments/iap` · `/api/v1/payments/subscriptions`; react twin: —
+  - keywords: 인앱결제, 앱 결제, 구독, 구매 복원, 앱스토어, 구글 플레이, 스토어 구독 해지 / in-app purchase, iap, subscription, restore purchases, app store, google play, web checkout
 - `ui`: Design tokens as Dart constants, light and dark Material 3 themes that follow the system, and the LoadingView and ErrorView the starter uses.
   - take: in every project; needs: —
   - backend: —; react twin: ui, theme, tokens
@@ -41,7 +45,7 @@
   - take: in every project; needs: api-client, auth, legal, ui
   - backend: modules `auth` · `auth-session` · `account` · `legal` · `platform` · paths `/api/v1/auth` · `/api/v1/account` · `/api/v1/legal`; react twin: app-starter
   - keywords: 스타터, 시작 템플릿, 새 앱, 모바일 시작 / starter, boilerplate, new app, mobile start
-- `app-sample`: The reference app: the starter's flows plus a board tab, push settings and a settings tab, wired the way a project would. Read it for wiring; a stamp removes it.
-  - take: never stamped (reference app); needs: api-client, auth, board, legal, push, ui
-  - backend: modules `auth` · `auth-session` · `account` · `legal` · `board` · `notification-push` · `notification-fcm` · `platform` · more when present `author-profile` · `idempotency` · paths `/api/v1/auth` · `/api/v1/account` · `/api/v1/legal` · `/api/v1/boards` · `/api/v1/push`; react twin: app-sample
+- `app-sample`: The reference app: the starter's flows plus a board tab, a store tab (products, buy, restore, web checkout, my subscription, the cancel-in-the-store notice before account deletion), push settings and a settings tab, wired the way a project would. Read it for wiring; a stamp removes it.
+  - take: never stamped (reference app); needs: api-client, auth, board, iap, legal, push, ui
+  - backend: modules `auth` · `auth-session` · `account` · `legal` · `board` · `notification-push` · `notification-fcm` · `payment` · `payment-iap` · `platform` · one of `payment-appstore` | `payment-googleplay` · more when present `author-profile` · `idempotency` · `auth-web-handoff` · paths `/api/v1/auth` · `/api/v1/account` · `/api/v1/legal` · `/api/v1/boards` · `/api/v1/push` · `/api/v1/payments/iap` · `/api/v1/payments/subscriptions`; react twin: app-sample
   - keywords: 샘플 앱, 참조 앱, 연결 예시 / sample app, reference app, wiring example

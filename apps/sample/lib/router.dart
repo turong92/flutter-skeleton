@@ -14,6 +14,7 @@ import 'screens/reset_password_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/shell_screen.dart';
 import 'screens/sign_up_screen.dart';
+import 'screens/store_screen.dart';
 import 'screens/verify_screen.dart';
 
 /// Open in every sign-in state: a reset link survives the splash, and the
@@ -128,6 +129,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                     ],
                   ),
                 ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/store',
+                builder: (context, state) => const StoreScreen(),
               ),
             ],
           ),

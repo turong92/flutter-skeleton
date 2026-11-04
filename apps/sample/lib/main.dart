@@ -2,12 +2,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
+import 'package:skeleton_iap/skeleton_iap.dart';
 import 'package:skeleton_push/skeleton_push.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
 import 'config.dart';
 import 'firebase_setup.dart';
 import 'router.dart';
+import 'screens/store_screen.dart';
 import 'wiring.dart';
 
 Future<void> main() async {
@@ -60,6 +62,18 @@ class SampleApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(_pushSetupProvider);
+    // Watched from the root so the store's left-over purchases are picked up
+    // at start; what the server said to each purchase is shown wherever the
+    // person is.
+    ref.watch(iapServiceProvider);
+    ref.listen(iapOutcomesProvider, (_, next) {
+      final outcome = next.value;
+      if (outcome == null) return;
+      if (outcome is IapGranted) ref.invalidate(mySubscriptionProvider);
+      _messengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text(iapOutcomeText(outcome))),
+      );
+    });
     // iOS shows a message that arrives in front by itself; Android does not.
     ref.listen(pushMessagesProvider, (_, next) {
       final message = next.value;

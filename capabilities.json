@@ -163,6 +163,33 @@
       }
     },
     {
+      "id": "iap",
+      "kind": "package",
+      "summary": "In-app purchase through the App Store and Google Play: the server's product list as the store prices it, buy and restore with the server's account token, every purchase checked by the server before anything opens or finishes, left-over purchases at start, a web checkout address opened in the outside browser (only when the server's channel has the web), and the lookup that tells a person to cancel a store subscription before deleting the account. No screens.",
+      "package": "skeleton_iap",
+      "path": "packages/iap",
+      "stampFlag": { "flag": "--packages iap", "included": "flag" },
+      "needs": ["api-client"],
+      "backend": {
+        "modules": ["payment", "payment-iap"],
+        "oneOfModules": [["payment-appstore", "payment-googleplay"]],
+        "optionalModules": ["auth-web-handoff", "payment-jdbc"],
+        "basePaths": ["/api/v1/payments/iap", "/api/v1/payments/subscriptions"],
+        "docs": ["docs/modules/payment-iap.md", "docs/modules/payment-appstore.md", "docs/modules/payment-googleplay.md", "docs/modules/auth-web-handoff.md", "docs/payment-http-contract.md"]
+      },
+      "pairsWith": { "react": [] },
+      "docs": ["packages/iap/README.md"],
+      "notFor": [
+        "Creating products or store accounts: the project registers them in App Store Connect and Play Console",
+        "Card payment inside the app (WebView): the web checkout opens the outside browser",
+        "Refunds, family sharing, offer codes: not built"
+      ],
+      "keywords": {
+        "ko": ["인앱결제", "앱 결제", "구독", "구매 복원", "앱스토어", "구글 플레이", "스토어 구독 해지"],
+        "en": ["in-app purchase", "iap", "subscription", "restore purchases", "app store", "google play", "web checkout"]
+      }
+    },
+    {
       "id": "ui",
       "kind": "package",
       "summary": "Design tokens as Dart constants, light and dark Material 3 themes that follow the system, and the LoadingView and ErrorView the starter uses.",
@@ -208,16 +235,16 @@
     {
       "id": "app-sample",
       "kind": "app",
-      "summary": "The reference app: the starter's flows plus a board tab, push settings and a settings tab, wired the way a project would. Read it for wiring; a stamp removes it.",
+      "summary": "The reference app: the starter's flows plus a board tab, a store tab (products, buy, restore, web checkout, my subscription, the cancel-in-the-store notice before account deletion), push settings and a settings tab, wired the way a project would. Read it for wiring; a stamp removes it.",
       "package": "sample",
       "path": "apps/sample",
       "stampFlag": { "flag": null, "included": "never" },
-      "needs": ["api-client", "auth", "board", "legal", "push", "ui"],
+      "needs": ["api-client", "auth", "board", "iap", "legal", "push", "ui"],
       "backend": {
-        "modules": ["auth", "auth-session", "account", "legal", "board", "notification-push", "notification-fcm", "platform"],
-        "oneOfModules": [],
-        "optionalModules": ["author-profile", "idempotency"],
-        "basePaths": ["/api/v1/auth", "/api/v1/account", "/api/v1/legal", "/api/v1/boards", "/api/v1/push"],
+        "modules": ["auth", "auth-session", "account", "legal", "board", "notification-push", "notification-fcm", "payment", "payment-iap", "platform"],
+        "oneOfModules": [["payment-appstore", "payment-googleplay"]],
+        "optionalModules": ["author-profile", "idempotency", "auth-web-handoff"],
+        "basePaths": ["/api/v1/auth", "/api/v1/account", "/api/v1/legal", "/api/v1/boards", "/api/v1/push", "/api/v1/payments/iap", "/api/v1/payments/subscriptions"],
         "docs": ["docs/sample.md"]
       },
       "pairsWith": { "react": ["app-sample"] },

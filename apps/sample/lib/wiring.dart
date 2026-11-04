@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_board/skeleton_board.dart';
+import 'package:skeleton_iap/skeleton_iap.dart';
 import 'package:skeleton_legal/skeleton_legal.dart';
 import 'package:skeleton_push/skeleton_push.dart';
 
@@ -32,6 +33,11 @@ final sampleWiring = <Override>[
   // true only once the stored session is checked: a tap that started the app
   // waits until then
   pushSignedInProvider.overrideWith(
+    (ref) => ref.watch(authSessionProvider) is SignedIn,
+  ),
+  iapApiProvider.overrideWith((ref) => IapApi(ref.watch(apiClientProvider))),
+  // true only once the stored session is checked, as for push
+  iapSignedInProvider.overrideWith(
     (ref) => ref.watch(authSessionProvider) is SignedIn,
   ),
   pushOpenLinkProvider.overrideWith(

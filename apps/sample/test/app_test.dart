@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:skeleton_api_client/testing.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_board/skeleton_board.dart';
+import 'package:skeleton_iap/skeleton_iap.dart';
 import 'package:skeleton_push/skeleton_push.dart';
 import 'package:skeleton_push/testing.dart';
 
@@ -151,6 +152,8 @@ Widget _app(
     signUpAttemptStoreProvider.overrideWithValue(MemorySignUpAttemptStore()),
     httpAdapterProvider.overrideWithValue(backend.adapter),
     ...sampleWiring,
+    // no store in a widget test: the real one would try to reach billing
+    iapPlatformProvider.overrideWithValue(null),
     if (pushSource != null)
       pushTokenSourceProvider.overrideWithValue(pushSource),
   ],
@@ -177,6 +180,7 @@ void main() {
         tokenStoreProvider.overrideWithValue(MemoryTokenStore()),
         httpAdapterProvider.overrideWithValue(_Backend().adapter),
         ...sampleWiring,
+        iapPlatformProvider.overrideWithValue(null),
       ],
     );
     addTearDown(container.dispose);

@@ -1,10 +1,11 @@
 # sample
 
-The reference app: everything the starter has (sign up with the consent boxes, confirm the mailed code, sign in, reset a forgotten password, delete the account) plus two tabs on top of the kotlin-skeleton `apps/sample` server:
+The reference app: everything the starter has (sign up with the consent boxes, confirm the mailed code, sign in, reset a forgotten password, delete the account) plus three tabs on top of the kotlin-skeleton `apps/sample` server:
 
 | Tab | What it shows | Packages |
 |---|---|---|
 | Board | the posts of board `general`, post detail with reactions and comments, write and edit | `board` |
+| Store | products to buy, restore purchases, web checkout when the server allows it, my subscription | `iap` |
 | Settings | who is signed in, this device's push switch and one switch per notification kind, a test notification, account settings (delete), sign out | `push`, `auth` |
 
 The starter is the smaller app (accounts only). Pick the packages you need from here; this app is not meant to ship as it is.
@@ -13,7 +14,7 @@ The starter is the smaller app (accounts only). Pick the packages you need from 
 lib/main.dart           ProviderScope + MaterialApp.router; Firebase only when its values are set; push hook and foreground SnackBar
 lib/config.dart         AppConfig: API_BASE_URL, FIREBASE_* values, board code
 lib/firebase_setup.dart FirebaseOptions from the dart-define values (null = no Firebase)
-lib/wiring.dart         where the packages meet: legal, board (+ author resolver), push on auth's ApiClient
+lib/wiring.dart         where the packages meet: legal, board (+ author resolver), push, iap on auth's ApiClient
 lib/router.dart         routes, auth gate then consent gate, two-tab shell (go_router StatefulShellRoute)
 lib/screens/            login · sign-up · verify · forgot/reset password · account (delete) copied from the starter; shell · board · settings
 env/dev.json.example    the dart-define file to copy
@@ -43,7 +44,9 @@ Behaviour: the device is registered after sign-in and on a token refresh; sign-o
 
 ## Payment
 
-Payment is not in this sample: an app's payment is going to be in-app purchase (IAP), after the kotlin receipt-verification module exists.
+The Store tab is in-app purchase (`iap`): the products the server lists and the store prices, buy, restore, "Pay on the web" (only when the server's channel is `IAP_AND_WEB` or `WEB_ONLY`; it opens the outside browser with a one-time sign-in address) and the subscription the server knows. What the server says to a purchase shows as a SnackBar wherever you are. The account screen tells a person with a live App Store / Google Play subscription to cancel it there before deleting the account (the server cannot end it).
+
+It needs the kotlin-skeleton server with `payment`, `payment-iap` and `payment-appstore` or `payment-googleplay` turned on (the `iap` switch is off by default). Without them the tab says the products could not load; the rest of the app works. No store account is in this repo: create the products in App Store Connect / Play Console and put them in the server's product map. iOS needs the In-App Purchase capability on the app id in Xcode; Android needs the app uploaded to a Play testing track before the billing library lists products. None of this was run on a device here.
 
 
 ## Native settings in this app

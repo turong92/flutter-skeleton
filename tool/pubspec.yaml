@@ -1,0 +1,10 @@
+name: skeleton_tool
+description: Repository tools of flutter-skeleton (catalog generator, new-project stamper). Not copied into a stamped project.
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.13.0
+
+dev_dependencies:
+  test: ^1.31.1

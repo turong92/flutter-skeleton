@@ -1,0 +1,125 @@
+{
+  "$schema": "docs/capabilities.schema.json",
+  "schemaVersion": 1,
+  "mode": "skeleton",
+  "name": "flutter-skeleton",
+  "summary": "Flutter mobile skeleton (Pub Workspaces + Melos): encapsulated packages and a starter app a new project picks from. The backend is the sibling kotlin-skeleton, the web twin is react-skeleton.",
+  "siblings": {
+    "kotlin": { "repo": "kotlin-skeleton", "catalog": "capabilities.json", "llms": "llms.txt" },
+    "react": { "repo": "react-skeleton", "catalog": "capabilities.json", "llms": "llms.txt" }
+  },
+  "capabilities": [
+    {
+      "id": "lints",
+      "kind": "package",
+      "summary": "Shared lint rules (flutter_lints plus avoid_print and unawaited_futures) every package and app includes.",
+      "package": "skeleton_lints",
+      "path": "packages/lints",
+      "stampFlag": { "flag": null, "included": "always" },
+      "needs": [],
+      "backend": null,
+      "pairsWith": { "react": [] },
+      "docs": [],
+      "notFor": ["Project-specific rules: add them in the app's own analysis_options.yaml"],
+      "keywords": {
+        "ko": ["린트", "정적 분석", "코드 규칙"],
+        "en": ["lints", "analysis options", "static analysis"]
+      }
+    },
+    {
+      "id": "api-client",
+      "kind": "package",
+      "summary": "One Dio-based REST client for the backend: envelope unwrapping (value, values, pagination), the standard ApiRequestError with its codes, header providers and an error hook. Pure Dart.",
+      "package": "skeleton_api_client",
+      "path": "packages/api_client",
+      "stampFlag": { "flag": null, "included": "always" },
+      "needs": [],
+      "backend": {
+        "modules": ["platform"],
+        "oneOfModules": [],
+        "optionalModules": [],
+        "basePaths": ["/api/v1"],
+        "docs": ["docs/modules/platform.md", "docs/errors.md"]
+      },
+      "pairsWith": { "react": ["api-client"] },
+      "docs": ["packages/api_client/README.md"],
+      "notFor": [
+        "Authentication: tokens and refresh live in auth",
+        "Streams (SSE, WebSocket): not here"
+      ],
+      "keywords": {
+        "ko": ["API 호출", "백엔드 연결", "에러 처리", "에러 코드", "응답 형식"],
+        "en": ["api client", "rest", "http client", "dio", "error codes", "envelope"]
+      }
+    },
+    {
+      "id": "auth",
+      "kind": "package",
+      "summary": "Email and password sign-in, secure token storage, silent refresh on 401 with a single in-flight refresh, session state (Riverpod), go_router redirect helpers and a login form.",
+      "package": "skeleton_auth",
+      "path": "packages/auth",
+      "stampFlag": { "flag": null, "included": "always" },
+      "needs": ["api-client"],
+      "backend": {
+        "modules": ["auth", "auth-session"],
+        "oneOfModules": [],
+        "optionalModules": [],
+        "basePaths": ["/api/v1/auth"],
+        "docs": ["docs/modules/auth.md", "docs/modules/auth-session.md", "docs/account-http-contract.md"]
+      },
+      "pairsWith": { "react": ["auth"] },
+      "docs": ["packages/auth/README.md"],
+      "notFor": [
+        "Sign-up, password reset, social login, MFA: not built yet",
+        "How the login screen looks: the app owns it (texts are parameters)"
+      ],
+      "keywords": {
+        "ko": ["로그인", "로그아웃", "인증", "토큰", "토큰 갱신", "세션", "리프레시 토큰", "로그인 상태"],
+        "en": ["login", "logout", "auth", "token", "session", "refresh token", "sign in", "secure storage"]
+      }
+    },
+    {
+      "id": "ui",
+      "kind": "package",
+      "summary": "Design tokens as Dart constants, light and dark Material 3 themes that follow the system, and the LoadingView and ErrorView the starter uses.",
+      "package": "skeleton_ui",
+      "path": "packages/ui",
+      "stampFlag": { "flag": null, "included": "always" },
+      "needs": [],
+      "backend": null,
+      "pairsWith": { "react": ["ui", "theme", "tokens"] },
+      "docs": ["packages/ui/README.md"],
+      "notFor": [
+        "A component library: Material widgets are used as they are",
+        "A stored theme switch: the theme follows the system"
+      ],
+      "keywords": {
+        "ko": ["테마", "다크 모드", "디자인 토큰", "색", "로딩", "에러 화면"],
+        "en": ["theme", "dark mode", "design tokens", "colors", "loading view", "error view"]
+      }
+    },
+    {
+      "id": "app-starter",
+      "kind": "app",
+      "summary": "The starter app: sign in, see who you are (GET /auth/me), sign out, restore the session on start. It becomes the new project's app.",
+      "package": "starter",
+      "path": "apps/starter",
+      "stampFlag": { "flag": null, "included": "always" },
+      "needs": ["api-client", "auth", "ui"],
+      "backend": {
+        "modules": ["auth", "auth-session", "platform"],
+        "oneOfModules": [],
+        "optionalModules": [],
+        "basePaths": ["/api/v1/auth"],
+        "docs": ["docs/account-http-contract.md"]
+      },
+      "pairsWith": { "react": ["app-starter"] },
+      "docs": ["apps/starter/README.md"],
+      "notFor": ["Anything beyond sign-in: delete what you do not use, the starter is the minimum"],
+      "keywords": {
+        "ko": ["스타터", "시작 템플릿", "새 앱", "모바일 시작"],
+        "en": ["starter", "boilerplate", "new app", "mobile start"]
+      }
+    }
+  ]
+}

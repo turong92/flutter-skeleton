@@ -26,6 +26,8 @@ jobs:
       - run: dart format --output=none --set-exit-if-changed .
       - run: melos run analyze
       - run: melos run test
+      # The catalog says what the repo is; the sibling repos are not cloned here, so only this repo is checked.
+      - run: dart tool/build_capabilities.dart --check
       # Catches a broken Gradle setup or manifest. Not run on the machine this
       # skeleton was written on (no Android SDK there): first verified by CI.
       - uses: actions/setup-java@v4

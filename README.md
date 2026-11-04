@@ -2,7 +2,7 @@
 
 Flutter 모바일 앱 스켈레톤 — **Pub Workspaces + Melos**. kotlin-skeleton 백엔드, react-skeleton 웹과 같은 기조로, 캡슐화된 패키지를 모아 두고 프로젝트가 필요한 것만 골라 쓴다. 스켈레톤 자체가 돌아가고 시험되는 레포다(생성기 스크립트가 아니다).
 
-> 상태: **3단계**. 스타터 앱에서 가입(약관 동의) · 메일 인증 · 로그인 · 비밀번호 재설정 · 내 정보 · 탈퇴 · 로그아웃을 하고, 액세스 토큰이 만료되면 리프레시 토큰으로 조용히 갱신한다. 게시판(`board`) · 푸시(`push`) · 인앱결제(`iap`)는 `--packages` 로 고르는 패키지이고, 셋을 연결해 보여 주는 참조 앱이 `apps/sample` 이다. 앱 결제는 인앱결제가 기본이고 서버(kotlin `payment-iap`)가 스토어에 직접 물어 확인한 뒤에만 지급한다. 토스 WebView 시도는 로컬 브랜치에 보관. 기능 카탈로그는 `capabilities.json`(`docs/capabilities.md` · `llms.txt` 가 거기서 만들어진다). 새 프로젝트는 `scripts/new-project.sh` 로 골라 찍는다(아래).
+> 상태: **3단계**. 스타터 앱에서 가입(약관 동의) · 메일 인증 · 로그인 · 비밀번호 재설정 · 내 정보 · 탈퇴 · 로그아웃을 하고, 액세스 토큰이 만료되면 리프레시 토큰으로 조용히 갱신한다. 게시판(`board`) · 푸시(`push`) · 인앱결제(`iap`)는 `--packages` 로 고르는 패키지이고, 셋을 연결해 보여 주는 참조 앱이 `apps/sample` 이다. 앱 결제는 인앱결제가 기본이고 서버(kotlin `payment-iap`)가 스토어에 직접 물어 확인한 뒤에만 지급한다. 토스 WebView 시도는 로컬 브랜치에 보관. 소셜 로그인은 제공자 앱 SDK 의 토큰을 서버(kotlin `auth-social`)가 확인한 뒤에만 로그인시키며, 코어(`social-login`)와 제공자별 패키지(`social-login-google|apple|kakao|naver`)를 `--packages` 로 고른다. 기능 카탈로그는 `capabilities.json`(`docs/capabilities.md` · `llms.txt` 가 거기서 만들어진다). 새 프로젝트는 `scripts/new-project.sh` 로 골라 찍는다(아래).
 
 ## 구조
 
@@ -17,6 +17,8 @@ packages/
 ├── board/           # skeleton_board — 글 · 댓글 · 반응 (--packages board)
 ├── push/            # skeleton_push — FCM 기기 등록 · 설정 (--packages push)
 ├── iap/             # skeleton_iap — 인앱결제 · 서버 확인 · 웹 결제 링크 (--packages iap)
+├── social_login/    # skeleton_social_login — 소셜 로그인 코어: 앱 SDK 토큰 → 서버 확인 → 세션 (--packages social-login)
+├── social_login_google/ · _apple/ · _kakao/ · _naver/   # 제공자별 SDK (--packages social-login-<제공자>)
 └── ui/              # skeleton_ui — 토큰 · 라이트/다크 ThemeData · 로딩/에러 부품
 ```
 

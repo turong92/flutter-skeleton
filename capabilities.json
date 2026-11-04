@@ -76,7 +76,7 @@
       "pairsWith": { "react": ["auth", "account-lifecycle", "session-refresh"] },
       "docs": ["packages/auth/README.md"],
       "notFor": [
-        "Social login, magic link, MFA: not built yet",
+        "Magic link, MFA: not built yet",
         "How the screens look: the app owns them (texts are parameters)"
       ],
       "keywords": {
@@ -190,6 +190,138 @@
       }
     },
     {
+      "id": "social-login",
+      "kind": "package",
+      "summary": "Sign in with a social provider's app SDK token, core only: the provider interface, the nonce, the server call (POST /auth/social/{provider}/token), link and re-authentication tokens for settings, the controller that signs the session in only after the server accepted the token, and which providers to show (GET /auth/methods). The provider SDKs are the social-login-* packages. No screens.",
+      "package": "skeleton_social_login",
+      "path": "packages/social_login",
+      "stampFlag": { "flag": "--packages social-login", "included": "flag" },
+      "needs": ["api-client", "auth"],
+      "backend": {
+        "modules": ["auth-social"],
+        "oneOfModules": [["auth-social-google", "auth-social-apple", "auth-social-kakao", "auth-social-naver"]],
+        "optionalModules": [],
+        "basePaths": ["/api/v1/auth/social", "/api/v1/account/identities/social"],
+        "docs": ["docs/modules/auth-social.md", "docs/account-http-contract.md"]
+      },
+      "pairsWith": { "react": ["social-login"] },
+      "docs": ["packages/social_login/README.md"],
+      "notFor": [
+        "A provider's SDK: take the social-login-google, -apple, -kakao or -naver package",
+        "Browser (code flow) sign-in: that is the web twin",
+        "Button looks: the app draws them (each provider has a design guide)"
+      ],
+      "keywords": {
+        "ko": ["소셜 로그인", "간편 로그인", "계정 연결", "소셜 계정 연결", "소셜 탈퇴"],
+        "en": ["social login", "social sign-in", "oauth", "id token", "link account", "app sdk token"]
+      }
+    },
+    {
+      "id": "social-login-google",
+      "kind": "package",
+      "summary": "Google sign-in for the social login core (google_sign_in 7): returns the ID token for the web client id the server checks.",
+      "package": "skeleton_social_login_google",
+      "path": "packages/social_login_google",
+      "stampFlag": { "flag": "--packages social-login-google", "included": "flag" },
+      "needs": ["social-login"],
+      "backend": {
+        "modules": ["auth-social-google"],
+        "oneOfModules": [],
+        "optionalModules": [],
+        "basePaths": ["/api/v1/auth/social/google"],
+        "docs": ["docs/modules/auth-social-google.md"]
+      },
+      "pairsWith": { "react": [] },
+      "docs": ["packages/social_login_google/README.md"],
+      "notFor": [
+        "Registering the client ids and the package name with SHA-1 in the Google Cloud console: the project does it",
+        "Sending a nonce: google_sign_in 7 takes one only once per run"
+      ],
+      "keywords": {
+        "ko": ["구글 로그인"],
+        "en": ["google sign-in", "google login"]
+      }
+    },
+    {
+      "id": "social-login-apple",
+      "kind": "package",
+      "summary": "Sign in with Apple for the social login core (sign_in_with_apple 8, iOS app only): the ID token with a hashed nonce, the name from the first sign-in, and the token revoke the App Store asks for before an account is deleted.",
+      "package": "skeleton_social_login_apple",
+      "path": "packages/social_login_apple",
+      "stampFlag": { "flag": "--packages social-login-apple", "included": "flag" },
+      "needs": ["api-client", "social-login"],
+      "backend": {
+        "modules": ["auth-social-apple"],
+        "oneOfModules": [],
+        "optionalModules": [],
+        "basePaths": ["/api/v1/auth/social/apple"],
+        "docs": ["docs/modules/auth-social-apple.md"]
+      },
+      "pairsWith": { "react": [] },
+      "docs": ["packages/social_login_apple/README.md"],
+      "notFor": [
+        "Android and web Apple sign-in: a later step (Services ID and callback)",
+        "The Sign in with Apple capability and the relay-mail domain: the project registers them with Apple"
+      ],
+      "keywords": {
+        "ko": ["애플 로그인", "애플로 로그인", "애플 탈퇴 철회"],
+        "en": ["sign in with apple", "apple login", "apple revoke"]
+      }
+    },
+    {
+      "id": "social-login-kakao",
+      "kind": "package",
+      "summary": "Kakao sign-in for the social login core (kakao_flutter_sdk_user 2): through KakaoTalk when installed, else the Kakao account page; returns the access token.",
+      "package": "skeleton_social_login_kakao",
+      "path": "packages/social_login_kakao",
+      "stampFlag": { "flag": "--packages social-login-kakao", "included": "flag" },
+      "needs": ["social-login"],
+      "backend": {
+        "modules": ["auth-social-kakao"],
+        "oneOfModules": [],
+        "optionalModules": [],
+        "basePaths": ["/api/v1/auth/social/kakao"],
+        "docs": ["docs/modules/auth-social-kakao.md"]
+      },
+      "pairsWith": { "react": [] },
+      "docs": ["packages/social_login_kakao/README.md"],
+      "notFor": [
+        "KakaoSdk.init and the platform files (URL scheme, Android intent filter): the app does them, the README lists them",
+        "The Kakao logo: the repo ships none, see Kakao's design guide"
+      ],
+      "keywords": {
+        "ko": ["카카오 로그인", "카카오톡 로그인"],
+        "en": ["kakao login", "kakaotalk login"]
+      }
+    },
+    {
+      "id": "social-login-naver",
+      "kind": "package",
+      "summary": "Naver sign-in for the social login core (flutter_naver_login 2.1): returns the access token the server checks with Naver's profile API. The Naver SDK puts its client secret in the app.",
+      "package": "skeleton_social_login_naver",
+      "path": "packages/social_login_naver",
+      "stampFlag": { "flag": "--packages social-login-naver", "included": "flag" },
+      "needs": ["social-login"],
+      "backend": {
+        "modules": ["auth-social-naver"],
+        "oneOfModules": [],
+        "optionalModules": [],
+        "basePaths": ["/api/v1/auth/social/naver"],
+        "docs": ["docs/modules/auth-social-naver.md"]
+      },
+      "pairsWith": { "react": [] },
+      "docs": ["packages/social_login_naver/README.md"],
+      "notFor": [
+        "A check that the token was issued to this app: Naver offers none we found, the README says what that means",
+        "The platform files (meta-data, FlutterFragmentActivity, Nid keys, handleURL): the app does them",
+        "The Naver logo: the repo ships none, see Naver's design guide"
+      ],
+      "keywords": {
+        "ko": ["네이버 로그인"],
+        "en": ["naver login"]
+      }
+    },
+    {
       "id": "ui",
       "kind": "package",
       "summary": "Design tokens as Dart constants, light and dark Material 3 themes that follow the system, and the LoadingView and ErrorView the starter uses.",
@@ -235,13 +367,13 @@
     {
       "id": "app-sample",
       "kind": "app",
-      "summary": "The reference app: the starter's flows plus a board tab, a store tab (products, buy, restore, web checkout, my subscription, the cancel-in-the-store notice before account deletion), push settings and a settings tab, wired the way a project would. Read it for wiring; a stamp removes it.",
+      "summary": "The reference app: the starter's flows plus a board tab, a store tab (products, buy, restore, web checkout, my subscription, the cancel-in-the-store notice before account deletion), social sign-in buttons with linking in settings, push settings and a settings tab, wired the way a project would. Read it for wiring; a stamp removes it.",
       "package": "sample",
       "path": "apps/sample",
       "stampFlag": { "flag": null, "included": "never" },
-      "needs": ["api-client", "auth", "board", "iap", "legal", "push", "ui"],
+      "needs": ["api-client", "auth", "board", "iap", "legal", "push", "social-login", "social-login-apple", "social-login-google", "social-login-kakao", "social-login-naver", "ui"],
       "backend": {
-        "modules": ["auth", "auth-session", "account", "legal", "board", "notification-push", "notification-fcm", "payment", "payment-iap", "platform"],
+        "modules": ["auth", "auth-session", "account", "legal", "board", "notification-push", "notification-fcm", "payment", "payment-iap", "platform", "auth-social", "auth-social-google", "auth-social-apple", "auth-social-kakao", "auth-social-naver"],
         "oneOfModules": [["payment-appstore", "payment-googleplay"]],
         "optionalModules": ["author-profile", "idempotency", "auth-web-handoff"],
         "basePaths": ["/api/v1/auth", "/api/v1/account", "/api/v1/legal", "/api/v1/boards", "/api/v1/push", "/api/v1/payments/iap", "/api/v1/payments/subscriptions"],

@@ -37,6 +37,26 @@
   - take: `--packages iap`; needs: api-client
   - backend: modules `payment` · `payment-iap` · one of `payment-appstore` | `payment-googleplay` · more when present `auth-web-handoff` · `payment-jdbc` · paths `/api/v1/payments/iap` · `/api/v1/payments/subscriptions`; react twin: —
   - keywords: 인앱결제, 앱 결제, 구독, 구매 복원, 앱스토어, 구글 플레이, 스토어 구독 해지 / in-app purchase, iap, subscription, restore purchases, app store, google play, web checkout
+- `social-login`: Sign in with a social provider's app SDK token, core only: the provider interface, the nonce, the server call (POST /auth/social/{provider}/token), link and re-authentication tokens for settings, the controller that signs the session in only after the server accepted the token, and which providers to show (GET /auth/methods). The provider SDKs are the social-login-* packages. No screens.
+  - take: `--packages social-login`; needs: api-client, auth
+  - backend: modules `auth-social` · one of `auth-social-google` | `auth-social-apple` | `auth-social-kakao` | `auth-social-naver` · paths `/api/v1/auth/social` · `/api/v1/account/identities/social`; react twin: social-login
+  - keywords: 소셜 로그인, 간편 로그인, 계정 연결, 소셜 계정 연결, 소셜 탈퇴 / social login, social sign-in, oauth, id token, link account, app sdk token
+- `social-login-google`: Google sign-in for the social login core (google_sign_in 7): returns the ID token for the web client id the server checks.
+  - take: `--packages social-login-google`; needs: social-login
+  - backend: modules `auth-social-google` · paths `/api/v1/auth/social/google`; react twin: —
+  - keywords: 구글 로그인 / google sign-in, google login
+- `social-login-apple`: Sign in with Apple for the social login core (sign_in_with_apple 8, iOS app only): the ID token with a hashed nonce, the name from the first sign-in, and the token revoke the App Store asks for before an account is deleted.
+  - take: `--packages social-login-apple`; needs: api-client, social-login
+  - backend: modules `auth-social-apple` · paths `/api/v1/auth/social/apple`; react twin: —
+  - keywords: 애플 로그인, 애플로 로그인, 애플 탈퇴 철회 / sign in with apple, apple login, apple revoke
+- `social-login-kakao`: Kakao sign-in for the social login core (kakao_flutter_sdk_user 2): through KakaoTalk when installed, else the Kakao account page; returns the access token.
+  - take: `--packages social-login-kakao`; needs: social-login
+  - backend: modules `auth-social-kakao` · paths `/api/v1/auth/social/kakao`; react twin: —
+  - keywords: 카카오 로그인, 카카오톡 로그인 / kakao login, kakaotalk login
+- `social-login-naver`: Naver sign-in for the social login core (flutter_naver_login 2.1): returns the access token the server checks with Naver's profile API. The Naver SDK puts its client secret in the app.
+  - take: `--packages social-login-naver`; needs: social-login
+  - backend: modules `auth-social-naver` · paths `/api/v1/auth/social/naver`; react twin: —
+  - keywords: 네이버 로그인 / naver login
 - `ui`: Design tokens as Dart constants, light and dark Material 3 themes that follow the system, and the LoadingView and ErrorView the starter uses.
   - take: in every project; needs: —
   - backend: —; react twin: ui, theme, tokens
@@ -45,7 +65,7 @@
   - take: in every project; needs: api-client, auth, legal, ui
   - backend: modules `auth` · `auth-session` · `account` · `legal` · `platform` · paths `/api/v1/auth` · `/api/v1/account` · `/api/v1/legal`; react twin: app-starter
   - keywords: 스타터, 시작 템플릿, 새 앱, 모바일 시작 / starter, boilerplate, new app, mobile start
-- `app-sample`: The reference app: the starter's flows plus a board tab, a store tab (products, buy, restore, web checkout, my subscription, the cancel-in-the-store notice before account deletion), push settings and a settings tab, wired the way a project would. Read it for wiring; a stamp removes it.
-  - take: never stamped (reference app); needs: api-client, auth, board, iap, legal, push, ui
-  - backend: modules `auth` · `auth-session` · `account` · `legal` · `board` · `notification-push` · `notification-fcm` · `payment` · `payment-iap` · `platform` · one of `payment-appstore` | `payment-googleplay` · more when present `author-profile` · `idempotency` · `auth-web-handoff` · paths `/api/v1/auth` · `/api/v1/account` · `/api/v1/legal` · `/api/v1/boards` · `/api/v1/push` · `/api/v1/payments/iap` · `/api/v1/payments/subscriptions`; react twin: app-sample
+- `app-sample`: The reference app: the starter's flows plus a board tab, a store tab (products, buy, restore, web checkout, my subscription, the cancel-in-the-store notice before account deletion), social sign-in buttons with linking in settings, push settings and a settings tab, wired the way a project would. Read it for wiring; a stamp removes it.
+  - take: never stamped (reference app); needs: api-client, auth, board, iap, legal, push, social-login, social-login-apple, social-login-google, social-login-kakao, social-login-naver, ui
+  - backend: modules `auth` · `auth-session` · `account` · `legal` · `board` · `notification-push` · `notification-fcm` · `payment` · `payment-iap` · `platform` · `auth-social` · `auth-social-google` · `auth-social-apple` · `auth-social-kakao` · `auth-social-naver` · one of `payment-appstore` | `payment-googleplay` · more when present `author-profile` · `idempotency` · `auth-web-handoff` · paths `/api/v1/auth` · `/api/v1/account` · `/api/v1/legal` · `/api/v1/boards` · `/api/v1/push` · `/api/v1/payments/iap` · `/api/v1/payments/subscriptions`; react twin: app-sample
   - keywords: 샘플 앱, 참조 앱, 연결 예시 / sample app, reference app, wiring example

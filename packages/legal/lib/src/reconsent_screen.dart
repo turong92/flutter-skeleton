@@ -19,15 +19,21 @@ class ReconsentScreen extends ConsumerStatefulWidget {
     super.key,
     this.locale,
     this.labels = const LegalLabels(),
+    this.onLeave,
   });
 
   static Key checkKey(String type) =>
       Key('skeleton_legal.reconsent.check.$type');
   static Key viewKey(String type) => Key('skeleton_legal.reconsent.view.$type');
   static const agreeKey = Key('skeleton_legal.reconsent.agree');
+  static const leaveKey = Key('skeleton_legal.reconsent.leave');
 
   final String? locale;
   final LegalLabels labels;
+
+  /// The way out for someone who will not agree (sign out). This package does
+  /// not know the session, so the app passes it; without it there is no button.
+  final VoidCallback? onLeave;
 
   @override
   ConsumerState<ReconsentScreen> createState() => _ReconsentScreenState();
@@ -69,8 +75,8 @@ class _ReconsentScreenState extends ConsumerState<ReconsentScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _failed = true);
-      // a refused version means the list is out of date: read it again
-      if (e is ApiRequestError && e.status == 400) {
+      // 409 LEGAL.VERSION_STALE: the list is out of date, read it again
+      if (e is ApiRequestError && e.code == 'LEGAL.VERSION_STALE') {
         try {
           reconsent.require((await api.status()).missing);
         } on ApiRequestError {
@@ -139,6 +145,14 @@ class _ReconsentScreenState extends ConsumerState<ReconsentScreen> {
                 : () => _agree(items),
             child: Text(labels.agree),
           ),
+          if (widget.onLeave != null) ...[
+            const SizedBox(height: 8),
+            OutlinedButton(
+              key: ReconsentScreen.leaveKey,
+              onPressed: widget.onLeave,
+              child: Text(labels.signOut),
+            ),
+          ],
         ],
       ),
     );

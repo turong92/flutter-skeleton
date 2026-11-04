@@ -274,6 +274,7 @@ void main() {
     Future<(ProviderContainer, FakeLegal)> open(
       WidgetTester tester, {
       List<Map<String, Object?>> needs = missing,
+      VoidCallback? onLeave,
     }) async {
       final legal = FakeLegal();
       final container = ProviderContainer(
@@ -286,7 +287,9 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(home: ReconsentScreen(locale: 'en')),
+          child: MaterialApp(
+            home: ReconsentScreen(locale: 'en', onLeave: onLeave),
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -349,14 +352,26 @@ void main() {
       },
     );
 
+    testWidgets('the sign-out button calls onLeave', (tester) async {
+      var left = 0;
+      await open(tester, onLeave: () => left++);
+      await tester.tap(find.byKey(ReconsentScreen.leaveKey));
+      expect(left, 1);
+    });
+
     testWidgets(
-      'a refused version (400) shows the message and reads the status again',
+      'a stale version (409) shows the message and reads the status again',
       (tester) async {
         final (container, legal) = await open(tester);
-        legal.onAgree = (_) => FakeAdapter.json(400, {
-          'code': 'LEGAL.VERSION_NOT_CURRENT',
+        legal.onAgree = (_) => FakeAdapter.json(409, {
+          'code': 'LEGAL.VERSION_STALE',
           'title': 'x',
-          'status': 400,
+          'status': 409,
+          'data': {
+            'stale': [
+              {'type': 'terms', 'requiredVersion': '9'},
+            ],
+          },
         });
         legal.statusMissing = [
           {'type': 'terms', 'version': '9', 'reason': 'OUTDATED'},

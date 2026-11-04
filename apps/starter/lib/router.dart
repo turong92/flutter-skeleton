@@ -80,7 +80,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/consent',
-        builder: (context, state) => const ReconsentScreen(),
+        builder: (context, state) => ReconsentScreen(
+          onLeave: ref.read(authSessionProvider.notifier).logout,
+        ),
       ),
     ],
   );

@@ -34,7 +34,8 @@ class LegalApi {
       _client.value('/legal/consents/me', decode: ConsentStatus.fromJson);
 
   /// `POST /legal/consents`: agree to these versions. A version that is no
-  /// longer current is refused with 400. [source] names the screen it came from.
+  /// longer agreeable is refused with 409 LEGAL.VERSION_STALE. [source] names
+  /// the screen it came from.
   Future<ConsentStatus> agree(List<ConsentClaim> claims, {String? source}) =>
       _client.value(
         '/legal/consents',

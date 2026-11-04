@@ -11,6 +11,7 @@ class LegalLabels {
     this.reconsentBody = 'Please read and agree to continue.',
     this.agree = 'Agree and continue',
     this.agreeFailed = 'Could not save your agreement. Please try again.',
+    this.signOut = 'Sign out',
   });
 
   /// Next to a document that has to be agreed to.
@@ -27,4 +28,7 @@ class LegalLabels {
   final String reconsentBody;
   final String agree;
   final String agreeFailed;
+
+  /// The way out of the consent screen (see `ReconsentScreen.onLeave`).
+  final String signOut;
 }

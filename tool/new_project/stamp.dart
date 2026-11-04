@@ -36,7 +36,8 @@ class StampOptions {
   /// Ids of the packages to keep (from [planKeep]).
   final List<String> keep;
 
-  /// Replaces `skeleton_` in package names and imports when set.
+  /// Replaces every `skeleton_` in .dart, .yaml, .json and .md files when set (package names,
+  /// imports, storage keys and widget keys included).
   final String? prefix;
 }
 
@@ -118,6 +119,9 @@ const _skipDirs = {
   '.symlinks',
   '.melos_tool',
   '.idea',
+  'coverage',
+  'captures',
+  'xcuserdata',
 };
 const _skipFiles = {
   '.DS_Store',
@@ -128,7 +132,9 @@ const _skipFiles = {
   'flutter_export_environment.sh',
   '.flutter-plugins',
   '.flutter-plugins-dependencies',
+  '.env',
 };
+const _skipSuffixes = ['.iml', '.jks', '.keystore', '.key', '.secret'];
 
 void copyTree(Directory src, Directory dst) {
   dst.createSync(recursive: true);
@@ -141,7 +147,12 @@ void copyTree(Directory src, Directory dst) {
     } else if (item is File) {
       final isLocalEnv =
           item.parent.path.endsWith('/env') && name.endsWith('.json');
-      if (!_skipFiles.contains(name) && !name.endsWith('.iml') && !isLocalEnv) {
+      final isEditorLocal =
+          item.parent.path.endsWith('/.vscode') && name != 'extensions.json';
+      if (!_skipFiles.contains(name) &&
+          !_skipSuffixes.any(name.endsWith) &&
+          !isLocalEnv &&
+          !isEditorLocal) {
         item.copySync('${dst.path}/$name');
       }
     }
@@ -149,6 +160,27 @@ void copyTree(Directory src, Directory dst) {
 }
 
 // ---------------------------------------------------------------------------- apply
+
+String _camel(String name) {
+  final words = name.split('_').where((w) => w.isNotEmpty).toList();
+  return words.first +
+      words.skip(1).map((w) => '${w[0].toUpperCase()}${w.substring(1)}').join();
+}
+
+/// [text] with the first match of [pattern] replaced; stops when there is none.
+String replacePatternOrFail(
+  String text,
+  RegExp pattern,
+  String to,
+  String where,
+) {
+  if (!pattern.hasMatch(text)) {
+    throw StampError(
+      '"${pattern.pattern}" is not in $where, so it cannot be renamed',
+    );
+  }
+  return text.replaceFirst(pattern, to);
+}
 
 String _display(String name) => name
     .split('_')
@@ -193,10 +225,7 @@ void applyStamp(Directory target, StampOptions o) {
   final name = o.name;
   final display = _display(name);
   final appId = '${o.org}.$name';
-  final iosId = appId.replaceAll(
-    '_',
-    '-',
-  ); // an iOS bundle id has no underscore
+  final iosId = '${o.org}.${_camel(name)}'; // as flutter create does: no underscore in an iOS bundle id
   final all = readPackages(target);
 
   // 1. packages that were not asked for
@@ -212,9 +241,11 @@ void applyStamp(Directory target, StampOptions o) {
   _write(
     target,
     '$app/pubspec.yaml',
-    _read(target, '$app/pubspec.yaml').replaceFirst(
+    replacePatternOrFail(
+      _read(target, '$app/pubspec.yaml'),
       RegExp(r'^description: .*$', multiLine: true),
       'description: $display app.',
+      '$app/pubspec.yaml',
     ),
   );
   _edit(target, '$app/android/app/build.gradle.kts', [
@@ -325,9 +356,11 @@ void _rewriteRootPubspec(
     'name: ${name}_workspace\n',
     'pubspec.yaml',
   );
-  text = text.replaceFirst(
+  text = replacePatternOrFail(
+    text,
     RegExp(r'^description: .*$', multiLine: true),
     'description: Workspace root of $name. Not published; each package under packages/ is picked on its own.',
+    'pubspec.yaml',
   );
   final block = RegExp(r'^workspace:\n((?:  - .*\n)+)', multiLine: true);
   if (!block.hasMatch(text)) {
@@ -486,7 +519,7 @@ The app reads `API_BASE_URL` (with `/api/v1`) from `--dart-define-from-file=env/
 
 ## Android and iOS ids
 
-Android `applicationId` and iOS bundle id are `${o.org}.$name` (underscores become hyphens on iOS). Change them before the first store upload.
+Android `applicationId` is `${o.org}.$name` and the iOS bundle id is `${o.org}.${_camel(name)}` (no underscore on iOS). Change them before the first store upload.
 ''');
 
   _write(t, 'CLAUDE.md', '''# $name — Claude Code context
@@ -563,6 +596,9 @@ void main(List<String> args) {
   } on StampError catch (e) {
     stderr.writeln('x ${e.message}');
     exit(args.isNotEmpty && args.first == 'plan' ? 2 : 1);
+  } catch (e) {
+    stderr.writeln('x unexpected: $e');
+    exit(1);
   }
 }
 

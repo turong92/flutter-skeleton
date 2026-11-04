@@ -43,6 +43,8 @@ expect_exit 2 "a target that exists" bash "$SCRIPT" "$TMP/exists" acme_app
 expect_exit 2 "a name with a hyphen" bash "$SCRIPT" "$TMP/x2" acme-app
 expect_exit 2 "an org that is not reverse-domain" bash "$SCRIPT" "$TMP/x3" acme_app --org acme
 expect_exit 2 "the prefix skeleton" bash "$SCRIPT" "$TMP/x4" acme_app --prefix skeleton
+expect_exit 2 "a prefix that makes a name an existing dependency has (flutter_lints)" bash "$SCRIPT" "$TMP/x4b" acme_app --prefix flutter
+expect_exit 2 "an app name containing skeleton_" bash "$SCRIPT" "$TMP/x4c" my_skeleton_app
 expect_exit 2 "an unknown option" bash "$SCRIPT" "$TMP/x5" acme_app --nope
 expect_exit 2 "a target inside the repo" bash "$SCRIPT" "$SRC/stamped-inside" acme_app
 [ ! -e "$SRC/stamped-inside" ] && pass "nothing is created inside the repo" || { fail "created inside the repo"; rm -rf "$SRC/stamped-inside"; }
@@ -63,7 +65,7 @@ check "the app is apps/acme_app and apps/starter is gone" test -d "$P1/apps/acme
 check "the new-project tools did not come along" test ! -e "$P1/tool" -a ! -e "$P1/scripts" -a ! -e "$P1/.github/workflows/new-project.yml"
 check "the Android package folder moved" test -f "$P1/apps/acme_app/android/app/src/main/kotlin/com/example/acme_app/MainActivity.kt" -a ! -e "$P1/apps/acme_app/android/app/src/main/kotlin/com/example/starter"
 check "applicationId is com.example.acme_app" grep -q 'applicationId = "com.example.acme_app"' "$P1/apps/acme_app/android/app/build.gradle.kts"
-check "the iOS bundle id has a hyphen, not an underscore" grep -q 'PRODUCT_BUNDLE_IDENTIFIER = com.example.acme-app;' "$P1/apps/acme_app/ios/Runner.xcodeproj/project.pbxproj"
+check "the iOS bundle id is camelCase (no underscore)" grep -q 'PRODUCT_BUNDLE_IDENTIFIER = com.example.acmeApp;' "$P1/apps/acme_app/ios/Runner.xcodeproj/project.pbxproj"
 check "the workspace lists the app and not tool" bash -c "grep -q '  - apps/acme_app' '$P1/pubspec.yaml' && ! grep -q '  - tool' '$P1/pubspec.yaml'"
 check "no env/*.json, no .git, no generated platform files came along" bash -c "[ ! -e '$P1/.git' ] && [ ! -e '$P1/apps/acme_app/env/dev.json' ] && [ ! -e '$P1/apps/acme_app/ios/Flutter/Generated.xcconfig' ]"
 [ -z "$(leftovers "$P1" 'com.example.starter\|package:starter/')" ] && pass "no starter id left" || fail "starter left in: $(leftovers "$P1" 'com.example.starter\|package:starter/')"

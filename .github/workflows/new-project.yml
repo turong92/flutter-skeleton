@@ -11,12 +11,10 @@ on:
       - capabilities.json
       - pubspec.yaml
       - analysis_options.yaml
-      - packages/*/pubspec.yaml
-      - apps/starter/pubspec.yaml
-      - apps/starter/android/**
-      - apps/starter/ios/**
-      - apps/starter/lib/**
-      - apps/starter/test/**
+      - packages/**
+      - apps/starter/**
+      - docs/capabilities.schema.json
+      - docs/superpowers/**
       - .github/workflows/ci.yml
       - .github/workflows/new-project.yml
   pull_request:
@@ -27,12 +25,10 @@ on:
       - capabilities.json
       - pubspec.yaml
       - analysis_options.yaml
-      - packages/*/pubspec.yaml
-      - apps/starter/pubspec.yaml
-      - apps/starter/android/**
-      - apps/starter/ios/**
-      - apps/starter/lib/**
-      - apps/starter/test/**
+      - packages/**
+      - apps/starter/**
+      - docs/capabilities.schema.json
+      - docs/superpowers/**
       - .github/workflows/ci.yml
       - .github/workflows/new-project.yml
 

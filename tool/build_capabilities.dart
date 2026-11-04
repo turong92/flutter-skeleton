@@ -219,23 +219,32 @@ List<String> checkSiblings(Directory root, Json catalog) {
   final siblings = catalog['siblings'] as Json?;
   if (siblings == null) return const [];
   final problems = <String>[];
+  void skip(String what) => stdout.writeln('sibling check skipped: $what');
   Directory? clone(String key) {
     final dir = Directory(
       '${root.parent.path}/${(siblings[key]! as Json)['repo']}',
     );
-    return dir.existsSync() ? dir : null;
+    if (!dir.existsSync()) {
+      skip('${dir.path} is not cloned');
+      return null;
+    }
+    return dir;
   }
 
   final kotlin = clone('kotlin');
-  if (kotlin != null) {
-    final readme = File('${kotlin.path}/docs/modules/README.md');
+  final readme = kotlin == null
+      ? null
+      : File('${kotlin.path}/docs/modules/README.md');
+  if (readme != null && !readme.existsSync()) {
+    skip('${readme.path} does not exist');
+  }
+  if (kotlin != null && readme!.existsSync()) {
     final modules = {
-      if (readme.existsSync())
-        for (final m in RegExp(
-          r'^\| `([a-z0-9-]+)` \|',
-          multiLine: true,
-        ).allMatches(readme.readAsStringSync()))
-          m.group(1)!,
+      for (final m in RegExp(
+        r'^\| `([a-z0-9-]+)` \|',
+        multiLine: true,
+      ).allMatches(readme.readAsStringSync()))
+        m.group(1)!,
     };
     for (final e in entriesOf(catalog)) {
       final b = e['backend'] as Json?;
@@ -267,7 +276,9 @@ List<String> checkSiblings(Directory root, Json catalog) {
     final file = File(
       '${react.path}/${(siblings['react']! as Json)['catalog']}',
     );
-    if (file.existsSync()) {
+    if (!file.existsSync()) {
+      skip('${file.path} does not exist');
+    } else {
       final ids = {for (final e in entriesOf(readJson(file))) e['id']};
       for (final e in entriesOf(catalog)) {
         for (final id in stringsOf((e['pairsWith']! as Json)['react'])) {

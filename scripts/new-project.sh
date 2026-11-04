@@ -9,10 +9,11 @@
 # What it does (the string work is tool/new_project/stamp.dart):
 #   1. Copies this repo to <target-dir> (no .git, .dart_tool, build, env/*.json, generated platform files).
 #   2. apps/starter -> apps/<name>: pubspec name, Android namespace / applicationId / MainActivity package folder,
-#      iOS bundle id, display names. A text that cannot be found stops the script (exit 1), nothing is skipped quietly.
+#      iOS bundle id (camelCase as flutter create writes it: com.example.acmeApp), display names. A text that cannot be found stops the script (exit 1), nothing is skipped quietly.
 #   3. Packages = what the starter uses + --packages, closed over their pubspec dependencies. The other packages are
 #      removed and the workspace list in the root pubspec.yaml is rewritten.
-#   4. --prefix acme: skeleton_ -> acme_ in package names and imports.
+#   4. --prefix acme: every skeleton_ in .dart, .yaml, .json and .md files becomes acme_ (package names, imports,
+#      the main library file name, and also storage keys and widget keys that start with skeleton_).
 #   5. capabilities.json becomes mode "project" (what is kept; the rest under "omitted"), docs/capabilities.md and
 #      llms.txt are regenerated, README / CLAUDE.md / CHANGELOG are rewritten for the project.
 #   6. The new-project tools (this script, its test, tool/, the workflow) do not come along.
@@ -32,7 +33,7 @@ usage: scripts/new-project.sh <target-dir> <name> [--packages a,b] [--org com.ex
   <name>        Dart package name of the app = apps/<name> (lower-case letters, digits, underscores)
   --packages    packages to add to the starter's own (ids such as api-client, comma separated)
   --org         reverse-domain organisation for the Android applicationId and iOS bundle id (default com.example)
-  --prefix      replaces skeleton_ in package names (acme -> acme_auth)
+  --prefix      replaces every skeleton_ in .dart, .yaml, .json, .md files (acme -> acme_auth, also storage and widget keys)
 EOF2
 }
 
@@ -66,10 +67,16 @@ done
 TARGET_ARG="${POSITIONAL[0]}"; NAME="${POSITIONAL[1]}"
 
 echo "$NAME" | grep -Eq '^[a-z][a-z0-9_]*$' || die_usage "name must be lower-case letters, digits, underscores: $NAME"
+case "$NAME" in *skeleton_*) die_usage "name must not contain skeleton_ (the prefix swap would rename it): $NAME" ;; esac
 echo "$ORG" | grep -Eq '^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$' || die_usage "org must look like com.example: $ORG"
 if [ -n "$PREFIX" ]; then
   echo "$PREFIX" | grep -Eq '^[a-z][a-z0-9]*$' || die_usage "prefix must be lower-case letters and digits: $PREFIX"
   [ "$PREFIX" != skeleton ] || die_usage "prefix 'skeleton' is what it already is"
+  # acme_<package> must not be a name the workspace already depends on (e.g. prefix flutter -> flutter_lints)
+  for d in "$SRC"/packages/*/; do
+    cand="${PREFIX}_$(basename "$d")"
+    if grep -q "^  ${cand}:" "$SRC/pubspec.lock"; then die_usage "prefix '$PREFIX' would name a package $cand, which an existing dependency already uses"; fi
+  done
 fi
 
 ALL_PACKAGES="$(valid_packages)"
@@ -111,9 +118,9 @@ printf '%s\n' "$PLAN" | sed -n 's/^why /   /p'
 echo "   app: apps/$NAME (from apps/starter), id $ORG.$NAME"
 
 echo "== copy -> $TARGET"
-dart "$HELPER" copy "$SRC" "$TARGET"
+dart "$HELPER" copy "$SRC" "$TARGET" || { echo "x copy failed: $TARGET may be half written, delete it and run again" >&2; exit 1; }
 echo "== transform"
-dart "$HELPER" apply "$TARGET" "$NAME" "$ORG" "${PREFIX:--}" "$KEEP"
+dart "$HELPER" apply "$TARGET" "$NAME" "$ORG" "${PREFIX:--}" "$KEEP" || { echo "x the stamp stopped halfway: $TARGET is half stamped, delete it and run again" >&2; exit 1; }
 
 cat <<EOF2
 

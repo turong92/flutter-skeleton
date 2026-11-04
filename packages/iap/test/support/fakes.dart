@@ -4,6 +4,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:in_app_purchase_android/billing_client_wrappers.dart';
+import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 import 'package:in_app_purchase_platform_interface/in_app_purchase_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:skeleton_api_client/skeleton_api_client.dart';
@@ -24,7 +26,7 @@ ResponseBody errorBody(int status, String code) =>
 
 Map<String, Object?> configJson({
   String channel = 'IAP_ONLY',
-  String store = 'googleplay',
+  String? store = 'googleplay',
   String token = serverToken,
 }) => {
   'channel': channel,
@@ -58,12 +60,59 @@ ResponseBody granted() => valueBody({
   'subscription': null,
 });
 
+/// What Android has beyond the shared store API: past purchases and consume.
+class FakeAndroidAddition implements InAppPurchaseAndroidPlatformAddition {
+  /// What `queryPastPurchases` returns.
+  List<GooglePlayPurchaseDetails> past = [];
+  final consumed = <PurchaseDetails>[];
+
+  @override
+  Future<QueryPurchaseDetailsResponse> queryPastPurchases({
+    String? applicationUserName,
+  }) async => QueryPurchaseDetailsResponse(pastPurchases: past);
+
+  @override
+  Future<BillingResultWrapper> consumePurchase(PurchaseDetails purchase) async {
+    consumed.add(purchase);
+    return const BillingResultWrapper(responseCode: BillingResponse.ok);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// A Google Play purchase as the plugin builds it.
+GooglePlayPurchaseDetails googlePurchase({
+  String orderId = 'GPA.1',
+  String product = 'cheer_3000',
+  String token = 'gtoken-1',
+  bool acknowledged = false,
+}) => GooglePlayPurchaseDetails.fromPurchase(
+  PurchaseWrapper(
+    orderId: orderId,
+    packageName: 'com.example.app',
+    purchaseTime: 0,
+    purchaseToken: token,
+    signature: 'sig',
+    products: [product],
+    isAutoRenewing: false,
+    originalJson: '{}',
+    isAcknowledged: acknowledged,
+    purchaseState: PurchaseStateWrapper.purchased,
+  ),
+).single..status = PurchaseStatus.purchased;
+
 /// The store side: what `in_app_purchase` calls on the platform.
 class FakeStorePlatform extends InAppPurchasePlatform
     with MockPlatformInterfaceMixin {
   /// Delivered when the app starts listening (what the store keeps from the
-  /// last run).
+  /// last run). Only StoreKit does this; Android hands nothing over on listen.
   List<PurchaseDetails> leftOver = [];
+  bool redeliversOnListen = true;
+
+  /// Replaces the plain details for a product id (Google Play lists one per
+  /// subscription offer).
+  final Map<String, List<ProductDetails>> productOverrides = {};
   final _controller = StreamController<List<PurchaseDetails>>.broadcast();
   final completed = <PurchaseDetails>[];
   final bought = <({PurchaseParam param, bool consumable, bool autoConsume})>[];
@@ -79,7 +128,7 @@ class FakeStorePlatform extends InAppPurchasePlatform
     out = StreamController<List<PurchaseDetails>>(
       onListen: () {
         inner = _controller.stream.listen(out.add);
-        if (leftOver.isNotEmpty) {
+        if (redeliversOnListen && leftOver.isNotEmpty) {
           final first = leftOver;
           scheduleMicrotask(() => out.add(first));
         }
@@ -98,14 +147,17 @@ class FakeStorePlatform extends InAppPurchasePlatform
   ) async => ProductDetailsResponse(
     productDetails: [
       for (final id in identifiers)
-        ProductDetails(
-          id: id,
-          title: id,
-          description: '',
-          price: r'$1.00',
-          rawPrice: 1,
-          currencyCode: 'USD',
-        ),
+        ...productOverrides[id] ??
+            [
+              ProductDetails(
+                id: id,
+                title: id,
+                description: '',
+                price: r'$1.00',
+                rawPrice: 1,
+                currencyCode: 'USD',
+              ),
+            ],
     ],
     notFoundIDs: const [],
   );
@@ -166,6 +218,7 @@ class Harness {
     this.platform = 'android',
     FutureOr<ResponseBody> Function(RequestOptions options)? onPurchase,
     String channel = 'IAP_ONLY',
+    String? configStore = 'googleplay',
     this.linkUrl = 'https://example.com/pricing#handoff=SECRET-CODE',
     this.linkResponse,
   }) {
@@ -176,11 +229,15 @@ class Harness {
     final iap = InAppPurchase.instance;
     debugDefaultTargetPlatformOverride = null;
     InAppPurchasePlatform.instance = store;
+    store.redeliversOnListen = platform == 'ios';
+    InAppPurchasePlatformAddition.instance = platform == 'android'
+        ? android
+        : null;
     this.onPurchase = onPurchase ?? (_) => granted();
     adapter = FakeAdapter((options) {
       switch (options.path) {
         case '/payments/iap/config':
-          return valueBody(configJson(channel: channel));
+          return valueBody(configJson(channel: channel, store: configStore));
         case '/payments/iap/web-checkout-link':
           return linkResponse ?? valueBody({'url': linkUrl});
         default:
@@ -202,6 +259,7 @@ class Harness {
   final String linkUrl;
   final ResponseBody? linkResponse;
   late final FakeStorePlatform store;
+  final android = FakeAndroidAddition();
   late final FakeAdapter adapter;
   late final IapService service;
   late final FutureOr<ResponseBody> Function(RequestOptions) onPurchase;

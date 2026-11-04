@@ -3,9 +3,20 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:in_app_purchase_android/billing_client_wrappers.dart';
+import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 import 'package:skeleton_iap/skeleton_iap.dart';
 
 import 'support/fakes.dart';
+
+const _phase = PricingPhaseWrapper(
+  billingCycleCount: 0,
+  billingPeriod: 'P1M',
+  formattedPrice: r'$1.00',
+  priceAmountMicros: 1000000,
+  priceCurrencyCode: 'USD',
+  recurrenceMode: RecurrenceMode.infiniteRecurring,
+);
 
 void main() {
   // The first InAppPurchase.instance registers the Android platform, which
@@ -44,6 +55,72 @@ void main() {
       },
     );
 
+    test(
+      'Android consumes a one-time product once the server granted it',
+      () async {
+        final h = Harness();
+        addTearDown(h.dispose);
+        await h.start();
+
+        h.store.deliver(googlePurchase());
+        await pumpEventQueue();
+
+        expect(h.outcomes.single, isA<IapGranted>());
+        expect(
+          h.android.consumed.single.verificationData.serverVerificationData,
+          'gtoken-1',
+        );
+      },
+    );
+
+    test('a product the server does not list is not for sale', () async {
+      final h = Harness(configStore: null);
+      addTearDown(h.dispose);
+
+      final catalog = await h.service.loadCatalog();
+
+      expect(catalog.offers, isEmpty);
+    });
+
+    test('Google offers only the subscription plan the server maps', () async {
+      final h = Harness();
+      addTearDown(h.dispose);
+      h.store.productOverrides['premium'] =
+          GooglePlayProductDetails.fromProductDetails(
+            const ProductDetailsWrapper(
+              description: '',
+              name: 'premium',
+              productId: 'premium',
+              productType: ProductType.subs,
+              title: 'premium',
+              subscriptionOfferDetails: [
+                SubscriptionOfferDetailsWrapper(
+                  basePlanId: 'yearly',
+                  offerTags: [],
+                  offerIdToken: 't-yearly',
+                  pricingPhases: [_phase],
+                ),
+                SubscriptionOfferDetailsWrapper(
+                  basePlanId: 'monthly',
+                  offerTags: [],
+                  offerIdToken: 't-monthly',
+                  pricingPhases: [_phase],
+                ),
+              ],
+            ),
+          );
+
+      final catalog = await h.service.loadCatalog();
+
+      final premium = catalog.offers.where(
+        (o) => o.product.storeProductId == 'premium',
+      );
+      expect(
+        premium.map((o) => (o.details as GooglePlayProductDetails).offerToken),
+        ['t-monthly'],
+      );
+    });
+
     test('a restore carries the server token too', () async {
       final h = Harness();
       addTearDown(h.dispose);
@@ -58,7 +135,7 @@ void main() {
   group('before the server answers', () {
     test('nothing is completed and nothing is granted', () async {
       final answer = Completer<ResponseBody>();
-      final h = Harness(onPurchase: (_) => answer.future);
+      final h = Harness(platform: 'ios', onPurchase: (_) => answer.future);
       addTearDown(h.dispose);
       await h.start();
 
@@ -167,6 +244,7 @@ void main() {
     test('what failed for a while is sent again by retryUnfinished', () async {
       var calls = 0;
       final h = Harness(
+        platform: 'ios',
         onPurchase: (_) =>
             ++calls == 1 ? errorBody(503, 'PAYMENT.UNAVAILABLE') : granted(),
       );
@@ -188,7 +266,7 @@ void main() {
   group('the same purchase', () {
     test('is sent once and completed once, however often it arrives', () async {
       final answer = Completer<ResponseBody>();
-      final h = Harness(onPurchase: (_) => answer.future);
+      final h = Harness(platform: 'ios', onPurchase: (_) => answer.future);
       addTearDown(h.dispose);
       await h.start();
 
@@ -207,8 +285,8 @@ void main() {
   });
 
   group('purchases from before this run', () {
-    test('what the store hands over at start goes the same way', () async {
-      final h = Harness();
+    test('what Apple hands over at start goes the same way', () async {
+      final h = Harness(platform: 'ios');
       h.store.leftOver = [purchase(id: 'old-1')];
       addTearDown(h.dispose);
 
@@ -217,6 +295,30 @@ void main() {
       expect(h.purchaseCalls, hasLength(1));
       expect(h.store.completed.single.purchaseID, 'old-1');
     });
+
+    test(
+      'Android reads what it left unacknowledged and sends only that',
+      () async {
+        final h = Harness();
+        h.android.past = [
+          googlePurchase(orderId: 'GPA.old', token: 'unacked'),
+          googlePurchase(
+            orderId: 'GPA.done',
+            token: 'acked',
+            acknowledged: true,
+          ),
+        ];
+        addTearDown(h.dispose);
+
+        await h.start();
+
+        expect(h.purchaseCalls, hasLength(1));
+        expect(
+          h.purchaseCalls.single.data,
+          containsPair('purchaseToken', 'unacked'),
+        );
+      },
+    );
 
     test('a restored purchase is checked by the server too', () async {
       final answer = Completer<ResponseBody>();

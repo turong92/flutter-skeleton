@@ -24,6 +24,7 @@ abstract final class IapErrorCodes {
 class IapPurchaseResult {
   const IapPurchaseResult({
     required this.granted,
+    this.kind,
     this.orderId,
     this.subscription,
   });
@@ -32,6 +33,11 @@ class IapPurchaseResult {
     final subscription = json['subscription'];
     return IapPurchaseResult(
       granted: json['result'] == 'GRANTED',
+      kind: switch (json['kind']) {
+        'ONE_TIME' => IapProductKind.oneTime,
+        'SUBSCRIPTION' => IapProductKind.subscription,
+        _ => null,
+      },
       orderId: json['orderId'] as String?,
       subscription: subscription is Map<String, Object?>
           ? IapSubscription.fromJson(subscription)
@@ -40,6 +46,9 @@ class IapPurchaseResult {
   }
 
   final bool granted;
+
+  /// What the server says was bought; null when the answer has no `kind`.
+  final IapProductKind? kind;
   final String? orderId;
   final IapSubscription? subscription;
 }

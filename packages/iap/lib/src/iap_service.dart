@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 import 'package:skeleton_api_client/skeleton_api_client.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -49,14 +50,22 @@ class IapService {
   final _done = <String>{};
   final _unfinished = <String, PurchaseDetails>{};
 
+  // The kind of each product the server maps (set by [loadCatalog]), for the
+  // answers that carry no `kind`.
+  final _kinds = <String, IapProductKind>{};
+
+  bool get _isAndroid => _platform != 'ios';
+
   String get _storeId => _platform == 'ios' ? 'appstore' : 'googleplay';
 
   Stream<IapOutcome> get outcomes => _outcomes.stream;
 
-  /// Starts listening to the store. Do it early: the store hands over the
-  /// purchases left from the last run when someone listens.
+  /// Starts listening to the store. Do it early. StoreKit hands over the
+  /// purchases left from the last run when someone listens; Google Play does
+  /// not, so on Android the unacknowledged ones are read here.
   void start() {
-    _subscription ??= _store.purchaseStream.listen(
+    if (_subscription != null) return;
+    _subscription = _store.purchaseStream.listen(
       (purchases) {
         for (final purchase in purchases) {
           unawaited(_handle(purchase));
@@ -65,6 +74,24 @@ class IapService {
       // A broken stream must not take the app down; the next start listens again.
       onError: (Object _) {},
     );
+    if (_isAndroid) unawaited(_sendUnacknowledged());
+  }
+
+  Future<void> _sendUnacknowledged() async {
+    try {
+      final past = await _store
+          .getPlatformAddition<InAppPurchaseAndroidPlatformAddition>()
+          .queryPastPurchases();
+      // Acknowledged ones were settled before; sending them again only eats
+      // the server's request limit.
+      for (final purchase in past.pastPurchases) {
+        if (!purchase.billingClientPurchase.isAcknowledged) {
+          unawaited(_handle(purchase));
+        }
+      }
+    } on Object {
+      // Nothing to read now; the next start reads again.
+    }
   }
 
   Future<void> dispose() async {
@@ -79,6 +106,10 @@ class IapService {
       platform: _platform,
       storefront: await _storefront(),
     );
+    // No store for this platform on the server: it would answer 503 to a paid
+    // purchase.
+    if (config.store == null) return IapCatalog(config: config, offers: []);
+    _kinds.addAll({for (final p in config.products) p.storeProductId: p.kind});
     final found = await _store.queryProductDetails({
       for (final p in config.products) p.storeProductId,
     });
@@ -87,7 +118,8 @@ class IapService {
       offers: [
         for (final product in config.products)
           for (final details in found.productDetails)
-            if (details.id == product.storeProductId)
+            if (details.id == product.storeProductId &&
+                _isMappedPlan(product, details))
               IapOffer(
                 product: product,
                 details: details,
@@ -97,6 +129,19 @@ class IapService {
     );
   }
 
+  /// Google lists one entry per subscription offer; the server maps one base
+  /// plan only. Another plan would be paid and then refused.
+  bool _isMappedPlan(IapProduct product, ProductDetails details) {
+    if (product.kind != IapProductKind.subscription ||
+        details is! GooglePlayProductDetails) {
+      return true;
+    }
+    final index = details.subscriptionIndex;
+    final offers = details.productDetails.subscriptionOfferDetails;
+    if (index == null || offers == null) return true;
+    return offers[index].basePlanId == product.basePlanId;
+  }
+
   /// Starts the store's purchase sheet. The result arrives on [outcomes].
   Future<void> buy(IapOffer offer) async {
     final param = PurchaseParam(
@@ -104,9 +149,13 @@ class IapService {
       applicationUserName: offer.accountToken,
     );
     // Not consumed on its own: the store would give it away before the server
-    // has checked it.
+    // has checked it. StoreKit insists on `true` and consumes only when the
+    // purchase is completed; Google Play is consumed by hand in [_finish].
     if (offer.product.kind == IapProductKind.oneTime) {
-      await _store.buyConsumable(purchaseParam: param, autoConsume: false);
+      await _store.buyConsumable(
+        purchaseParam: param,
+        autoConsume: _platform == 'ios',
+      );
     } else {
       await _store.buyNonConsumable(purchaseParam: param);
     }
@@ -185,7 +234,12 @@ class IapService {
       final result = await _api.confirmPurchase(_storeId, _body(purchase));
       if (result.granted) {
         _done.add(key);
-        await _finish(purchase);
+        await _finish(
+          purchase,
+          oneTime:
+              (result.kind ?? _kinds[purchase.productID]) ==
+              IapProductKind.oneTime,
+        );
         _emit(
           IapGranted(
             purchase.productID,
@@ -200,7 +254,10 @@ class IapService {
     } on ApiRequestError catch (e) {
       if (_refusedForGood(e)) {
         _done.add(key);
-        await _finish(purchase);
+        await _finish(
+          purchase,
+          oneTime: _kinds[purchase.productID] == IapProductKind.oneTime,
+        );
         _emit(IapRejected(purchase.productID, e.code));
       } else if (e.code == IapErrorCodes.ownedElsewhere) {
         _emit(IapNotConfirmed(purchase.productID, IapWait.otherAccount));
@@ -230,9 +287,18 @@ class IapService {
     _ => false,
   };
 
-  Future<void> _finish(PurchaseDetails purchase) async {
-    if (!purchase.pendingCompletePurchase) return;
+  /// Ends the purchase in the store. A one-time Google Play purchase is
+  /// consumed (that also acknowledges it); without it the same product could
+  /// not be bought again. Everything else is completed.
+  Future<void> _finish(PurchaseDetails purchase, {bool oneTime = false}) async {
     try {
+      if (_isAndroid && oneTime) {
+        await _store
+            .getPlatformAddition<InAppPurchaseAndroidPlatformAddition>()
+            .consumePurchase(purchase);
+        return;
+      }
+      if (!purchase.pendingCompletePurchase) return;
       await _store.completePurchase(purchase);
     } on Object {
       // The server already settled it; the store hands it back at the next

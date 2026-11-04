@@ -13,6 +13,7 @@ dependencies:
     sdk: flutter
   flutter_riverpod: ^3.4.3
   in_app_purchase: ^3.2.3
+  in_app_purchase_android: ^0.5.5
   skeleton_api_client: any # workspace sibling
   url_launcher: ^6.3.2
 

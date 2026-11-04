@@ -393,8 +393,8 @@ F2 와 F4 는 나란히 갈 수 있다. 1단계 = F1~F5 이고, F5 가 끝나면
 ### 13.2 흐름
 
 1. `GET /payments/iap/config?platform=&storefront=` → `channel` · `appAccountToken` · `products`. 상품 id 로 `queryProductDetails`.
-2. 구매: `PurchaseParam.applicationUserName` = 서버가 준 `appAccountToken` 그대로(앱이 만들지 않는다). 소모성 자동 소비는 끈다(서버 확인 전에 소비하지 않는다).
-3. `purchaseStream`(앱 시작 때 남은 미완료 구매와 복원 포함)의 `purchased` · `restored` 는 모두 `POST /payments/iap/{store}/purchases`: appstore `{transactionId}` · googleplay `{productId, purchaseToken}`.
+2. 구매: `PurchaseParam.applicationUserName` = 서버가 준 `appAccountToken` 그대로(앱이 만들지 않는다). 서버 확인 전에 소비하지 않는다: iOS 는 플러그인이 `autoConsume: true` 를 강제하고 `completePurchase` 때 소비되며, Android 는 `autoConsume: false` 로 사고 서버가 지급(또는 영구 거절)한 뒤 `consumePurchase`(승인 겸함)를 직접 부른다. 단건 판정은 GRANTED 응답의 `kind`, 없으면 상품 지도. `config.store` 가 null 이면 팔지 않고, Android 구독은 `basePlanId` 가 지도와 맞는 제안만 보인다.
+3. `purchaseStream`(iOS 는 앱 시작 때 남은 미완료 구매를 listen 때 준다. Android 는 주지 않아 `start()` 가 `queryPastPurchases` 로 미승인 구매만 읽어 같은 경로로 보낸다. 복원 포함)의 `purchased` · `restored` 는 모두 `POST /payments/iap/{store}/purchases`: appstore `{transactionId}` · googleplay `{productId, purchaseToken}`.
 4. 응답 → 앱이 할 일(서버 계약 표 그대로):
 
 | 응답 | 완료(`completePurchase`) | 권한 |
@@ -429,6 +429,6 @@ F2 와 F4 는 나란히 갈 수 있다. 1단계 = F1~F5 이고, F5 가 끝나면
 
 ### 13.6 확인 못 한 것
 
-- 실제 App Store · Google Play 구매(Xcode · Android SDK · 스토어 계정 없음). `applicationUserName` 이 안드로이드에서 `setObfuscatedAccountId` 로 가는지, iOS 에서 `appAccountToken` 이 되는지(서버 설계서도 같은 미확인).
-- 구글 구독의 기본 요금제(`basePlanId`)가 여럿일 때 어느 `ProductDetails` 를 고르는지, 안드로이드에서 앱 시작 때 남은 구매를 `purchaseStream` 이 다시 주는지, 스토어 나라(`storefront`)를 읽는 법.
+- 실제 App Store · Google Play 구매(Xcode · Android SDK · 스토어 계정 없음). `applicationUserName` 이 iOS 에서 `appAccountToken` 이 되는지는 실기기로 확인하지 못했다(안드로이드의 `setObfuscatedAccountId` 는 플러그인 소스 `MethodCallHandlerImpl.java` 로 확인됨).
+- 스토어 나라(`storefront`)를 읽는 법. (요금제 거름과 Android 재수신은 소스로 확인해 코드에 넣었고, 실기기 동작은 못 봤다.)
 - 소모성 · 비소모성 구분: 서버 계약에 없어 단건(`ONE_TIME`)은 소모성, 구독은 비소모성으로 둔다.

@@ -18,7 +18,7 @@ String iapOutcomeText(IapOutcome outcome) => switch (outcome) {
   IapNotConfirmed(reason: IapWait.otherAccount) =>
     'This purchase belongs to another account. Sign in with that one.',
   IapNotConfirmed(reason: IapWait.retryLater) =>
-    'Could not confirm the purchase yet. It stays open and is tried again.',
+    'Could not confirm the purchase yet. It stays open and is sent again the next time the app starts.',
   IapStoreError() => outcome.message,
 };
 

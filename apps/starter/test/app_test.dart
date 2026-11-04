@@ -77,7 +77,7 @@ void main() {
     expect(find.text('user@example.com'), findsOneWidget);
     expect(await store.read(), isNotNull);
 
-    await tester.tap(find.text('Sign out'));
+    await tester.tap(find.byTooltip('Sign out'));
     await tester.pumpAndSettle();
 
     expect(find.text('Sign in'), findsOneWidget);

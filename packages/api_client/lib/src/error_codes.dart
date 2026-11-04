@@ -10,6 +10,10 @@ abstract final class ErrorCodes {
   static const authInvalidCredentials = 'AUTH.INVALID_CREDENTIALS';
   static const authRefreshInvalid = 'AUTH.REFRESH_INVALID';
   static const authRefreshReused = 'AUTH.REFRESH_REUSED';
+  static const authAccountSuspended = 'AUTH.ACCOUNT_SUSPENDED';
+
+  /// 429 on refresh: the session is fine, wait (`Retry-After`).
+  static const authTooManyRefreshes = 'AUTH.TOO_MANY_REFRESHES';
 }
 
 /// Codes made by this client, not by the backend. The status is 0 for a

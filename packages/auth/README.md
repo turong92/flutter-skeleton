@@ -21,7 +21,7 @@ ProviderScope(
 | Export | Meaning |
 |---|---|
 | `TokenStore` · `SecureTokenStore` · `MemoryTokenStore` | Where the tokens live. `SecureTokenStore` = iOS Keychain / Android Keystore. Extension point: implement the interface. |
-| `apiClientProvider` | One `ApiClient` for the app: sends `Authorization: Bearer`, renews on 401. Use it for every authenticated call. |
+| `apiClientProvider` | The app's one `ApiClient`: sends `Authorization: Bearer`, renews on 401. Keep exactly one per app and use it for every authenticated call: the single-flight refresh lives in that client, a second client would refresh on its own and spend the rotated refresh token. |
 | `authSessionProvider` | `AuthSession` notifier, state `AuthChecking` · `SignedOut` · `SignedIn(principal)`. `login(email:, password:)`, `logout()`. Starts by checking stored tokens with `GET /auth/me`. |
 | `AuthApi` (`authApiProvider`) | `login` · `refresh` · `logout` · `me`. Stores nothing. |
 | `authRedirect(ref)` · `authRefreshListenable(ref)` · `authRedirectFor(state, location)` | go_router wiring: checking → `/splash`, signed out → `/login`, signed in → off `/login` and `/splash` to `/me` (paths are parameters). |
@@ -32,8 +32,9 @@ ProviderScope(
 ## Refresh rules
 
 - A 401 on a normal call renews the access token **once**, saves the rotated pair, and repeats the call. Calls that fail together share one refresh; a call that failed with an older token than the stored one just repeats. (The refresh token rotates on every use and a reused one closes the session.)
-- `AUTH.REFRESH_INVALID` / `AUTH.REFRESH_REUSED`: the store is cleared, the state becomes `SignedOut`, the router goes to the login route.
-- Network error, 5xx or 429 during refresh: the session stays and the caller gets that error. The same refresh token is used on the next try, which the backend's `reuse-grace` (starter: 60 s) tolerates.
+- The session ends (store cleared, state `SignedOut`, the router goes to the login route) on a 401 with an `AUTH.*` code (`REFRESH_INVALID`, `REFRESH_REUSED`, ...), on `403 AUTH.ACCOUNT_SUSPENDED`, and after five 401s in a row without an `AUTH.*` code. `429 AUTH.TOO_MANY_REFRESHES` keeps the session and goes to the caller.
+- No answer (network, timeout), 408, 429, 5xx during refresh: the response may have been lost after the server rotated the token, so the **same refresh token** is sent again (the backend's `reuse-grace`, starter 60 s, returns the same successor), after 2, 4, 8, 16, then every 30 s, for as long as the failure stays transient. A call that waits on this gets a network error after 45 s; the retrying goes on in the background.
+- A sign-out or a new sign-in while a refresh is in flight wins: the late refresh result is not stored.
 - On app start with an unreachable server the state is `SignedOut` but the tokens are kept for the next start.
 - Tokens are never logged: no interceptor prints headers, `TokenPair` and the store `toString`s are redacted.
 

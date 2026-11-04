@@ -26,8 +26,11 @@ class SecureTokenStore implements TokenStore {
 
   @override
   Future<void> save(TokenPair tokens) async {
-    await _storage.write(key: _accessKey, value: tokens.accessToken);
+    // Refresh token first: if the app dies between the two writes, the old
+    // access token is merely expired and the new refresh token renews it. The
+    // other order would keep a spent refresh token.
     await _storage.write(key: _refreshKey, value: tokens.refreshToken);
+    await _storage.write(key: _accessKey, value: tokens.accessToken);
   }
 
   @override

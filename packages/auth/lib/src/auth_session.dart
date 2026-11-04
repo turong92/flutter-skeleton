@@ -59,16 +59,17 @@ class AuthSession extends Notifier<AuthState> {
 
   /// App start: stored tokens are checked with `GET /auth/me` (which renews an
   /// expired access token on the way). Never leaves the app on the splash: when
-  /// the check fails for any reason the user lands on the login screen. A
-  /// failure that is not the server ending the session (offline) keeps the
-  /// stored tokens for the next start.
+  /// the check fails with an API or network error the user lands on the login
+  /// screen. A failure that is not the server ending the session (offline) keeps
+  /// the stored tokens for the next start. Anything else (a broken secure
+  /// storage, a bug) is not swallowed.
   Future<void> _restore() async {
     try {
       final tokens = await ref.read(tokenStoreProvider).read();
       if (tokens == null) return _set(const SignedOut());
       final principal = await ref.read(authApiProvider).me();
       _set(SignedIn(principal));
-    } catch (_) {
+    } on ApiRequestError {
       if (ref.mounted && state is AuthChecking) state = const SignedOut();
     }
   }

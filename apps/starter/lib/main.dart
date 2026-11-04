@@ -7,10 +7,13 @@ import 'config.dart';
 import 'router.dart';
 
 void main() {
-  assert(
-    AppConfig.apiBaseUrl.isNotEmpty,
-    'API_BASE_URL is empty: run with --dart-define-from-file=env/dev.json',
-  );
+  // Not an assert: a release build without the define would otherwise start
+  // and fail on every request.
+  if (AppConfig.apiBaseUrl.isEmpty) {
+    throw StateError(
+      'API_BASE_URL is empty: build with --dart-define-from-file=env/<env>.json',
+    );
+  }
   runApp(
     ProviderScope(
       overrides: [

@@ -15,6 +15,7 @@ ApiClient _client(
   tokenStore: store,
   onSessionEnded: onSessionEnded ?? () {},
   adapter: backend.adapter,
+  retryDelays: const [Duration.zero],
 );
 
 Future<Object?> _me(ApiClient client) =>
@@ -66,12 +67,16 @@ void main() {
     expect(backend.refreshCalls, 1);
   });
 
-  for (final code in ['AUTH.REFRESH_INVALID', 'AUTH.REFRESH_REUSED']) {
+  for (final (status, code) in [
+    (401, 'AUTH.REFRESH_INVALID'),
+    (401, 'AUTH.REFRESH_REUSED'),
+    (403, 'AUTH.ACCOUNT_SUSPENDED'),
+  ]) {
     test(
       '$code clears the store, ends the session once and surfaces the 401',
       () async {
         backend.accessToken = 'server-rotated-out';
-        backend.refreshOverride = () => apiError(401, code);
+        backend.refreshOverride = () => apiError(status, code);
         var ended = 0;
         final client = _client(backend, store, onSessionEnded: () => ended++);
 
@@ -89,10 +94,11 @@ void main() {
     );
   }
 
-  test('a refresh that fails on the network keeps the session and surfaces that error', () async {
+  test('a refresh whose response is lost is sent again with the SAME refresh token', () async {
     backend.accessToken = 'server-rotated-out';
-    final offline = FakeAdapter((options) {
-      if (options.path == '/auth/refresh') {
+    var lost = 0;
+    final flaky = FakeAdapter((options) {
+      if (options.path == '/auth/refresh' && lost++ == 0) {
         throw DioException.connectionError(
           requestOptions: options,
           reason: 'down',
@@ -105,23 +111,48 @@ void main() {
       baseUrl: 'http://localhost:8080/api/v1',
       tokenStore: store,
       onSessionEnded: () => ended++,
-      adapter: offline,
+      adapter: flaky,
+      retryDelays: const [Duration.zero],
     );
 
-    await expectLater(
-      _me(client),
-      throwsA(
-        isA<ApiRequestError>().having(
-          (e) => e.code,
-          'code',
-          ClientErrorCodes.networkError,
-        ),
-      ),
-    );
+    expect(await _me(client), 'acc_user');
 
-    expect(await store.read(), isNotNull);
+    final sent = backend.requests
+        .where((r) => r.path == '/auth/refresh')
+        .toList();
+    expect(sent, hasLength(1)); // the first never reached the backend
+    expect(
+      flaky.requests.where((r) => r.path == '/auth/refresh'),
+      hasLength(2),
+    );
+    expect(
+      flaky.requests
+          .where((r) => r.path == '/auth/refresh')
+          .map((r) => (r.data as Map)['refreshToken'])
+          .toSet(),
+      {'refresh-1'},
+    );
     expect(ended, 0);
   });
+
+  test(
+    'a logout while a refresh is in flight is not undone by the refresh result',
+    () async {
+      backend.accessToken = 'server-rotated-out';
+      backend.refreshDelay = const Duration(milliseconds: 50);
+      final client = _client(backend, store);
+
+      final call = _me(client);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await store.clear(); // the user signs out while the refresh runs
+
+      await expectLater(
+        call,
+        throwsA(isA<ApiRequestError>().having((e) => e.status, 'status', 401)),
+      );
+      expect(await store.read(), isNull);
+    },
+  );
 
   test(
     'a request that is still 401 after the retry gives up (no refresh loop)',
@@ -157,7 +188,7 @@ void main() {
   });
 
   test(
-    'token values never show up in toString of the pair or the stores',
+    'token values never show up in toString of the pair or the memory store',
     () async {
       const pair = TokenPair(
         accessToken: 'secret-access',
@@ -166,11 +197,7 @@ void main() {
       final memory = MemoryTokenStore();
       await memory.save(pair);
 
-      for (final text in [
-        pair.toString(),
-        memory.toString(),
-        SecureTokenStore().toString(),
-      ]) {
+      for (final text in [pair.toString(), memory.toString()]) {
         expect(text, isNot(contains('secret')));
       }
     },

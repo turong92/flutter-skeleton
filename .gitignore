@@ -34,6 +34,10 @@ apps/*/env/*.json
 .melos_tool/
 pubspec_overrides.yaml
 
+# Firebase files of your own project (this repo has none)
+**/google-services.json
+**/GoogleService-Info.plist
+
 # Secrets
 .env
 *.secret

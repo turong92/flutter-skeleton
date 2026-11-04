@@ -1,0 +1,96 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- flutter create only puts INTERNET in the debug and profile manifests;
+         a release build needs it here to reach the backend. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Android 13+ asks before showing a notification. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <application
+        android:label="sample"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            <!-- Specifies an Android theme to apply to this Activity as soon as
+                 the Android process has started. This theme is visible to the user
+                 while the Flutter UI initializes. After that, this theme continues
+                 to determine the Window background behind the Flutter UI. -->
+            <meta-data
+              android:name="io.flutter.embedding.android.NormalTheme"
+              android:resource="@style/NormalTheme"
+              />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+        <!-- Don't delete the meta-data below.
+             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+    </application>
+    <!-- Package visibility (Android 11+). Without these entries the payment
+         window cannot see the card and bank apps it hands over to.
+         The package list is Toss Payments' list of card and bank apps; extend it
+         with the apps your buyers use. -->
+    <queries>
+        <!-- Used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- The three kinds of address the payment window opens. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <category android:name="android.intent.category.BROWSABLE"/>
+            <data android:scheme="intent"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="market"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <category android:name="android.intent.category.BROWSABLE"/>
+            <data android:scheme="https"/>
+        </intent>
+        <!-- Card and bank apps. -->
+        <package android:name="viva.republica.toss"/>
+        <package android:name="com.kakao.talk"/>
+        <package android:name="com.kakaobank.channel"/>
+        <package android:name="com.nhn.android.search"/>
+        <package android:name="com.samsung.android.spay"/>
+        <package android:name="com.samsung.android.spaylite"/>
+        <package android:name="com.kbcard.cxh.appcard"/>
+        <package android:name="com.kbstar.liivbank"/>
+        <package android:name="com.kbstar.reboot"/>
+        <package android:name="com.kbstar.kbbank"/>
+        <package android:name="kvp.jjy.MispAndroid320"/>
+        <package android:name="com.hyundaicard.appcard"/>
+        <package android:name="com.shcard.smartpay"/>
+        <package android:name="com.shinhan.smartcaremgr"/>
+        <package android:name="com.shinhancard.smartshinhan"/>
+        <package android:name="kr.co.samsungcard.mpocket"/>
+        <package android:name="com.lcacApp"/>
+        <package android:name="com.lottemembers.android"/>
+        <package android:name="com.hanaskcard.paycla"/>
+        <package android:name="com.hanaskcard.rocomo.potal"/>
+        <package android:name="kr.co.citibank.citimobile"/>
+        <package android:name="com.wooricard.smartapp"/>
+        <package android:name="com.wooribank.smart.npib"/>
+        <package android:name="nh.smart.nhallonepay"/>
+        <package android:name="com.nonghyup.nhcardpay"/>
+        <package android:name="com.nhnent.payapp"/>
+        <package android:name="com.kftc.bankpay.android"/>
+        <package android:name="com.ahnlab.v3mobileplus"/>
+        <package android:name="kr.co.shiftworks.vguardweb"/>
+        <package android:name="com.TouchEn.mVaccine.webs"/>
+    </queries>
+</manifest>

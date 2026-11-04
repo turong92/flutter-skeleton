@@ -36,3 +36,5 @@ jobs:
           java-version: '17'
       - run: flutter build apk --debug
         working-directory: apps/starter
+      - run: flutter build apk --debug
+        working-directory: apps/sample

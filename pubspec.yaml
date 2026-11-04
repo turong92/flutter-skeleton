@@ -19,6 +19,7 @@ workspace:
   - packages/push
   - packages/payment
   - apps/starter
+  - apps/sample
   - tool
 
 dev_dependencies:

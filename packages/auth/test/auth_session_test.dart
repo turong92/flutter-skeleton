@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:skeleton_api_client/skeleton_api_client.dart';
@@ -9,7 +10,7 @@ import 'support/backend_fake.dart';
 
 ProviderContainer _container(
   FakeAuthBackend backend,
-  MemoryTokenStore store, {
+  TokenStore store, {
   HttpClientAdapter? adapter,
 }) {
   final container = ProviderContainer(
@@ -116,6 +117,20 @@ void main() {
     });
   });
 
+  test('a store that cannot be read: signed out (not stuck on the splash) and the error is reported', () async {
+    final reported = <FlutterErrorDetails>[];
+    final previous = FlutterError.onError;
+    FlutterError.onError = reported.add;
+    addTearDown(() => FlutterError.onError = previous);
+    final container = _container(backend, _BrokenStore());
+
+    final state = await _settled(container);
+    await Future<void>.delayed(Duration.zero);
+
+    expect(state, isA<SignedOut>());
+    expect(reported.single.exception, isA<StateError>());
+  });
+
   group('login and logout', () {
     test('login stores the tokens and signs in', () async {
       final container = _container(backend, store);
@@ -198,4 +213,15 @@ void main() {
       },
     );
   });
+}
+
+class _BrokenStore implements TokenStore {
+  @override
+  Future<TokenPair?> read() async => throw StateError('keystore unavailable');
+
+  @override
+  Future<void> save(TokenPair tokens) async {}
+
+  @override
+  Future<void> clear() async {}
 }

@@ -18,7 +18,7 @@ class MeScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('My account'),
         actions: [
-          IconButton(
+          IconButton.outlined(
             icon: const Icon(Icons.logout),
             tooltip: 'Sign out',
             onPressed: () => ref.read(authSessionProvider.notifier).logout(),

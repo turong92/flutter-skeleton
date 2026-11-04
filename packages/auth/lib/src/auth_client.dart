@@ -15,7 +15,6 @@ ApiClient createAuthClient({
   required FutureOr<void> Function() onSessionEnded,
   HttpClientAdapter? adapter,
   void Function(ApiRequestError error)? onError,
-  List<Duration> retryDelays = AuthInterceptor.defaultRetryDelays,
 }) {
   final client = ApiClient(
     baseUrl: baseUrl,
@@ -36,7 +35,6 @@ ApiClient createAuthClient({
       store: tokenStore,
       refresh: AuthApi(client).refresh,
       onSessionEnded: onSessionEnded,
-      retryDelays: retryDelays,
     ),
   );
   return client;

@@ -40,7 +40,6 @@ class AuthInterceptor extends Interceptor {
     required this.refresh,
     required this.onSessionEnded,
     this.retryDelays = defaultRetryDelays,
-    this.waitLimit = const Duration(seconds: 45),
   });
 
   static const defaultRetryDelays = [
@@ -53,6 +52,9 @@ class AuthInterceptor extends Interceptor {
 
   /// Codeless 401s in a row after which the session is treated as ended.
   static const _maxCodeless401 = 5;
+
+  /// How long one call waits for the shared refresh flight.
+  static const _waitLimit = Duration(seconds: 45);
   static const _retriedKey = 'authRetried';
 
   final Dio dio;
@@ -62,9 +64,6 @@ class AuthInterceptor extends Interceptor {
 
   /// Waits between sends of a transient-failing refresh; the last one repeats.
   final List<Duration> retryDelays;
-
-  /// How long one call waits for the shared refresh flight.
-  final Duration waitLimit;
 
   Future<_Outcome>? _inFlight;
 
@@ -78,7 +77,7 @@ class AuthInterceptor extends Interceptor {
     }
 
     final outcome = await _recover(_bearerOf(options)).timeout(
-      waitLimit,
+      _waitLimit,
       onTimeout: () => _Failed(
         ApiRequestError.network(detail: 'session refresh is taking too long'),
       ),
@@ -148,6 +147,12 @@ class AuthInterceptor extends Interceptor {
             (e.status == 401 && authCode) ||
             codeless401 >= _maxCodeless401;
         if (ends) {
+          // A sign-out or a newer sign-in may have happened while the request
+          // was out: only a session that still holds the sent token is ended.
+          final now = await store.read();
+          if (now == null || now.refreshToken != sentToken) {
+            return const _Ended();
+          }
           await store.clear();
           await onSessionEnded();
           return const _Ended();

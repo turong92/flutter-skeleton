@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:skeleton_api_client/skeleton_api_client.dart';
 
@@ -59,18 +60,30 @@ class AuthSession extends Notifier<AuthState> {
 
   /// App start: stored tokens are checked with `GET /auth/me` (which renews an
   /// expired access token on the way). Never leaves the app on the splash: when
-  /// the check fails with an API or network error the user lands on the login
-  /// screen. A failure that is not the server ending the session (offline) keeps
-  /// the stored tokens for the next start. Anything else (a broken secure
-  /// storage, a bug) is not swallowed.
+  /// the check fails the user lands on the login screen. A failure that is not
+  /// the server ending the session (offline) keeps the stored tokens for the
+  /// next start. Errors other than API/network ones are also reported.
   Future<void> _restore() async {
     try {
       final tokens = await ref.read(tokenStoreProvider).read();
       if (tokens == null) return _set(const SignedOut());
       final principal = await ref.read(authApiProvider).me();
       _set(SignedIn(principal));
-    } on ApiRequestError {
+    } catch (e, stackTrace) {
+      // Whatever went wrong, never stay on the splash.
       if (ref.mounted && state is AuthChecking) state = const SignedOut();
+      if (e is! ApiRequestError) {
+        // An API or network failure is expected; anything else is a bug or a
+        // broken keystore and must be seen.
+        FlutterError.reportError(
+          FlutterErrorDetails(
+            exception: e,
+            stack: stackTrace,
+            library: 'skeleton_auth',
+            context: ErrorDescription('while restoring the session'),
+          ),
+        );
+      }
     }
   }
 

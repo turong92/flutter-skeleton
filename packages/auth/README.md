@@ -26,7 +26,7 @@ ProviderScope(
 | `AuthApi` (`authApiProvider`) | `login` · `refresh` · `logout` · `me`. Stores nothing. |
 | `authRedirect(ref)` · `authRefreshListenable(ref)` · `authRedirectFor(state, location)` | go_router wiring: checking → `/splash`, signed out → `/login`, signed in → off `/login` and `/splash` to `/me` (paths are parameters). |
 | `LoginForm(labels: LoginLabels(...))` | Email/password form. Texts are parameters (default English). Shows `labels.invalidCredentials` for `AUTH.INVALID_CREDENTIALS`. |
-| `createAuthClient(...)` | The wiring behind `apiClientProvider`, for code that is not Riverpod. |
+| `createAuthClient(...)` | The wiring behind `apiClientProvider`. Call it once per app (for code that is not Riverpod): every extra client has its own single-flight and would spend the rotated refresh token. |
 | `httpAdapterProvider` | Test seam: a fake Dio `HttpClientAdapter` (see `skeleton_api_client/testing.dart`). |
 
 ## Refresh rules

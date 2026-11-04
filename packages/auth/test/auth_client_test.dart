@@ -5,17 +5,16 @@ import 'package:skeleton_api_client/testing.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 
 import 'support/backend_fake.dart';
+import 'support/test_client.dart';
 
 ApiClient _client(
   FakeAuthBackend backend,
   TokenStore store, {
   void Function()? onSessionEnded,
-}) => createAuthClient(
-  baseUrl: 'http://localhost:8080/api/v1',
-  tokenStore: store,
-  onSessionEnded: onSessionEnded ?? () {},
+}) => testAuthClient(
+  store: store,
   adapter: backend.adapter,
-  retryDelays: const [Duration.zero],
+  onSessionEnded: onSessionEnded,
 );
 
 Future<Object?> _me(ApiClient client) =>
@@ -107,12 +106,10 @@ void main() {
       return backend.adapter.fetch(options, null, null);
     });
     var ended = 0;
-    final client = createAuthClient(
-      baseUrl: 'http://localhost:8080/api/v1',
-      tokenStore: store,
-      onSessionEnded: () => ended++,
+    final client = testAuthClient(
+      store: store,
       adapter: flaky,
-      retryDelays: const [Duration.zero],
+      onSessionEnded: () => ended++,
     );
 
     expect(await _me(client), 'acc_user');
@@ -186,6 +183,31 @@ void main() {
 
     expect(backend.refreshCalls, 0);
   });
+
+  test(
+    'a REUSED answer for an old token does not sign out a newer sign-in',
+    () async {
+      backend.accessToken = 'server-rotated-out';
+      backend.refreshDelay = const Duration(milliseconds: 50);
+      backend.refreshOverride = () => apiError(401, 'AUTH.REFRESH_REUSED');
+      var ended = 0;
+      final client = _client(backend, store, onSessionEnded: () => ended++);
+
+      final call = _me(client);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      // the user signs in again while the old refresh is out
+      await store.save(
+        const TokenPair(accessToken: 'new-access', refreshToken: 'new-refresh'),
+      );
+
+      await expectLater(
+        call,
+        throwsA(isA<ApiRequestError>().having((e) => e.status, 'status', 401)),
+      );
+      expect((await store.read())!.refreshToken, 'new-refresh');
+      expect(ended, 0);
+    },
+  );
 
   test(
     'token values never show up in toString of the pair or the memory store',

@@ -24,7 +24,7 @@ class FakeBoard {
   /// While set, POSTs wait for it (a slow network).
   Completer<void>? holdPosts;
   late final FakeAdapter adapter = FakeAdapter((o) async {
-    if (o.method == 'POST') await holdPosts?.future;
+    if (o.method == 'POST' || o.method == 'PATCH') await holdPosts?.future;
     return _handle(o);
   });
 

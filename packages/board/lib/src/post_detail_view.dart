@@ -90,6 +90,19 @@ class _PostDetailViewState extends ConsumerState<PostDetailView> {
     ref.invalidate(boardCommentsProvider(_ref));
   });
 
+  /// True when the server took the edit, so the editor can close.
+  Future<bool> _editComment(Comment comment, String body) async {
+    var saved = false;
+    await _run(() async {
+      await ref
+          .read(boardApiProvider)
+          .updateComment(widget.board, widget.postId, comment.id, body: body);
+      ref.invalidate(boardCommentsProvider(_ref));
+      saved = true;
+    });
+    return saved;
+  }
+
   Future<void> _deleteComment(Comment comment) async {
     if (!await confirmDelete(context, labels, labels.confirmDeleteComment)) {
       return;
@@ -179,9 +192,11 @@ class _PostDetailViewState extends ConsumerState<PostDetailView> {
                 reactionStyles: widget.reactionStyles,
                 reactionTypes: config?.reactionTypes ?? const [],
                 maxDepth: config?.maxCommentDepth ?? 0,
+                commentMaxLength: config?.commentMaxLength,
                 busy: _busy,
                 onReply: (c) => setState(() => _replyTo = c),
                 onToggleReaction: _toggleCommentReaction,
+                onEdit: _editComment,
                 onDelete: _deleteComment,
               ),
             ],

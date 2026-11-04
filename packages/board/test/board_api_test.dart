@@ -151,6 +151,21 @@ void main() {
     expect(request.data, {'body': 'hi', 'parentId': 10, 'authorId': 'prf_1'});
   });
 
+  test('updateComment patches the body', () async {
+    final adapter = FakeAdapter(
+      (_) => valueBody(commentJson(10, body: 'edited', mine: true)),
+    );
+
+    final comment = await apiWith(adapter)
+        .updateComment('general', 1, 10, body: 'edited');
+
+    final request = adapter.requests.single;
+    expect(request.method, 'PATCH');
+    expect(request.path, '/boards/general/posts/1/comments/10');
+    expect(request.data, {'body': 'edited'});
+    expect(comment.body, 'edited');
+  });
+
   test('reactions: PUT with the type, DELETE with a query', () async {
     final adapter = FakeAdapter(
       (_) => valueBody({

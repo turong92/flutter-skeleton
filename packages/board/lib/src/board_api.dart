@@ -93,6 +93,19 @@ class BoardApi {
     decode: Comment.fromJson,
   );
 
+  /// `PATCH .../comments/{id}`: the author changes the text.
+  Future<Comment> updateComment(
+    String board,
+    int postId,
+    int commentId, {
+    required String body,
+  }) => _client.value(
+    '/boards/$board/posts/$postId/comments/$commentId',
+    method: 'PATCH',
+    json: {'body': body},
+    decode: Comment.fromJson,
+  );
+
   /// `DELETE .../comments/{id}`: the thread keeps the place.
   Future<void> deleteComment(String board, int postId, int commentId) =>
       _client.noContent(

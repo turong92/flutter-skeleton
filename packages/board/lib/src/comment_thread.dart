@@ -18,9 +18,11 @@ class CommentThreads extends ConsumerWidget {
     required this.reactionStyles,
     required this.reactionTypes,
     required this.maxDepth,
+    required this.commentMaxLength,
     required this.busy,
     required this.onReply,
     required this.onToggleReaction,
+    required this.onEdit,
     required this.onDelete,
   });
 
@@ -31,6 +33,7 @@ class CommentThreads extends ConsumerWidget {
 
   /// A comment at this depth takes no reply.
   final int maxDepth;
+  final int? commentMaxLength;
   final bool busy;
   final void Function(Comment comment) onReply;
   final Future<void> Function(
@@ -39,6 +42,9 @@ class CommentThreads extends ConsumerWidget {
     required bool picked,
   })
   onToggleReaction;
+
+  /// Answers true when the server took the new text.
+  final Future<bool> Function(Comment comment, String body) onEdit;
   final void Function(Comment comment) onDelete;
 
   @override
@@ -81,10 +87,12 @@ class CommentThreads extends ConsumerWidget {
           reactionStyles: reactionStyles,
           reactionTypes: reactionTypes,
           canReply: comment.depth < maxDepth,
+          maxLength: commentMaxLength,
           busy: busy,
           onReply: () => onReply(comment),
           onToggleReaction: (type, {required picked}) =>
               onToggleReaction(comment, type, picked: picked),
+          onEdit: (body) => onEdit(comment, body),
           onDelete: () => onDelete(comment),
         ),
         for (final reply in comment.replies)
@@ -101,16 +109,18 @@ class CommentThreads extends ConsumerWidget {
   }
 }
 
-class _CommentTile extends StatelessWidget {
+class _CommentTile extends StatefulWidget {
   const _CommentTile({
     required this.comment,
     required this.labels,
     required this.reactionStyles,
     required this.reactionTypes,
     required this.canReply,
+    required this.maxLength,
     required this.busy,
     required this.onReply,
     required this.onToggleReaction,
+    required this.onEdit,
     required this.onDelete,
   });
 
@@ -119,18 +129,48 @@ class _CommentTile extends StatelessWidget {
   final Map<String, BoardReactionStyle> reactionStyles;
   final List<String> reactionTypes;
   final bool canReply;
+  final int? maxLength;
   final bool busy;
   final VoidCallback onReply;
   final void Function(String type, {required bool picked}) onToggleReaction;
+  final Future<bool> Function(String body) onEdit;
   final VoidCallback onDelete;
 
-  String get _text =>
+  @override
+  State<_CommentTile> createState() => _CommentTileState();
+}
+
+class _CommentTileState extends State<_CommentTile> {
+  bool _editing = false;
+  late final _text = TextEditingController();
+
+  Comment get comment => widget.comment;
+  BoardLabels get labels => widget.labels;
+
+  String get _shownText =>
       comment.body ??
       switch (comment.status) {
         CommentStatus.deleted => labels.commentDeleted,
         CommentStatus.pending => labels.commentPending,
         _ => labels.commentHidden,
       };
+
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  void _startEdit() {
+    _text.text = comment.body ?? '';
+    setState(() => _editing = true);
+  }
+
+  Future<void> _save() async {
+    if (await widget.onEdit(_text.text) && mounted) {
+      setState(() => _editing = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -146,13 +186,16 @@ class _CommentTile extends StatelessWidget {
             style: theme.textTheme.bodySmall,
           ),
           const SizedBox(height: 2),
-          Text(
-            _text,
-            style: comment.body == null
-                ? const TextStyle(fontStyle: FontStyle.italic)
-                : null,
-          ),
-          if (shown)
+          if (_editing)
+            _editor()
+          else
+            Text(
+              _shownText,
+              style: comment.body == null
+                  ? const TextStyle(fontStyle: FontStyle.italic)
+                  : null,
+            ),
+          if (shown && !_editing)
             Padding(
               padding: const EdgeInsets.only(top: 6),
               child: Wrap(
@@ -162,19 +205,28 @@ class _CommentTile extends StatelessWidget {
                 children: [
                   ReactionBar(
                     keyPrefix: 'comment-${comment.id}-react',
-                    types: reactionTypes,
-                    styles: reactionStyles,
+                    types: widget.reactionTypes,
+                    styles: widget.reactionStyles,
                     state: comment.reactions,
-                    onToggle: busy ? null : onToggleReaction,
+                    onToggle: widget.busy ? null : widget.onToggleReaction,
                   ),
-                  if (canReply)
+                  if (widget.canReply)
                     OutlinedButton(
                       key: ValueKey('reply-${comment.id}'),
                       style: const ButtonStyle(
                         visualDensity: VisualDensity.compact,
                       ),
-                      onPressed: onReply,
+                      onPressed: widget.onReply,
                       child: Text(labels.reply),
+                    ),
+                  if (comment.mine)
+                    OutlinedButton(
+                      key: ValueKey('edit-comment-${comment.id}'),
+                      style: const ButtonStyle(
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      onPressed: widget.busy ? null : _startEdit,
+                      child: Text(labels.edit),
                     ),
                   if (comment.mine)
                     OutlinedButton(
@@ -182,7 +234,7 @@ class _CommentTile extends StatelessWidget {
                       style: const ButtonStyle(
                         visualDensity: VisualDensity.compact,
                       ),
-                      onPressed: busy ? null : onDelete,
+                      onPressed: widget.busy ? null : widget.onDelete,
                       child: Text(labels.delete),
                     ),
                 ],
@@ -190,6 +242,44 @@ class _CommentTile extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+
+  Widget _editor() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          key: ValueKey('edit-field-${comment.id}'),
+          controller: _text,
+          maxLength: widget.maxLength,
+          minLines: 1,
+          maxLines: 4,
+          decoration: const InputDecoration(border: OutlineInputBorder()),
+        ),
+        Wrap(
+          spacing: 8,
+          children: [
+            ListenableBuilder(
+              listenable: _text,
+              builder: (context, _) => FilledButton(
+                key: ValueKey('edit-save-${comment.id}'),
+                onPressed: widget.busy || _text.text.trim().isEmpty
+                    ? null
+                    : _save,
+                child: Text(labels.save),
+              ),
+            ),
+            OutlinedButton(
+              key: ValueKey('edit-cancel-${comment.id}'),
+              onPressed: widget.busy
+                  ? null
+                  : () => setState(() => _editing = false),
+              child: Text(labels.cancel),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

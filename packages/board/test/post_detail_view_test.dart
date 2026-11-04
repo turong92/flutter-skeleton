@@ -232,6 +232,84 @@ void main() {
       );
     });
 
+    testWidgets('only my comment has an edit button', (tester) async {
+      final server = FakeBoard()
+        ..comments = [commentJson(10, mine: true), commentJson(11)];
+      await pumpBoard(tester, server, detail());
+
+      expect(find.byKey(const ValueKey('edit-comment-10')), findsOneWidget);
+      expect(find.byKey(const ValueKey('edit-comment-11')), findsNothing);
+    });
+
+    testWidgets(
+      'editing my comment patches it in place and re-reads the comments',
+      (tester) async {
+        final server = FakeBoard()
+          ..config = configJson(commentMaxLength: 9)
+          ..comments = [commentJson(10, body: 'old', mine: true)];
+        server.respond = (o) =>
+            o.method == 'PATCH' && o.path.endsWith('/comments/10')
+            ? valueBody(commentJson(10, body: 'new', mine: true))
+            : null;
+        await pumpBoard(tester, server, detail());
+
+        await tester.tap(find.byKey(const ValueKey('edit-comment-10')));
+        await tester.pumpAndSettle();
+        final field = find.byKey(const ValueKey('edit-field-10'));
+        expect(tester.widget<TextField>(field).maxLength, 9);
+        expect(tester.widget<TextField>(field).controller!.text, 'old');
+        await tester.enterText(field, 'new');
+        await tester.pump();
+        await tester.tap(find.byKey(const ValueKey('edit-save-10')));
+        await tester.pumpAndSettle();
+
+        expect(
+          server
+              .where('PATCH', '/boards/general/posts/1/comments/10')
+              .single
+              .data,
+          {'body': 'new'},
+        );
+        expect(
+          server.where('GET', '/boards/general/posts/1/comments'),
+          hasLength(2),
+        );
+        expect(server.where('GET', '/boards/general/posts/1'), hasLength(1));
+        expect(find.byKey(const ValueKey('edit-field-10')), findsNothing);
+      },
+    );
+
+    testWidgets('the save button is locked while the edit is out', (
+      tester,
+    ) async {
+      final server = FakeBoard()
+        ..holdPosts = Completer<void>()
+        ..comments = [commentJson(10, mine: true)];
+      server.respond = (o) =>
+          o.method == 'PATCH' ? valueBody(commentJson(10, mine: true)) : null;
+      await pumpBoard(tester, server, detail());
+
+      await tester.tap(find.byKey(const ValueKey('edit-comment-10')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('edit-save-10')));
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.tap(find.byKey(const ValueKey('edit-save-10')));
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(
+        tester
+            .widget<FilledButton>(find.byKey(const ValueKey('edit-save-10')))
+            .onPressed,
+        isNull,
+      );
+      server.holdPosts!.complete();
+      await tester.pumpAndSettle();
+      expect(
+        server.where('PATCH', '/boards/general/posts/1/comments/10'),
+        hasLength(1),
+      );
+    });
+
     testWidgets(
       'deleting my comment asks the server and re-reads the comments',
       (tester) async {

@@ -14,6 +14,10 @@ workspace:
   - packages/api_client
   - packages/auth
   - packages/ui
+  - packages/legal
+  - packages/board
+  - packages/push
+  - packages/payment
   - apps/starter
   - tool
 

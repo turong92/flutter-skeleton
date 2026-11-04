@@ -1,0 +1,21 @@
+name: skeleton_auth
+description: Login, token storage, silent refresh and session state for the kotlin-skeleton auth modules.
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.13.0
+  flutter: 3.47.9
+
+dependencies:
+  dio: ^5.11.1
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^3.4.3
+  flutter_secure_storage: ^11.2.0
+  go_router: ^18.1.2
+  skeleton_api_client: any # workspace sibling
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

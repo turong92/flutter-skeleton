@@ -12,6 +12,7 @@ environment:
 workspace:
   - packages/lints
   - packages/api_client
+  - packages/auth
 
 dev_dependencies:
   melos: ^8.10.0

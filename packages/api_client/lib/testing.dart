@@ -1,3 +1,7 @@
+/// Test double for apps and packages that test against the client: import it
+/// from tests only (`package:skeleton_api_client/testing.dart`).
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';

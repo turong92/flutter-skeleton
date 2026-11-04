@@ -10,4 +10,6 @@ dependencies:
   dio: ^5.11.1
 
 dev_dependencies:
-  test: ^1.33.0
+  # The Flutter SDK pins test_api (flutter_test), and the workspace resolves
+  # once: this is the newest `test` that agrees with it.
+  test: ^1.31.1

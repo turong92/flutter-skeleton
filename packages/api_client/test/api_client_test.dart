@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:skeleton_api_client/skeleton_api_client.dart';
 import 'package:test/test.dart';
 
-import 'support/fake_adapter.dart';
+import 'package:skeleton_api_client/testing.dart';
 
 const _meta = {'timestamp': '2026-01-01T00:00:00Z'};
 

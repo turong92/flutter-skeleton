@@ -108,8 +108,8 @@
           "properties": {
             "flag": { "type": ["string", "null"], "description": "The new-project.sh fragment that brings it in." },
             "included": {
-              "enum": ["always", "flag"],
-              "description": "always = every stamped project has it (the starter needs it, or it is root tooling). flag = only when asked for."
+              "enum": ["always", "flag", "never"],
+              "description": "always = every stamped project has it (the starter needs it, or it is root tooling). flag = only when asked for. never = the skeleton keeps it as a reference (the sample app) and a stamp removes it."
             }
           }
         },

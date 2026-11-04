@@ -226,6 +226,8 @@ void applyStamp(Directory target, StampOptions o) {
   final display = _display(name);
   final appId = '${o.org}.$name';
   final iosId = '${o.org}.${_camel(name)}'; // as flutter create does: no underscore in an iOS bundle id
+  // 0. the sample app is a reference of the skeleton; a project never carries it
+  _delete(target, 'apps/sample');
   final all = readPackages(target);
 
   // 1. packages that were not asked for
@@ -280,11 +282,13 @@ void applyStamp(Directory target, StampOptions o) {
     ("title: 'Starter'", "title: '$display'"),
   ]);
   _edit(target, '$app/lib/screens/login_screen.dart', [
-    ("Text('Starter')", "Text('$display')"),
+    ("title: 'Starter'", "title: '$display'"),
   ]);
-  _edit(target, '$app/test/app_test.dart', [
-    ('package:starter/main.dart', 'package:$name/main.dart'),
-  ]);
+  for (final test in ['app_test', 'account_flow_test']) {
+    _edit(target, '$app/test/$test.dart', [
+      ('package:starter/', 'package:$name/'),
+    ]);
+  }
   _edit(target, '$app/README.md', [('# starter\n', '# $name\n')]);
   if (name != 'starter') {
     Directory('${target.path}/$app').renameSync('${target.path}/apps/$name');
@@ -305,6 +309,10 @@ void applyStamp(Directory target, StampOptions o) {
   }
   _pruneEmpty(Directory('${target.path}/scripts'), target.path);
   _edit(target, '.github/workflows/ci.yml', [
+    (
+      '      - run: flutter build apk --debug\n        working-directory: apps/sample\n',
+      '',
+    ),
     ('working-directory: apps/starter', 'working-directory: apps/$name'),
   ]);
   var ci = _read(target, '.github/workflows/ci.yml');
@@ -430,7 +438,15 @@ void _writeProjectCatalog(Directory t, StampOptions o, String prefix) {
   final kept = <Json>[];
   final omitted = <Json>[];
   for (final e in entries) {
-    if (e['kind'] == 'app') {
+    if (e['kind'] == 'app' &&
+        (e['stampFlag']! as Json)['included'] == 'never') {
+      omitted.add({
+        'id': e['id'],
+        'kind': e['kind'],
+        'summary': e['summary'],
+        'stampFlag': null,
+      });
+    } else if (e['kind'] == 'app') {
       kept.add({
         ...e,
         'id': appId,

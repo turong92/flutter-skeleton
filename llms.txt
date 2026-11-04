@@ -17,15 +17,31 @@
   - take: in every project; needs: —
   - backend: modules `platform` · paths `/api/v1`; react twin: api-client
   - keywords: API 호출, 백엔드 연결, 에러 처리, 에러 코드, 응답 형식 / api client, rest, http client, dio, error codes, envelope
-- `auth`: Email and password sign-in, secure token storage, silent refresh on 401 with a single in-flight refresh, session state (Riverpod), go_router redirect helpers and a login form.
+- `auth`: Email and password sign-in, account lifecycle (sign-up, email verification, password reset, account deletion), secure token storage, silent refresh on 401 with a single in-flight refresh, session state (Riverpod), go_router redirect helpers and the forms.
   - take: in every project; needs: api-client
-  - backend: modules `auth` · `auth-session` · paths `/api/v1/auth`; react twin: auth
-  - keywords: 로그인, 로그아웃, 인증, 토큰, 토큰 갱신, 세션, 리프레시 토큰, 로그인 상태 / login, logout, auth, token, session, refresh token, sign in, secure storage
+  - backend: modules `auth` · `auth-session` · `account` · more when present `account-jdbc` · `auth-session-jdbc` · paths `/api/v1/auth` · `/api/v1/account`; react twin: auth, account-lifecycle, session-refresh
+  - keywords: 로그인, 로그아웃, 인증, 토큰, 토큰 갱신, 세션, 리프레시 토큰, 로그인 상태, 가입, 회원가입, 비밀번호 재설정, 탈퇴, 이메일 인증 / login, logout, auth, token, session, refresh token, sign in, secure storage, sign up, password reset, account deletion, email verification
+- `legal`: Legal documents and consents: the sign-up consent boxes, a document page, the re-consent screen and the 403 LEGAL.RECONSENT_REQUIRED handling (go_router redirect to /consent).
+  - take: in every project; needs: api-client, auth
+  - backend: modules `legal` · `legal-jdbc` · paths `/api/v1/legal`; react twin: legal, legal-documents
+  - keywords: 약관, 동의, 재동의, 개인정보 처리방침, 법적 문서 / terms, consent, reconsent, privacy policy, legal documents
+- `board`: Board posts, nested comments and reactions: list with paging, detail, editor, idempotent submits, delete and edit only for your own.
+  - take: `--packages board`; needs: api-client
+  - backend: modules `board` · `board-jdbc` · more when present `author-profile` · `idempotency` · paths `/api/v1/boards`; react twin: board
+  - keywords: 게시판, 글, 댓글, 대댓글, 반응, 좋아요 / board, posts, comments, replies, reactions, likes
+- `push`: Push notifications through FCM: device registration, permission prompt, per-kind settings, a test notification, tapped-link handling and removing the device on sign-out. The app initializes Firebase.
+  - take: `--packages push`; needs: api-client
+  - backend: modules `notification-push` · `notification-push-jdbc` · `notification-fcm` · more when present `notification-push-legal` · paths `/api/v1/push`; react twin: push
+  - keywords: 푸시, 알림, FCM, 기기 등록, 알림 권한 / push, notifications, fcm, device token, notification permission
 - `ui`: Design tokens as Dart constants, light and dark Material 3 themes that follow the system, and the LoadingView and ErrorView the starter uses.
   - take: in every project; needs: —
   - backend: —; react twin: ui, theme, tokens
   - keywords: 테마, 다크 모드, 디자인 토큰, 색, 로딩, 에러 화면 / theme, dark mode, design tokens, colors, loading view, error view
-- `app-starter`: The starter app: sign in, see who you are (GET /auth/me), sign out, restore the session on start. It becomes the new project's app.
-  - take: in every project; needs: api-client, auth, ui
-  - backend: modules `auth` · `auth-session` · `platform` · paths `/api/v1/auth`; react twin: app-starter
+- `app-starter`: The starter app: sign up with consents, verify email, sign in, reset the password, see who you are (GET /auth/me), delete the account, sign out, agree again when a document changes, restore the session on start. It becomes the new project's app.
+  - take: in every project; needs: api-client, auth, legal, ui
+  - backend: modules `auth` · `auth-session` · `account` · `legal` · `platform` · paths `/api/v1/auth` · `/api/v1/account` · `/api/v1/legal`; react twin: app-starter
   - keywords: 스타터, 시작 템플릿, 새 앱, 모바일 시작 / starter, boilerplate, new app, mobile start
+- `app-sample`: The reference app: the starter's flows plus a board tab, push settings and a settings tab, wired the way a project would. Read it for wiring; a stamp removes it.
+  - take: never stamped (reference app); needs: api-client, auth, board, legal, push, ui
+  - backend: modules `auth` · `auth-session` · `account` · `legal` · `board` · `notification-push` · `notification-fcm` · `platform` · more when present `author-profile` · `idempotency` · paths `/api/v1/auth` · `/api/v1/account` · `/api/v1/legal` · `/api/v1/boards` · `/api/v1/push`; react twin: app-sample
+  - keywords: 샘플 앱, 참조 앱, 연결 예시 / sample app, reference app, wiring example

@@ -1,6 +1,6 @@
 # flutter-skeleton — Claude Code 컨텍스트
 
-Flutter 모바일 앱 스켈레톤. Pub Workspaces + Melos. 캡슐화된 패키지(`packages/`)와 스타터 앱(`apps/starter`)을 모아 두고, 프로젝트가 필요한 것만 골라 쓴다. 짝 백엔드는 kotlin-skeleton, 웹판은 react-skeleton(같은 id 의 패키지가 같은 일을 한다).
+Flutter 모바일 앱 스켈레톤. Pub Workspaces + Melos. 캡슐화된 패키지(`packages/`)와 스타터 앱(`apps/starter`)과 참조 앱(`apps/sample`, 찍을 때 빠진다)을 모아 두고, 프로젝트가 필요한 것만 골라 쓴다. 짝 백엔드는 kotlin-skeleton, 웹판은 react-skeleton(같은 id 의 패키지가 같은 일을 한다).
 
 ## 규칙
 
@@ -27,7 +27,9 @@ kotlin-skeleton `docs/account-http-contract.md`, `docs/modules/auth.md`, `docs/m
 
 ## 현재 범위
 
-1단계(로그인 → 내 정보 → 로그아웃, 조용한 갱신) + 카탈로그 + `new-project.sh`(2단계). 가입 · 재설정 · 소셜 · 푸시 · 실시간 · 다국어는 아직 없다.
+1~2단계(로그인 → 내 정보 → 로그아웃, 조용한 갱신) + 카탈로그 + `new-project.sh`. 3단계: 가입 · 메일 인증 · 비밀번호 재설정 · 탈퇴(`auth`), 약관 동의와 재동의(`legal`, 스타터가 쓴다), 게시판(`board`) · 푸시(`push`)(둘 다 `--packages` 로 고른다), 이 둘을 연결해 보여 주는 참조 앱 `apps/sample`(찍을 때 늘 지워진다). 소셜 · 실시간 · 다국어는 아직 없다.
+
+결제는 이번에 없음: 앱 결제는 IAP 기본 예정(kotlin 영수증 검증 뒤), 토스 WebView 시도는 로컬 브랜치 `stage3-toss-payment` 에 보관. Firebase 설정 파일(`google-services.json` · `GoogleService-Info.plist`)은 gitignore 이고 프로젝트가 갖는다.
 
 ## 카탈로그
 

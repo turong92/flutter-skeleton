@@ -321,9 +321,11 @@ String _backendText(Json? b) {
 
 String _howToTake(Json e) {
   final stamp = e['stampFlag']! as Json;
-  return stamp['included'] == 'always'
-      ? 'in every project'
-      : _code(stamp['flag']! as String);
+  return switch (stamp['included']) {
+    'always' => 'in every project',
+    'never' => 'never stamped (reference app)',
+    _ => _code(stamp['flag']! as String),
+  };
 }
 
 String renderMd(Json catalog) {

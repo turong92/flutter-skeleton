@@ -61,27 +61,105 @@
     {
       "id": "auth",
       "kind": "package",
-      "summary": "Email and password sign-in, secure token storage, silent refresh on 401 with a single in-flight refresh, session state (Riverpod), go_router redirect helpers and a login form.",
+      "summary": "Email and password sign-in, account lifecycle (sign-up, email verification, password reset, account deletion), secure token storage, silent refresh on 401 with a single in-flight refresh, session state (Riverpod), go_router redirect helpers and the forms.",
       "package": "skeleton_auth",
       "path": "packages/auth",
       "stampFlag": { "flag": null, "included": "always" },
       "needs": ["api-client"],
       "backend": {
-        "modules": ["auth", "auth-session"],
+        "modules": ["auth", "auth-session", "account"],
         "oneOfModules": [],
-        "optionalModules": [],
-        "basePaths": ["/api/v1/auth"],
-        "docs": ["docs/modules/auth.md", "docs/modules/auth-session.md", "docs/account-http-contract.md"]
+        "optionalModules": ["account-jdbc", "auth-session-jdbc"],
+        "basePaths": ["/api/v1/auth", "/api/v1/account"],
+        "docs": ["docs/modules/auth.md", "docs/modules/auth-session.md", "docs/modules/account.md", "docs/account-http-contract.md"]
       },
-      "pairsWith": { "react": ["auth"] },
+      "pairsWith": { "react": ["auth", "account-lifecycle", "session-refresh"] },
       "docs": ["packages/auth/README.md"],
       "notFor": [
-        "Sign-up, password reset, social login, MFA: not built yet",
-        "How the login screen looks: the app owns it (texts are parameters)"
+        "Social login, magic link, MFA: not built yet",
+        "How the screens look: the app owns them (texts are parameters)"
       ],
       "keywords": {
-        "ko": ["로그인", "로그아웃", "인증", "토큰", "토큰 갱신", "세션", "리프레시 토큰", "로그인 상태"],
-        "en": ["login", "logout", "auth", "token", "session", "refresh token", "sign in", "secure storage"]
+        "ko": ["로그인", "로그아웃", "인증", "토큰", "토큰 갱신", "세션", "리프레시 토큰", "로그인 상태", "가입", "회원가입", "비밀번호 재설정", "탈퇴", "이메일 인증"],
+        "en": ["login", "logout", "auth", "token", "session", "refresh token", "sign in", "secure storage", "sign up", "password reset", "account deletion", "email verification"]
+      }
+    },
+    {
+      "id": "legal",
+      "kind": "package",
+      "summary": "Legal documents and consents: the sign-up consent boxes, a document page, the re-consent screen and the 403 LEGAL.RECONSENT_REQUIRED handling (go_router redirect to /consent).",
+      "package": "skeleton_legal",
+      "path": "packages/legal",
+      "stampFlag": { "flag": null, "included": "always" },
+      "needs": ["api-client", "auth"],
+      "backend": {
+        "modules": ["legal", "legal-jdbc"],
+        "oneOfModules": [],
+        "optionalModules": [],
+        "basePaths": ["/api/v1/legal"],
+        "docs": ["docs/modules/legal.md", "docs/modules/legal-jdbc.md", "docs/legal.md", "docs/legal-http-contract.md"]
+      },
+      "pairsWith": { "react": ["legal", "legal-documents"] },
+      "docs": ["packages/legal/README.md"],
+      "notFor": [
+        "A markdown renderer: documents show as plain selectable text",
+        "Cookie banners: not an app concern"
+      ],
+      "keywords": {
+        "ko": ["약관", "동의", "재동의", "개인정보 처리방침", "법적 문서"],
+        "en": ["terms", "consent", "reconsent", "privacy policy", "legal documents"]
+      }
+    },
+    {
+      "id": "board",
+      "kind": "package",
+      "summary": "Board posts, nested comments and reactions: list with paging, detail, editor, idempotent submits, delete and edit only for your own.",
+      "package": "skeleton_board",
+      "path": "packages/board",
+      "stampFlag": { "flag": "--packages board", "included": "flag" },
+      "needs": ["api-client"],
+      "backend": {
+        "modules": ["board", "board-jdbc"],
+        "oneOfModules": [],
+        "optionalModules": ["author-profile", "idempotency"],
+        "basePaths": ["/api/v1/boards"],
+        "docs": ["docs/modules/board.md", "docs/modules/board-jdbc.md", "docs/board-http-contract.md"]
+      },
+      "pairsWith": { "react": ["board"] },
+      "docs": ["packages/board/README.md"],
+      "notFor": [
+        "Guest posts, attachments, moderation, search, drafts",
+        "Choosing an author profile: the app gives a resolver"
+      ],
+      "keywords": {
+        "ko": ["게시판", "글", "댓글", "대댓글", "반응", "좋아요"],
+        "en": ["board", "posts", "comments", "replies", "reactions", "likes"]
+      }
+    },
+    {
+      "id": "push",
+      "kind": "package",
+      "summary": "Push notifications through FCM: device registration, permission prompt, per-kind settings, a test notification, tapped-link handling and removing the device on sign-out. The app initializes Firebase.",
+      "package": "skeleton_push",
+      "path": "packages/push",
+      "stampFlag": { "flag": "--packages push", "included": "flag" },
+      "needs": ["api-client"],
+      "backend": {
+        "modules": ["notification-push", "notification-push-jdbc", "notification-fcm"],
+        "oneOfModules": [],
+        "optionalModules": ["notification-push-legal"],
+        "basePaths": ["/api/v1/push"],
+        "docs": ["docs/modules/notification-push.md", "docs/modules/notification-push-jdbc.md", "docs/modules/notification-fcm.md", "docs/push-http-contract.md"]
+      },
+      "pairsWith": { "react": ["push"] },
+      "docs": ["packages/push/README.md"],
+      "notFor": [
+        "Creating the Firebase project or its config files: the project owns them (google-services.json and GoogleService-Info.plist stay out of git)",
+        "Topic or broadcast messages"
+      ],
+      "keywords": {
+        "ko": ["푸시", "알림", "FCM", "기기 등록", "알림 권한"],
+        "en": ["push", "notifications", "fcm", "device token", "notification permission"]
       }
     },
     {
@@ -107,17 +185,17 @@
     {
       "id": "app-starter",
       "kind": "app",
-      "summary": "The starter app: sign in, see who you are (GET /auth/me), sign out, restore the session on start. It becomes the new project's app.",
+      "summary": "The starter app: sign up with consents, verify email, sign in, reset the password, see who you are (GET /auth/me), delete the account, sign out, agree again when a document changes, restore the session on start. It becomes the new project's app.",
       "package": "starter",
       "path": "apps/starter",
       "stampFlag": { "flag": null, "included": "always" },
-      "needs": ["api-client", "auth", "ui"],
+      "needs": ["api-client", "auth", "legal", "ui"],
       "backend": {
-        "modules": ["auth", "auth-session", "platform"],
+        "modules": ["auth", "auth-session", "account", "legal", "platform"],
         "oneOfModules": [],
         "optionalModules": [],
-        "basePaths": ["/api/v1/auth"],
-        "docs": ["docs/account-http-contract.md"]
+        "basePaths": ["/api/v1/auth", "/api/v1/account", "/api/v1/legal"],
+        "docs": ["docs/account-http-contract.md", "docs/legal-http-contract.md"]
       },
       "pairsWith": { "react": ["app-starter"] },
       "docs": ["apps/starter/README.md"],
@@ -125,6 +203,29 @@
       "keywords": {
         "ko": ["스타터", "시작 템플릿", "새 앱", "모바일 시작"],
         "en": ["starter", "boilerplate", "new app", "mobile start"]
+      }
+    },
+    {
+      "id": "app-sample",
+      "kind": "app",
+      "summary": "The reference app: the starter's flows plus a board tab, push settings and a settings tab, wired the way a project would. Read it for wiring; a stamp removes it.",
+      "package": "sample",
+      "path": "apps/sample",
+      "stampFlag": { "flag": null, "included": "never" },
+      "needs": ["api-client", "auth", "board", "legal", "push", "ui"],
+      "backend": {
+        "modules": ["auth", "auth-session", "account", "legal", "board", "notification-push", "notification-fcm", "platform"],
+        "oneOfModules": [],
+        "optionalModules": ["author-profile", "idempotency"],
+        "basePaths": ["/api/v1/auth", "/api/v1/account", "/api/v1/legal", "/api/v1/boards", "/api/v1/push"],
+        "docs": ["docs/sample.md"]
+      },
+      "pairsWith": { "react": ["app-sample"] },
+      "docs": ["apps/sample/README.md"],
+      "notFor": ["A base to build on: start from the starter and copy what you need from here"],
+      "keywords": {
+        "ko": ["샘플 앱", "참조 앱", "연결 예시"],
+        "en": ["sample app", "reference app", "wiring example"]
       }
     }
   ]

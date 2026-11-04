@@ -377,3 +377,5 @@ F2 와 F4 는 나란히 갈 수 있다. 1단계 = F1~F5 이고, F5 가 끝나면
 3. 카탈로그: flutter 쪽 `backend` 가 정본, kotlin 에는 `siblings.mobile` 한 줄만.
 4. Flutter SDK: brew cask 로 설치, Melos 는 `dart pub global activate melos`.
 5. (3단계, 2026-11-04) 결제는 토스 결제창만(실물·앱 밖 서비스용), IAP 는 디지털 판매 프로젝트가 생길 때. 재설정은 앱 화면 + 앱 링크 도메인 연결은 프로젝트 몫. 게시판·푸시·결제 화면은 apps/sample(찍을 때 빠짐). 형이 질문을 잘 모르겠다고 해 쉬운 설명 후 추천안으로 진행.
+6. (3단계 결제 확정, 2026-11-04) 당분간 실물이 없어 앱 결제는 IAP 가 기본이고 지역 스위치(웹 링크)는 기본 꺼짐 자리만 둔다. 3단계에서 토스 WebView · 샘플 결제 화면 · 카탈로그 payment 항목은 만들지 않는다(시도는 로컬 브랜치 `stage3-toss-payment`). IAP 는 kotlin 영수증 검증 모듈이 생긴 뒤 별도 묶음.
+   - 비밀번호 재설정: 앱이 있으면 앱, 없으면 웹 — App Links / Universal Links 로 한다(Firebase Dynamic Links 는 종료되어 쓰지 않는다). 링크 도메인 연결은 프로젝트 몫.

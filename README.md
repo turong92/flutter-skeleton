@@ -2,16 +2,20 @@
 
 Flutter 모바일 앱 스켈레톤 — **Pub Workspaces + Melos**. kotlin-skeleton 백엔드, react-skeleton 웹과 같은 기조로, 캡슐화된 패키지를 모아 두고 프로젝트가 필요한 것만 골라 쓴다. 스켈레톤 자체가 돌아가고 시험되는 레포다(생성기 스크립트가 아니다).
 
-> 상태: **1단계(최소 버전)**. 스타터 앱에서 이메일 · 비밀번호로 로그인하고, `GET /api/v1/auth/me` 로 내 정보를 보고, 로그아웃한다. 액세스 토큰이 만료되면 리프레시 토큰으로 조용히 갱신하고, 갱신에 실패하면 로그인 화면으로 돌아간다. 기능 카탈로그는 `capabilities.json`(`docs/capabilities.md` · `llms.txt` 가 거기서 만들어진다). 새 프로젝트는 `scripts/new-project.sh` 로 골라 찍는다(아래).
+> 상태: **3단계**. 스타터 앱에서 가입(약관 동의) · 메일 인증 · 로그인 · 비밀번호 재설정 · 내 정보 · 탈퇴 · 로그아웃을 하고, 액세스 토큰이 만료되면 리프레시 토큰으로 조용히 갱신한다. 게시판(`board`)과 푸시(`push`)는 `--packages` 로 고르는 패키지이고, 둘을 연결해 보여 주는 참조 앱이 `apps/sample` 이다. 결제는 이번에 없음: 앱 결제는 IAP 기본 예정(kotlin 영수증 검증 뒤), 토스 WebView 시도는 로컬 브랜치에 보관. 기능 카탈로그는 `capabilities.json`(`docs/capabilities.md` · `llms.txt` 가 거기서 만들어진다). 새 프로젝트는 `scripts/new-project.sh` 로 골라 찍는다(아래).
 
 ## 구조
 
 ```
 apps/starter/        # 새 프로젝트가 가져가는 앱 (android/ · ios/ 포함)
+apps/sample/         # 참조 앱: 스타터 + 게시판 · 푸시 연결 (찍을 때 빠진다)
 packages/
 ├── lints/           # skeleton_lints — flutter_lints + 몇 규칙
 ├── api_client/      # skeleton_api_client — Dio · envelope 벗기기 · 표준 에러 (순수 Dart)
-├── auth/            # skeleton_auth — 토큰 저장소 · 로그인 · 401 갱신 · AuthSession · LoginForm
+├── auth/            # skeleton_auth — 토큰 저장소 · 로그인 · 가입 · 재설정 · 탈퇴 · 401 갱신 · AuthSession
+├── legal/           # skeleton_legal — 약관 동의 체크 · 문서 화면 · 403 재동의
+├── board/           # skeleton_board — 글 · 댓글 · 반응 (--packages board)
+├── push/            # skeleton_push — FCM 기기 등록 · 설정 (--packages push)
 └── ui/              # skeleton_ui — 토큰 · 라이트/다크 ThemeData · 로딩/에러 부품
 ```
 
@@ -39,7 +43,7 @@ dart format --output=none --set-exit-if-changed .  # CI 가 보는 포맷 검사
 scripts/new-project.sh <target-dir> <name> [--packages a,b] [--org com.example] [--prefix acme]
 ```
 
-레포를 복사해 `apps/starter` 를 `apps/<name>` 으로 바꾸고(pubspec 이름 · Android namespace/applicationId/MainActivity 폴더 · iOS 번들 id · 표시 이름), 스타터가 쓰는 패키지 + `--packages` 만 남긴다. `--prefix acme` 는 `skeleton_` 를 `acme_` 로 바꾼다. 바꿀 문자열을 못 찾으면 멈춘다. `scripts/test-new-project.sh` 가 기본 찍기와 `--packages` 찍기를 해 보고 찍힌 곳에서 pub get · analyze · test 를 돌린다(CI 에서는 관련 파일이 바뀔 때만).
+레포를 복사해 `apps/sample` 을 지우고 `apps/starter` 를 `apps/<name>` 으로 바꾸고(pubspec 이름 · Android namespace/applicationId/MainActivity 폴더 · iOS 번들 id · 표시 이름), 스타터가 쓰는 패키지 + `--packages` 만 남긴다. `--prefix acme` 는 `skeleton_` 를 `acme_` 로 바꾼다. 바꿀 문자열을 못 찾으면 멈춘다. `scripts/test-new-project.sh` 가 기본 찍기와 `--packages` 찍기를 해 보고 찍힌 곳에서 pub get · analyze · test 를 돌린다(CI 에서는 관련 파일이 바뀔 때만).
 
 ## 설정
 

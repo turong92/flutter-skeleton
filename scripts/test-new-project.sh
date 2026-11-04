@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Test of scripts/new-project.sh: bad arguments, then two real stamps that must resolve, analyze and test.
+# Test of scripts/new-project.sh: bad arguments, then three real stamps that must resolve, analyze and test.
 #
 #   scripts/test-new-project.sh
 #
 #   1. bad arguments are refused with exit 2 and create nothing
 #   2. default stamp (acme_app, com.example): renames, no leftovers, pub get + analyze + test of the whole workspace
 #   3. --packages auth --org com.shop --prefix shop (shop_app): the same, with the prefix and org applied
+#   4. --packages board,push: both stay, apps/sample is gone, the same checks
 #
 # Needs the Flutter SDK and network for `flutter pub get` (a few minutes). The temp folder goes away at the end (KEEP=1 keeps it).
 # Texts that cannot be found stopping the stamp is tested in tool/test/stamp_test.dart.
@@ -70,6 +71,7 @@ check "the workspace lists the app and not tool" bash -c "grep -q '  - apps/acme
 check "no env/*.json, no .git, no generated platform files came along" bash -c "[ ! -e '$P1/.git' ] && [ ! -e '$P1/apps/acme_app/env/dev.json' ] && [ ! -e '$P1/apps/acme_app/ios/Flutter/Generated.xcconfig' ]"
 [ -z "$(leftovers "$P1" 'com.example.starter\|package:starter/')" ] && pass "no starter id left" || fail "starter left in: $(leftovers "$P1" 'com.example.starter\|package:starter/')"
 check "the catalog is a project catalog" grep -q '"mode": "project"' "$P1/capabilities.json"
+check "apps/sample, board and push are not in a default stamp" test ! -e "$P1/apps/sample" -a ! -e "$P1/packages/board" -a ! -e "$P1/packages/push"
 verify "$P1"
 
 echo "== 3. --packages auth --org com.shop --prefix shop"
@@ -80,6 +82,14 @@ check "applicationId is com.shop.shop_app" grep -q 'applicationId = "com.shop.sh
 check "imports use the prefix" grep -q "package:shop_auth/shop_auth.dart" "$P2/apps/shop_app/lib/main.dart"
 [ -z "$(leftovers "$P2" 'skeleton_')" ] && pass "no skeleton_ left" || fail "skeleton_ left in: $(leftovers "$P2" 'skeleton_')"
 verify "$P2"
+
+echo "== 4. --packages board,push"
+P3="$TMP/shop2"
+expect_exit 0 "stamp shop_app with board and push" bash "$SCRIPT" "$P3" shop_app --packages board,push
+check "board and push are kept, apps/sample is gone" test -d "$P3/packages/board" -a -d "$P3/packages/push" -a ! -e "$P3/apps/sample"
+check "the workspace lists board and push and not the sample" bash -c "grep -q '  - packages/board' '$P3/pubspec.yaml' && grep -q '  - packages/push' '$P3/pubspec.yaml' && ! grep -q 'apps/sample' '$P3/pubspec.yaml'"
+check "the CI file builds only the app" bash -c "! grep -q 'apps/sample' '$P3/.github/workflows/ci.yml'"
+verify "$P3"
 
 echo
 if [ "$FAILURES" -eq 0 ]; then echo "all passed"; else echo "$FAILURES failed"; exit 1; fi

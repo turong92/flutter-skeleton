@@ -31,6 +31,14 @@ Map<String, String> fakeSkeleton() {
       entry('a'),
       entry('b'),
       entry(
+        'app-sample',
+        kind: 'app',
+        package: 'sample',
+        path: 'apps/sample',
+        needs: ['b'],
+        included: 'never',
+      ),
+      entry(
         'app-starter',
         kind: 'app',
         package: 'starter',
@@ -41,7 +49,7 @@ Map<String, String> fakeSkeleton() {
     ],
   };
   return {
-    'pubspec.yaml': 'name: flutter_skeleton_workspace\ndescription: Root.\nworkspace:\n  - packages/a\n  - packages/b\n  - apps/starter\n  - tool\n',
+    'pubspec.yaml': 'name: flutter_skeleton_workspace\ndescription: Root.\nworkspace:\n  - packages/a\n  - packages/b\n  - apps/starter\n  - apps/sample\n  - tool\n',
     'packages/a/pubspec.yaml': pubspec('skeleton_a'),
     'packages/b/pubspec.yaml': pubspec('skeleton_b'),
     '$app/pubspec.yaml': 'name: starter\ndescription: Starter app.\nresolution: workspace\ndependencies:\n  skeleton_a: any\n',
@@ -55,11 +63,13 @@ Map<String, String> fakeSkeleton() {
     '$app/ios/Runner/Info.plist': plist,
     '$app/ios/Runner/Info-Debug.plist': plist,
     '$app/lib/main.dart': "title: 'Starter'\n",
-    '$app/lib/screens/login_screen.dart': "Text('Starter')\n",
+    '$app/lib/screens/login_screen.dart': "title: 'Starter',\n",
     '$app/test/app_test.dart': "import 'package:starter/main.dart';\n",
+    '$app/test/account_flow_test.dart': "import 'package:starter/main.dart';\nimport 'package:starter/router.dart';\n",
     '$app/README.md': '# starter\n',
-    '.github/workflows/ci.yml': 'working-directory: apps/starter\n      # The catalog says what the repo is.\n      - run: dart tool/build_capabilities.dart --check\n',
+    '.github/workflows/ci.yml': '      - run: flutter build apk --debug\n        working-directory: apps/starter\n      - run: flutter build apk --debug\n        working-directory: apps/sample\n      # The catalog says what the repo is.\n      - run: dart tool/build_capabilities.dart --check\n',
     '.github/workflows/new-project.yml': 'name: new-project\n',
+    'apps/sample/pubspec.yaml': pubspec('sample', deps: ['skeleton_b']),
     'tool/x.dart': '',
     'scripts/new-project.sh': '',
     'scripts/test-new-project.sh': '',
@@ -152,14 +162,35 @@ void main() {
       expect(root, contains('  - apps/acme_app\n'));
       expect(root, isNot(contains('packages/b')));
       expect(root, isNot(contains('  - tool')));
+      expect(root, isNot(contains('apps/sample')));
+      expect(Directory('${target.path}/apps/sample').existsSync(), isFalse);
+      final ci = File('${target.path}/.github/workflows/ci.yml')
+          .readAsStringSync();
+      expect(ci, isNot(contains('sample')));
+      expect(ci, contains('working-directory: apps/acme_app'));
       final catalog = readJson(File('${target.path}/capabilities.json'));
-      expect((catalog['omitted']! as List).single, containsPair('id', 'b'));
+      expect(
+        [for (final o in catalog['omitted']! as List) (o as Map)['id']],
+        ['b', 'app-sample'],
+      );
+      expect(
+        [for (final e in catalog['capabilities']! as List) (e as Map)['id']],
+        ['a', 'app-acme-app'],
+      );
       expect(
         checkSchema(
           catalog,
           readJson(File('../docs/capabilities.schema.json')),
         ),
         isEmpty,
+      );
+      expect(
+        File('${target.path}/apps/acme_app/test/account_flow_test.dart')
+            .readAsStringSync(),
+        allOf(
+          contains('package:acme_app/router.dart'),
+          isNot(contains('starter')),
+        ),
       );
       expect(
         File(

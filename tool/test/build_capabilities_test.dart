@@ -86,6 +86,37 @@ void main() {
     );
   });
 
+  test(
+    'an app that is never stamped passes the schema and is described as such',
+    () {
+      final catalog = {
+        ...fakeCatalog(),
+        r'$schema': 'docs/capabilities.schema.json',
+        'schemaVersion': 1,
+        'mode': 'skeleton',
+        'name': 'n',
+        'summary': 's',
+      };
+      (catalog['capabilities']! as List).add(
+        entry(
+          'app-demo',
+          kind: 'app',
+          package: 'demo',
+          path: 'apps/demo',
+          included: 'never',
+        ),
+      );
+      expect(
+        checkSchema(
+          catalog,
+          readJson(File('../docs/capabilities.schema.json')),
+        ),
+        isEmpty,
+      );
+      expect(renderMd(catalog), contains('never stamped'));
+    },
+  );
+
   test('the generated docs differ from the catalog when they are stale', () {
     final catalog = {
       ...fakeCatalog(),

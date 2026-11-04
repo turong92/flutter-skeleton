@@ -82,6 +82,7 @@ class CommentThreads extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _CommentTile(
+          key: ValueKey(comment.id),
           comment: comment,
           labels: labels,
           reactionStyles: reactionStyles,
@@ -111,6 +112,7 @@ class CommentThreads extends ConsumerWidget {
 
 class _CommentTile extends StatefulWidget {
   const _CommentTile({
+    super.key,
     required this.comment,
     required this.labels,
     required this.reactionStyles,

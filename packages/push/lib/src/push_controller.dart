@@ -110,6 +110,9 @@ class PushController extends Notifier<PushState> {
     if (!_initialChecked) {
       _initialChecked = true;
       _pendingLink = (await _source.initialMessage())?.link;
+      // Before the stale check: a build that ran while we waited has already
+      // passed this block, so nobody else would deliver the link.
+      _flush();
       if (_stale(generation)) return;
     }
     _flush();

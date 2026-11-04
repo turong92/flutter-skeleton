@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,6 +18,17 @@ class _SignedIn extends Notifier<bool> {
 }
 
 final _signedInSwitch = NotifierProvider<_SignedIn, bool>(_SignedIn.new);
+
+class _SlowInitialSource extends FakePushTokenSource {
+  _SlowInitialSource({super.permission, super.initial});
+  final answer = Completer<void>();
+
+  @override
+  Future<PushMessage?> initialMessage() async {
+    await answer.future;
+    return initial;
+  }
+}
 
 class _Rig {
   _Rig({bool signedIn = true, this.fcm = true, FakePushTokenSource? source})
@@ -290,6 +303,24 @@ void main() {
         expect(rig.opened, ['/inbox/3']);
       },
     );
+
+    test('the session comes back before initialMessage answers', () async {
+      final source = _SlowInitialSource(
+        permission: PushPermission.granted,
+        initial: PushMessage(link: '/inbox/3'),
+      );
+      final rig = _Rig(signedIn: false, source: source);
+      await rig.settle();
+
+      rig.signIn(true);
+      await rig.settle();
+      expect(rig.opened, isEmpty);
+
+      source.answer.complete();
+      await rig.settle();
+
+      expect(rig.opened, ['/inbox/3']);
+    });
 
     test('the tap that started the app is opened once', () async {
       final rig = _Rig(

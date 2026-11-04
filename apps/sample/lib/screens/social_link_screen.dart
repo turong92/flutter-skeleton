@@ -146,7 +146,7 @@ class _SocialLinkScreenState extends ConsumerState<SocialLinkScreen> {
           decoration: InputDecoration(labelText: label),
         ),
         actions: [
-          TextButton(
+          OutlinedButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),

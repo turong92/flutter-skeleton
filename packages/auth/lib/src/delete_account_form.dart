@@ -53,6 +53,17 @@ class DeleteAccountLabels {
 
 enum _Proof { password, code, social }
 
+/// Thrown by a [DeleteAccountForm.beforeDelete] hook to stop the delete and
+/// show [message] instead of the generic error.
+class DeleteAccountHookFailed implements Exception {
+  const DeleteAccountHookFailed(this.message);
+
+  final String message;
+
+  @override
+  String toString() => 'DeleteAccountHookFailed($message)';
+}
+
 /// Account deletion (Apple 5.1.1(v) wants it inside the app) with the proof
 /// that fits the account, read from `GET /account/me`: the password typed again;
 /// without a password but with an address, a 6-digit code mailed on request;
@@ -65,6 +76,11 @@ enum _Proof { password, code, social }
 /// when the person backed out. `auth` does not know the social package; the app
 /// connects the two.
 ///
+/// [beforeDelete] runs after the proof is in hand, right before
+/// `POST /account/delete` (an app's last cleanup, e.g. telling a provider to
+/// drop its access). Return false to stop quietly; throw
+/// [DeleteAccountHookFailed] to stop with a message. It runs again on a retry.
+///
 /// One submit uses one `Idempotency-Key`; pressing the button again after a
 /// failure sends the same key, so a lost answer cannot schedule two deletions.
 /// On `202` this device signs out locally (the server has ended the sessions)
@@ -74,6 +90,7 @@ class DeleteAccountForm extends ConsumerStatefulWidget {
     super.key,
     this.onDeleted,
     this.socialReauth,
+    this.beforeDelete,
     this.labels = const DeleteAccountLabels(),
   });
 
@@ -82,6 +99,7 @@ class DeleteAccountForm extends ConsumerStatefulWidget {
 
   final void Function(DeletionScheduled scheduled)? onDeleted;
   final Future<Map<String, Object?>?> Function()? socialReauth;
+  final Future<bool> Function()? beforeDelete;
   final DeleteAccountLabels labels;
 
   @override
@@ -160,6 +178,7 @@ class _DeleteAccountFormState extends ConsumerState<DeleteAccountForm> {
         // The person backed out of the provider's sheet: nothing to send.
         if (widget.socialReauth != null && reauth == null) return;
       }
+      if (await widget.beforeDelete?.call() == false) return;
       final scheduled = await api.deleteAccount(
         currentPassword: _proof == _Proof.password ? _password.text : null,
         confirmationCode: _proof == _Proof.code ? _code.text.trim() : null,
@@ -177,6 +196,7 @@ class _DeleteAccountFormState extends ConsumerState<DeleteAccountForm> {
 
   String _messageFor(Object error) {
     final labels = widget.labels;
+    if (error is DeleteAccountHookFailed) return error.message;
     if (error is! ApiRequestError) return labels.genericError;
     return switch (error.code) {
       AccountErrorCodes.deletionBlocked => labels.blocked,
@@ -211,7 +231,7 @@ class _DeleteAccountFormState extends ConsumerState<DeleteAccountForm> {
               validator: (v) => v == null || v.isEmpty ? labels.required : null,
             ),
           if (_proof == _Proof.code) ...[
-            TextButton(
+            OutlinedButton(
               onPressed: _busy ? null : _sendCode,
               child: Text(labels.sendCode),
             ),

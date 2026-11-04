@@ -15,7 +15,9 @@ The SDK gets `sha256(nonce)` as hex; Apple puts that in the token's `nonce` clai
 
 ## Account deletion
 
-App Review requires revoking the Apple tokens when an account is deleted. In the delete flow, before `POST /account/delete`:
+App Review requires revoking the Apple tokens when an account is deleted. Do it **right before `POST /account/delete`, after the proof is in hand** (with `skeleton_auth` that is `DeleteAccountForm(beforeDelete: ...)`): a revoke earlier lets the proof's own Apple sheet link the app again.
+
+When the account is proven by its Apple sign-in, take both from one sheet: `final proof = await apple.obtainForDelete(nonce)` gives `proof.credential` (for `socialReauth`) and `proof.authorizationCode` (for `apple.revokeWithCode(client, code)`). Otherwise:
 
 ```dart
 await apple.revokeBeforeDelete(ref.read(apiClientProvider));

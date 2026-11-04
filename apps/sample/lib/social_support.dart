@@ -48,9 +48,9 @@ class SampleAccount {
   /// The `method` of every sign-in method (`password`, `google`, `apple`, ...).
   final Set<String> methods;
 
-  /// Set when the account has an Apple sign-in and this build has the Apple
-  /// provider: Apple must be told to drop its access before the account is
-  /// deleted.
+  /// Set when the account has an Apple sign-in and the server lists Apple for
+  /// this build's Apple provider: Apple must be told to drop its access right
+  /// before the account is deleted.
   final AppleSocialProvider? appleToRevoke;
 }
 
@@ -58,7 +58,9 @@ final sampleAccountProvider = FutureProvider.autoDispose<SampleAccount>((
   ref,
 ) async {
   final client = ref.watch(apiClientProvider);
-  final providers = ref.watch(socialProvidersProvider);
+  // Only what the server lists counts: with Apple off there is nothing to
+  // revoke (the revoke would answer 404).
+  final available = await ref.watch(availableSocialProvidersProvider.future);
   final account = await client.value('/account/me', decode: (json) => json);
   final methods = {
     for (final item in [...?(account['methods'] as List?)])
@@ -70,7 +72,7 @@ final sampleAccountProvider = FutureProvider.autoDispose<SampleAccount>((
     email: account['email'] as String?,
     methods: methods,
     appleToRevoke: methods.contains('apple')
-        ? providers.whereType<AppleSocialProvider>().firstOrNull
+        ? available.whereType<AppleSocialProvider>().firstOrNull
         : null,
   );
 });
@@ -79,7 +81,13 @@ final sampleAccountProvider = FutureProvider.autoDispose<SampleAccount>((
 /// receive mail for): signs in again with a provider already linked to this
 /// account and returns the server's `socialReauth` object. Null = the person
 /// backed out.
-Future<Map<String, Object?>?> reauthWithLinkedProvider(WidgetRef ref) async {
+///
+/// With Apple, [onAppleRevokeCode] makes the one Apple sheet also yield the
+/// code the revoke needs, so a delete does not open Apple twice.
+Future<Map<String, Object?>?> reauthWithLinkedProvider(
+  WidgetRef ref, {
+  void Function(String authorizationCode)? onAppleRevokeCode,
+}) async {
   final providers = ref.read(socialProvidersProvider);
   final account = await ref.read(sampleAccountProvider.future);
   final provider = providers
@@ -89,7 +97,13 @@ Future<Map<String, Object?>?> reauthWithLinkedProvider(WidgetRef ref) async {
     throw StateError('No linked provider can be used in this build');
   }
   try {
-    final credential = await provider.obtain(generateSocialNonce());
+    final nonce = generateSocialNonce();
+    if (provider is AppleSocialProvider && onAppleRevokeCode != null) {
+      final proof = await provider.obtainForDelete(nonce);
+      onAppleRevokeCode(proof.authorizationCode);
+      return SocialAuthApi.socialReauth(provider.id, proof.credential);
+    }
+    final credential = await provider.obtain(nonce);
     return SocialAuthApi.socialReauth(provider.id, credential);
   } on SocialCancelled {
     return null;

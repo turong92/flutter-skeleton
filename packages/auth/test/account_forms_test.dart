@@ -474,7 +474,7 @@ void main() {
       await t.pumpAndSettle();
 
       expect(find.byKey(DeleteAccountForm.passwordKey), findsNothing);
-      await t.tap(find.widgetWithText(TextButton, 'Send me a code'));
+      await t.tap(find.widgetWithText(OutlinedButton, 'Send me a code'));
       await t.pumpAndSettle();
       await _type(t, DeleteAccountForm.codeKey, '123456');
       await t.tap(find.widgetWithText(FilledButton, 'Delete my account'));
@@ -520,6 +520,38 @@ void main() {
       });
       expect(h.calls('/account/delete/confirmation'), isEmpty);
       expect(await h.store.read(), isNull);
+    });
+
+    testWidgets('a beforeDelete hook that says no keeps the delete call from '
+        'being sent', (t) async {
+      final h = _Harness((o) {
+        if (o.path == '/auth/me') return ok(principalJson());
+        if (o.path == '/account/me') {
+          return ok({'hasPassword': true, 'email': 'a@example.com'});
+        }
+        return scheduled();
+      });
+      await h.store.save(const TokenPair(accessToken: 'a', refreshToken: 'r'));
+      var asked = 0;
+      await t.pumpWidget(
+        h.app(
+          DeleteAccountForm(
+            beforeDelete: () async {
+              asked++;
+              return false;
+            },
+          ),
+        ),
+      );
+      await t.pumpAndSettle();
+
+      await _type(t, DeleteAccountForm.passwordKey, 'pw');
+      await t.tap(find.widgetWithText(FilledButton, 'Delete my account'));
+      await t.pumpAndSettle();
+
+      expect(asked, 1);
+      expect(h.calls('/account/delete'), isEmpty);
+      expect(await h.store.read(), isNotNull);
     });
 
     testWidgets(

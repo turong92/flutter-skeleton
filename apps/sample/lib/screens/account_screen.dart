@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:skeleton_api_client/skeleton_api_client.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_iap/skeleton_iap.dart';
 import 'package:skeleton_social_login/skeleton_social_login.dart';
@@ -14,7 +15,9 @@ import 'form_page.dart';
 /// no address, a fresh sign-in with a linked provider; on success the device is
 /// signed out. A store subscription outlives the account (the server cannot end
 /// it), so the person is told to cancel it in the store first. An account with
-/// Sign in with Apple first has Apple told to drop its access (App Review).
+/// Sign in with Apple has Apple told to drop its access (App Review) right
+/// before the delete call, after the proof (a revoke earlier would let the
+/// proof's own Apple sheet link the app again).
 class AccountScreen extends ConsumerStatefulWidget {
   const AccountScreen({super.key});
 
@@ -23,38 +26,51 @@ class AccountScreen extends ConsumerStatefulWidget {
 }
 
 class _AccountScreenState extends ConsumerState<AccountScreen> {
-  var _revoked = false;
-  var _revoking = false;
-  String? _revokeError;
+  /// The revoke code the proof's own Apple sheet gave (Apple-only accounts),
+  /// so the revoke needs no second sheet.
+  String? _appleCode;
 
-  Future<void> _revokeApple() async {
-    final apple = ref.read(sampleAccountProvider).value?.appleToRevoke;
-    if (apple == null) return;
+  Future<Map<String, Object?>?> _reauth() {
+    _appleCode = null;
+    return reauthWithLinkedProvider(
+      ref,
+      onAppleRevokeCode: (code) => _appleCode = code,
+    );
+  }
+
+  /// Right before `POST /account/delete`: Apple drops its access (App Review).
+  /// Cancel = false (nothing is deleted); Apple off for the project = nothing
+  /// to revoke; any other failure stops the delete and the form stays.
+  Future<bool> _revokeApple() async {
+    final account = await ref.read(sampleAccountProvider.future);
+    final apple = account.appleToRevoke;
+    if (apple == null) return true;
     final client = ref.read(apiClientProvider);
-    setState(() {
-      _revoking = true;
-      _revokeError = null;
-    });
+    final code = _appleCode;
+    _appleCode = null;
     try {
-      await apple.revokeBeforeDelete(client);
-      if (mounted) setState(() => _revoked = true);
-    } on SocialCancelled {
-      // Backed out: nothing is deleted and nothing is shown.
-    } catch (_) {
-      if (mounted) {
-        setState(() => _revokeError = 'Apple could not be reached. Try again.');
+      if (code != null) {
+        await apple.revokeWithCode(client, code);
+      } else {
+        await apple.revokeBeforeDelete(client);
       }
-    } finally {
-      if (mounted) setState(() => _revoking = false);
+      return true;
+    } on SocialCancelled {
+      return false;
+    } catch (e) {
+      if (e is ApiRequestError && e.code == 'AUTH_SOCIAL.PROVIDER_NOT_FOUND') {
+        return true;
+      }
+      throw const DeleteAccountHookFailed(
+        'Apple could not be reached. Try again.',
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final store = ref.watch(iapStoreSubscriptionToCancelProvider);
-    final needsAppleStep =
-        !_revoked &&
-        ref.watch(sampleAccountProvider).value?.appleToRevoke != null;
+    final account = ref.watch(sampleAccountProvider);
     final notice = store.when(
       loading: () => null,
       // Not knowing is not "none": the person is asked to check.
@@ -85,29 +101,20 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           ),
           const SizedBox(height: SkeletonSpace.sm),
         ],
-        if (needsAppleStep) ...[
-          const Text(
-            'This account signs in with Apple. Apple has to drop its access '
-            'before the account can be deleted.',
+        // The form waits for /account/me: not knowing whether Apple is linked
+        // must not open a way to delete without the revoke.
+        account.when(
+          loading: () => const LoadingView(),
+          error: (_, _) => ErrorView(
+            message: 'Could not load your account.',
+            onRetry: () => ref.invalidate(sampleAccountProvider),
           ),
-          const SizedBox(height: SkeletonSpace.sm),
-          FilledButton(
-            key: const ValueKey('account.revokeApple'),
-            onPressed: _revoking ? null : _revokeApple,
-            child: const Text('Remove Apple access'),
-          ),
-          if (_revokeError != null) ...[
-            const SizedBox(height: SkeletonSpace.sm),
-            Text(
-              _revokeError!,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ],
-        ] else
-          DeleteAccountForm(
+          data: (_) => DeleteAccountForm(
             onDeleted: (_) => context.go('/login'),
-            socialReauth: () => reauthWithLinkedProvider(ref),
+            socialReauth: _reauth,
+            beforeDelete: _revokeApple,
           ),
+        ),
         const SizedBox(height: SkeletonSpace.md),
         OutlinedButton(
           onPressed: () => context.go('/settings'),

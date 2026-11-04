@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
-import 'package:skeleton_push/skeleton_push.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
-/// Who is signed in, the push settings of this device, social sign-in links,
-/// the account page (deletion) and sign-out. Sign-out is the only path that runs the
-/// sign-out hooks, so this device's push registration is removed first.
+/// Who is signed in, the way to the notification settings, social sign-in
+/// links, the account page (deletion) and sign-out. Sign-out is the only path
+/// that runs the sign-out hooks, so this device's push registration is removed
+/// first.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -24,8 +24,10 @@ class SettingsScreen extends ConsumerWidget {
         children: [
           ListTile(title: Text(who), subtitle: const Text('Signed in')),
           const Divider(),
-          const PushSettingsView(),
-          const Divider(),
+          OutlinedButton(
+            onPressed: () => context.go('/settings/notifications'),
+            child: const Text('Notification settings'),
+          ),
           const SizedBox(height: SkeletonSpace.sm),
           OutlinedButton(
             onPressed: () => context.go('/social'),

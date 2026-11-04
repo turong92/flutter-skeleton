@@ -21,7 +21,9 @@ dependencies:
   skeleton_board: any # workspace sibling
   skeleton_iap: any # workspace sibling
   skeleton_legal: any # workspace sibling
+  skeleton_notifications: any # workspace sibling
   skeleton_push: any # workspace sibling
+  skeleton_realtime: any # workspace sibling
   skeleton_social_login: any # workspace sibling
   skeleton_social_login_apple: any # workspace sibling
   skeleton_social_login_google: any # workspace sibling

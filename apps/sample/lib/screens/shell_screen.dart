@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:skeleton_notifications/skeleton_notifications.dart';
 
-/// The three tabs. Each keeps its own place when another tab is open.
+/// The four tabs. Each keeps its own place when another tab is open.
 class ShellScreen extends StatelessWidget {
   const ShellScreen({super.key, required this.shell});
 
@@ -21,6 +22,11 @@ class ShellScreen extends StatelessWidget {
             icon: Icon(Icons.forum_outlined),
             selectedIcon: Icon(Icons.forum),
             label: 'Board',
+          ),
+          NavigationDestination(
+            icon: UnreadBadge(child: Icon(Icons.notifications_outlined)),
+            selectedIcon: UnreadBadge(child: Icon(Icons.notifications)),
+            label: 'Notifications',
           ),
           NavigationDestination(
             icon: Icon(Icons.shopping_bag_outlined),

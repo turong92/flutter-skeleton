@@ -10,6 +10,7 @@ import 'screens/account_screen.dart';
 import 'screens/board_screens.dart';
 import 'screens/forgot_password_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/notifications_screens.dart';
 import 'screens/reset_password_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/shell_screen.dart';
@@ -56,6 +57,9 @@ final routerProvider = Provider<GoRouter>((ref) {
   final consentGate = reconsentRedirect(ref, homePath: '/board');
   final router = GoRouter(
     initialLocation: '/board',
+    // A link the app has no route for (a server link, an old push) lands on
+    // the inbox. The sign-in and consent redirects still come first.
+    onException: (context, state, router) => router.go('/notifications'),
     redirect: (context, state) =>
         authGate(context, state) ?? consentGate(context, state),
     refreshListenable: Listenable.merge([
@@ -140,6 +144,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
+                path: '/notifications',
+                builder: (context, state) => const NotificationsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
                 path: '/store',
                 builder: (context, state) => const StoreScreen(),
               ),
@@ -150,6 +162,13 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/settings',
                 builder: (context, state) => const SettingsScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'notifications',
+                    builder: (context, state) =>
+                        const NotificationSettingsScreen(),
+                  ),
+                ],
               ),
             ],
           ),

@@ -4,12 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_iap/skeleton_iap.dart';
+import 'package:skeleton_notifications/skeleton_notifications.dart';
 import 'package:skeleton_push/skeleton_push.dart';
 import 'package:skeleton_social_login/skeleton_social_login.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
 import 'config.dart';
 import 'firebase_setup.dart';
+import 'inbox_realtime.dart';
 import 'router.dart';
 import 'screens/store_screen.dart';
 import 'social_support.dart';
@@ -96,11 +98,13 @@ class SampleApp extends ConsumerWidget {
       );
     });
     // iOS shows a message that arrives in front by itself; Android does not.
+    ref.watch(inboxRealtimeProvider);
     ref.listen(pushMessagesProvider, (_, next) {
       final message = next.value;
-      if (message == null || defaultTargetPlatform != TargetPlatform.android) {
-        return;
-      }
+      if (message == null) return;
+      // The push is the same notification the inbox holds: read it again.
+      notificationsChanged(ref);
+      if (defaultTargetPlatform != TargetPlatform.android) return;
       final text = message.title ?? message.body;
       if (text == null) return;
       final link = message.link;

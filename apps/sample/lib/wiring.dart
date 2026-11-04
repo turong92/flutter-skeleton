@@ -3,6 +3,8 @@ import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_board/skeleton_board.dart';
 import 'package:skeleton_iap/skeleton_iap.dart';
 import 'package:skeleton_legal/skeleton_legal.dart';
+import 'package:skeleton_notifications/skeleton_notifications.dart';
+import 'package:skeleton_push/advertising.dart';
 import 'package:skeleton_push/skeleton_push.dart';
 
 import 'router.dart';
@@ -43,5 +45,27 @@ final sampleWiring = <Override>[
   pushOpenLinkProvider.overrideWith(
     (ref) =>
         (link) => ref.read(routerProvider).go(link),
+  ),
+  // A tapped push without a link lands on the inbox.
+  pushFallbackLinkProvider.overrideWithValue('/notifications'),
+  advertisingApiProvider.overrideWith(
+    (ref) => AdvertisingApi(ref.watch(apiClientProvider)),
+  ),
+  notificationsApiProvider.overrideWith(
+    (ref) => NotificationsApi(ref.watch(apiClientProvider)),
+  ),
+  // Everything of the inbox is keyed by this, so another account never sees
+  // the previous one's rows.
+  notificationsAccountProvider.overrideWith((ref) {
+    final session = ref.watch(authSessionProvider);
+    return session is SignedIn ? session.principal.accountId : null;
+  }),
+  notificationOpenProvider.overrideWith(
+    (ref) => (item) {
+      // The board's comment rows have no link, only the post id.
+      final postId = int.tryParse('${item.payload['postId']}');
+      final path = item.safeLink ?? (postId == null ? null : '/board/$postId');
+      if (path != null) ref.read(routerProvider).go(path);
+    },
   ),
 ];

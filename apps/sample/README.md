@@ -1,12 +1,13 @@
 # sample
 
-The reference app: everything the starter has (sign up with the consent boxes, confirm the mailed code, sign in, reset a forgotten password, delete the account) plus three tabs on top of the kotlin-skeleton `apps/sample` server:
+The reference app: everything the starter has (sign up with the consent boxes, confirm the mailed code, sign in, reset a forgotten password, delete the account) plus four tabs on top of the kotlin-skeleton `apps/sample` server:
 
 | Tab | What it shows | Packages |
 |---|---|---|
 | Board | the posts of board `general`, post detail with reactions and comments, write and edit | `board` |
+| Notifications | the inbox (paging, pull to refresh, unread marks, mark all as read) with the unread count on the tab; a tapped row opens its link, a board comment row (no link) opens its post | `notifications`, `realtime` |
 | Store | products to buy, restore purchases, web checkout when the server allows it, my subscription | `iap` |
-| Settings | who is signed in, this device's push switch and one switch per notification kind, a test notification, social sign-in links, account settings (delete), sign out | `push`, `auth`, `social-login` |
+| Settings | who is signed in, a way to the notification settings (`/settings/notifications`: this device's push switch, one switch per kind, a test notification, consent to promotional push), social sign-in links, account settings (delete), sign out | `push`, `legal`, `auth`, `social-login` |
 
 The starter is the smaller app (accounts only). Pick the packages you need from here; this app is not meant to ship as it is.
 
@@ -15,9 +16,10 @@ lib/main.dart           ProviderScope + MaterialApp.router; Firebase only when i
 lib/config.dart         AppConfig: API_BASE_URL, FIREBASE_* and social values, board code
 lib/social_support.dart the providers this build has, the account's sign-in methods, social re-auth, failure texts
 lib/firebase_setup.dart FirebaseOptions from the dart-define values (null = no Firebase)
-lib/wiring.dart         where the packages meet: legal, board (+ author resolver), push, iap on auth's ApiClient
-lib/router.dart         routes, auth gate then consent gate, two-tab shell (go_router StatefulShellRoute)
-lib/screens/            login · sign-up · verify · forgot/reset password · account (delete) copied from the starter; shell · board · settings
+lib/wiring.dart         where the packages meet: legal, board (+ author resolver), push (+ advertising, fallback link), notifications (+ account, row to path), iap on auth's ApiClient
+lib/inbox_realtime.dart the notification stream: open only signed in and in front, closed on sign-out, account change or background
+lib/router.dart         routes, auth gate then consent gate, four-tab shell (go_router StatefulShellRoute), unknown path -> inbox
+lib/screens/            login · sign-up · verify · forgot/reset password · account (delete) copied from the starter; shell · board · notifications · settings
 env/dev.json.example    the dart-define file to copy
 ```
 
@@ -41,7 +43,11 @@ This repo has no Firebase project, and the app does not need one to run. With th
 2. Put the five values (`FIREBASE_API_KEY`, `FIREBASE_PROJECT_ID`, `FIREBASE_MESSAGING_SENDER_ID`, `FIREBASE_ANDROID_APP_ID`, `FIREBASE_IOS_APP_ID`) in `env/dev.json`. No `google-services.json` or `GoogleService-Info.plist` is needed (the app passes the options in code); if you add them anyway, they are git-ignored.
 3. Run the backend with FCM on (`notification-fcm` with the service account of that project).
 
-Behaviour: the device is registered after sign-in and on a token refresh; sign-out removes it from the server first; a notification tapped while the app is in the background or closed opens its link once the session is back (`/board/7`, `/settings`, ...); a message that arrives while the app is in front shows a SnackBar on Android (iOS shows the system banner).
+Behaviour: the device is registered after sign-in and on a token refresh; sign-out removes it from the server first; a notification tapped while the app is in the background or closed opens its link once the session is back (`/board/7`, `/settings`, ...); a message that arrives while the app is in front shows a SnackBar on Android (iOS shows the system banner). The inbox is the original and the push is best effort: a tapped push without a link opens the Notifications tab, a push in front makes the inbox read again, and a tap does not mark the row read.
+
+## Notifications and promotional push
+
+The inbox needs the server's `notification` + `notification-jdbc`; the live update needs `notification-sse` (without it the app asks once, gets a 404 and stays quiet, the inbox still reads again when the app comes back). The stream is open only while somebody is signed in and the app is in front; an event only makes the app read the unread count again. The consent screen for promotional push (`/settings/notifications`) draws nothing on a server without it. What the product must set on the server (not app code): `advertising.title-prefix` as "(ad) <service name>" and `advertising.body-suffix` as the real opt-out path of the app (for example "Opt out: Settings > Notifications"); the default empty suffix sends promotions without a way to opt out.
 
 ## Payment
 
@@ -75,14 +81,16 @@ Buttons: Google white with an outline, Kakao `#FEE500`, Naver `#03C75A`, labelle
 ## Test
 
 ```bash
-flutter test      # sign in → tabs, board tab, push unavailable, sign-out hook, SnackBar, link after session restore (fake backend)
+flutter test      # sign in → tabs, board tab, push unavailable, sign-out hook, SnackBar, link after session restore, inbox (stream closed on sign-out, no rows of the previous account, comment row → post) (fake backend)
 ```
 
 ## Not checked on a device
 
 No Android SDK or Xcode ran here, so `flutter build apk`, an iOS build and everything on a real device are open. Check, in this order:
 
-- push: a real notification arrives, a tap opens its link, the permission dialog, the iOS foreground banner
+- push: a real notification arrives, a tap opens its link (or the inbox when it has none), the permission dialog, the iOS foreground banner
+- the live stream on a device: the inbox count changes when another account comments, the stream closes when the app goes to the background and opens again (with one re-read) when it comes back
+- the promotional push consent against a server with `notification-push-legal`, on a device
 - a mailed password-reset link opens the app (App Links / Universal Links need your own domain, see the starter README)
 - social sign-in with real provider apps: the Google, Apple, Kakao and Naver sheets, the Kakao and Naver return to the app (Android intent filter, iOS `handleURL` in the scene delegate), `import NidThirdPartyLogin` compiling in the Runner target
 - the iOS build with the entitlements and Background Modes under your own signing team

@@ -1,0 +1,30 @@
+name: flutter_skeleton_workspace
+description: Workspace root of flutter-skeleton. Not published; each package under packages/ is picked on its own.
+publish_to: none
+
+environment:
+  sdk: ^3.13.0
+  # The stable the skeleton was made and verified with. CI reads it through
+  # subosito/flutter-action `flutter-version-file: pubspec.yaml`.
+  flutter: 3.47.9
+
+# Pub workspaces do not take globs: every member is listed by path.
+workspace:
+  - packages/lints
+
+dev_dependencies:
+  melos: ^8.10.0
+
+melos:
+  scripts:
+    analyze:
+      description: flutter analyze in every package that has a pubspec
+      exec: flutter analyze --fatal-infos
+    format:
+      description: Format every Dart file
+      run: dart format .
+    test:
+      description: Run the tests of every package that has a test/ folder
+      exec: flutter test
+      packageFilters:
+        dirExists: test

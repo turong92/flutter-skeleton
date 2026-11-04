@@ -1,0 +1,40 @@
+# Dart / Flutter
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+
+# Local app settings: only the .example is committed
+apps/*/env/*.json
+!apps/*/env/*.json.example
+
+# Android signing and local config
+**/android/key.properties
+**/android/local.properties
+**/android/.gradle/
+**/android/captures/
+*.jks
+*.keystore
+
+# iOS / macOS generated
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Flutter/Generated.xcconfig
+**/ios/xcuserdata/
+
+# Melos
+.melos_tool/
+pubspec_overrides.yaml
+
+# Secrets
+.env
+*.secret
+*.key

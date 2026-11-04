@@ -1,0 +1,28 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A newer push cancels the earlier run of the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      # The Flutter version lives in one place: environment.flutter of the root pubspec.yaml
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version-file: pubspec.yaml
+          cache: true
+      - run: dart pub global activate melos
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed .
+      - run: melos run analyze
+      - run: melos run test

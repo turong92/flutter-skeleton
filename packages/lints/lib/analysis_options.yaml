@@ -1,0 +1,12 @@
+# flutter_lints is what `flutter create` ships. It already turns on
+# `implementation_imports` (no package:x/src/... from another package) and
+# `depend_on_referenced_packages` (an import needs a declared dependency),
+# which is the language-tool version of "stay out of a package's insides".
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    # A stray print in an auth flow is a token in the device log.
+    avoid_print: true
+    # A forgotten await on a save/refresh is a silent race.
+    unawaited_futures: true

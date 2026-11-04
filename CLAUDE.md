@@ -29,7 +29,7 @@ kotlin-skeleton `docs/account-http-contract.md`, `docs/modules/auth.md`, `docs/m
 
 1~2단계(로그인 → 내 정보 → 로그아웃, 조용한 갱신) + 카탈로그 + `new-project.sh`. 3단계: 가입 · 메일 인증 · 비밀번호 재설정 · 탈퇴(`auth`), 약관 동의와 재동의(`legal`, 스타터가 쓴다), 게시판(`board`) · 푸시(`push`)(둘 다 `--packages` 로 고른다), 이 둘을 연결해 보여 주는 참조 앱 `apps/sample`(찍을 때 늘 지워진다). 소셜 · 실시간 · 다국어는 아직 없다.
 
-결제는 이번에 없음: 앱 결제는 IAP 기본 예정(kotlin 영수증 검증 뒤), 토스 WebView 시도는 로컬 브랜치 `stage3-toss-payment` 에 보관. Firebase 설정 파일(`google-services.json` · `GoogleService-Info.plist`)은 gitignore 이고 프로젝트가 갖는다.
+결제: 인앱결제(`iap`, `--packages` 로 고른다) — 스토어 구매를 kotlin `payment-iap` 이 검증한 뒤에만 권한이 열린다. 앱 밖 웹 결제는 서버 지역 스위치가 켤 때만 1회용 링크를 바깥 브라우저로 연다(기본 꺼짐). 앱 안 WebView 결제는 두지 않는다. Firebase 설정 파일(`google-services.json` · `GoogleService-Info.plist`)은 gitignore 이고 프로젝트가 갖는다.
 
 ## 카탈로그
 

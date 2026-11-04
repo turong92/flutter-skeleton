@@ -1,0 +1,17 @@
+name: skeleton_realtime
+description: Server-sent events for the kotlin-skeleton notification-sse module. One connection over the app's Dio, reconnects, idle cut. Pure Dart.
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.13.0
+
+dependencies:
+  dio: ^5.11.1
+
+dev_dependencies:
+  fake_async: ^1.3.3
+  skeleton_api_client: any # workspace sibling, tests only (FakeAdapter)
+  # The Flutter SDK pins test_api (flutter_test), and the workspace resolves
+  # once: this is the newest `test` that agrees with it.
+  test: ^1.31.1

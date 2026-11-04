@@ -17,6 +17,7 @@ workspace:
   - packages/legal
   - packages/board
   - packages/push
+  - packages/realtime
   - packages/iap
   - packages/social_login
   - packages/social_login_google

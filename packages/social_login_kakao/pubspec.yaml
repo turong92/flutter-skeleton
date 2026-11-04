@@ -1,0 +1,18 @@
+name: skeleton_social_login_kakao
+description: Kakao sign-in (KakaoTalk or Kakao account) for skeleton_social_login, returns the Kakao access token.
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.13.0
+  flutter: 3.47.9
+
+dependencies:
+  flutter:
+    sdk: flutter
+  kakao_flutter_sdk_user: ^2.1.0
+  skeleton_social_login: any # workspace sibling
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

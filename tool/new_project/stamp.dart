@@ -124,6 +124,7 @@ const _skipDirs = {
   'xcuserdata',
 };
 const _skipFiles = {
+  '.git', // a git worktree keeps .git as a file that points back at the source repo
   '.DS_Store',
   'pubspec_overrides.yaml',
   'local.properties',

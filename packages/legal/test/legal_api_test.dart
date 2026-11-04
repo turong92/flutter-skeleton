@@ -106,6 +106,27 @@ void main() {
     expect(status.missing, isEmpty);
   });
 
+  test('withdraw posts to the type with no body', () async {
+    final adapter = FakeAdapter(
+      (_) => FakeAdapter.json(200, {
+        'value': {
+          'blocked': false,
+          'items': <Object?>[],
+          'missing': <Object?>[],
+        },
+        'meta': _meta,
+      }),
+    );
+
+    final status = await apiWith(adapter).withdraw('marketing-night');
+
+    final request = adapter.requests.single;
+    expect(request.method, 'POST');
+    expect(request.path, '/legal/consents/marketing-night/withdraw');
+    expect(request.data, isNull);
+    expect(status.blocked, isFalse);
+  });
+
   test('status lists what is still missing', () async {
     final adapter = FakeAdapter(
       (_) => FakeAdapter.json(200, {

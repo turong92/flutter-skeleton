@@ -10,7 +10,7 @@ legalApiProvider.overrideWith((ref) => LegalApi(ref.watch(apiClientProvider)))
 
 | Export | Meaning |
 |---|---|
-| `LegalApi` | `documents()` · `document(type, version:, locale:)` (public) · `status()` · `agree(claims, source:)`. Stores nothing. |
+| `LegalApi` | `documents()` · `document(type, version:, locale:)` (public) · `status()` · `agree(claims, source:)` · `withdraw(type)`. Stores nothing. |
 | `SignUpConsents(onChanged:, locale:, labels:)` | One box per document required at sign-up, plus one per optional document, all unchecked. `onChanged(SignUpConsentsValue)`: `complete` (every required box checked; use it to enable submit) and `toJson()` (the sign-up request's `consents`: `type`, `version`, `locale` of what was shown). |
 | `legalDocumentsProvider` | After a `400 LEGAL.CONSENT_REQUIRED`, `ref.invalidate(legalDocumentsProvider)`: a document whose version changed comes back unchecked. |
 | `LegalDocumentPage(type:, version:, locale:)` | The markdown source as plain selectable text (no renderer yet). |

@@ -46,4 +46,13 @@ class LegalApi {
         },
         decode: ConsentStatus.fromJson,
       );
+
+  /// `POST /legal/consents/{type}/withdraw`: withdraw an optional agreement
+  /// (marketing ...). Idempotent. A required type is refused with 409
+  /// LEGAL.WITHDRAWAL_NOT_ALLOWED.
+  Future<ConsentStatus> withdraw(String type) => _client.value(
+    '/legal/consents/$type/withdraw',
+    method: 'POST',
+    decode: ConsentStatus.fromJson,
+  );
 }

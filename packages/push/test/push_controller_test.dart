@@ -31,8 +31,12 @@ class _SlowInitialSource extends FakePushTokenSource {
 }
 
 class _Rig {
-  _Rig({bool signedIn = true, this.fcm = true, FakePushTokenSource? source})
-    : source = source ?? FakePushTokenSource() {
+  _Rig({
+    bool signedIn = true,
+    this.fcm = true,
+    FakePushTokenSource? source,
+    String? fallback,
+  }) : source = source ?? FakePushTokenSource() {
     adapter = FakeAdapter((o) {
       final custom = respond?.call(o);
       if (custom != null) return custom;
@@ -49,6 +53,7 @@ class _Rig {
         pushTokenSourceProvider.overrideWithValue(this.source),
         pushSignedInProvider.overrideWith((ref) => ref.watch(_signedInSwitch)),
         pushOpenLinkProvider.overrideWithValue(opened.add),
+        pushFallbackLinkProvider.overrideWithValue(fallback),
       ],
     );
     addTearDown(container.dispose);
@@ -268,6 +273,20 @@ void main() {
       await rig.settle();
 
       expect(rig.opened, ['/posts/7']);
+    });
+
+    test('a tap without a link goes to the fallback path', () async {
+      final rig = _Rig(
+        source: FakePushTokenSource(permission: PushPermission.granted),
+        fallback: '/notifications',
+      );
+      await rig.settle();
+
+      rig.source.tap(PushMessage(title: 'no link'));
+      rig.source.tap(PushMessage(link: '/posts/7'));
+      await rig.settle();
+
+      expect(rig.opened, ['/notifications', '/posts/7']);
     });
 
     test('a link to outside the app is dropped', () async {

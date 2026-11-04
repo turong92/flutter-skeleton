@@ -34,6 +34,10 @@ final pushOpenLinkProvider = Provider<void Function(String link)>(
   (ref) => (_) {},
 );
 
+/// Where a tapped notification goes when it carries no in-app link (e.g. the
+/// inbox route). Null (default): such a tap opens nothing.
+final pushFallbackLinkProvider = Provider<String?>((ref) => null);
+
 /// Messages that arrive while the app is in front (Android shows no system
 /// notification then; the app shows its own, e.g. a SnackBar).
 final pushMessagesProvider = StreamProvider<PushMessage>(
@@ -93,7 +97,7 @@ class PushController extends Notifier<PushState> {
     final generation = ++_generation;
     if (source.available) {
       final refresh = source.onTokenRefresh.listen(_onTokenRefresh);
-      final opened = source.onOpened.listen((m) => _open(m.link));
+      final opened = source.onOpened.listen((m) => _open(_target(m)));
       ref.onDispose(() {
         refresh.cancel();
         opened.cancel();
@@ -109,7 +113,8 @@ class PushController extends Notifier<PushState> {
     if (_stale(generation) || !_source.available) return;
     if (!_initialChecked) {
       _initialChecked = true;
-      _pendingLink = (await _source.initialMessage())?.link;
+      final initial = await _source.initialMessage();
+      _pendingLink = initial == null ? null : _target(initial);
       // Before the stale check: a build that ran while we waited has already
       // passed this block, so nobody else would deliver the link.
       _flush();
@@ -118,6 +123,10 @@ class PushController extends Notifier<PushState> {
     _flush();
     if (_signedIn) await _refresh(generation);
   }
+
+  /// A tapped notification's path: its link, else the fallback.
+  String? _target(PushMessage message) =>
+      message.link ?? ref.read(pushFallbackLinkProvider);
 
   void _open(String? link) {
     if (link == null) return;

@@ -12,6 +12,25 @@ Push notification registration and settings for the kotlin-skeleton `notificatio
 | `pushSignOutHookProvider` | Deletes this device's registration before sign-out (2 s limit, never throws) |
 | `safePushLink` | A tapped notification's `data.link` is kept only if it is an in-app path (`/...`, not `//`, no scheme) |
 
+| `pushFallbackLinkProvider` | Where a tapped notification goes when it has no in-app `link` (e.g. the inbox route). Default null: such a tap opens nothing |
+
+## Advertising consent: `package:skeleton_push/advertising.dart`
+
+Separate library because it needs `skeleton_legal` (a dependency of this package). It does not import `notifications` or `realtime`. For servers with `notification-push-legal` and an advertising kind; on a server without it (`GET /push/advertising` is 404) the view draws nothing.
+
+| Piece | What it is |
+|---|---|
+| `AdvertisingApi` | `advertising()` = `GET /push/advertising` (sender, `marketing` and `marketing-night` state, night window). Agree and withdraw are `LegalApi.agree` / `withdraw` |
+| `AdvertisingSettingsView` | Place it under `PushSettingsView`. Both consents start off and have no switch that turns them on: "Agree" opens the document (`LegalDocumentPage`), the box under it starts unchecked, and only then is the shown version recorded (`source: push-settings`). Night is locked while advertising is off. Off = confirm, then withdraw (advertising takes a still-agreed night with it). A band asks for the two-year reconfirmation (`source: reconfirm`). The server is read again after every change; a failed read shows an error and a retry, never a switch. `409 LEGAL.VERSION_STALE` reads the document again |
+| `AdvertisingLabels` | Every text (English defaults) |
+
+```dart
+advertisingApiProvider.overrideWith((ref) => AdvertisingApi(ref.watch(apiClientProvider))),
+legalApiProvider.overrideWith((ref) => LegalApi(ref.watch(apiClientProvider))),
+```
+
+**What the product fills in on the server** (not app code): `advertising.title-prefix` as "(광고) <service name>" and `body-suffix` as the app's real opt-out route (e.g. "Opt out: Settings > Notifications"). With the default empty suffix an advertising push goes out without a way to opt out.
+
 ## Wiring
 
 The package does not import `auth` and does not initialize Firebase.
@@ -28,6 +47,7 @@ ProviderScope(overrides: [
 
 - Watch `pushControllerProvider` once at the app root. It registers at start, right after sign-in and on every token refresh (`PUT /push/devices/{installationId}`), only when signed in and `config.fcm` is true. `400 PUSH.KIND_DISABLED` means `unavailable`.
 - Sign-out: `ref.read(signOutHooksProvider).add(ref.read(pushSignOutHookProvider))` (auth runs hooks before it clears the tokens).
+- A tap on a notification with no `link` goes to `pushFallbackLinkProvider` when it is set.
 - A notification that started the app (`getInitialMessage`) is held until `pushSignedInProvider` is true, then handed to `pushOpenLinkProvider` once.
 - In front: iOS shows the system banner (presentation options are set). Android shows nothing, so listen to `pushMessagesProvider` and show your own (a SnackBar).
 - `installationId` is made per install (`[A-Za-z0-9_-]{32}`) and kept in `shared_preferences`; a reinstall gets a new one. Tokens are never logged.

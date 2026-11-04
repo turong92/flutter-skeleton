@@ -379,3 +379,56 @@ F2 와 F4 는 나란히 갈 수 있다. 1단계 = F1~F5 이고, F5 가 끝나면
 5. (3단계, 2026-11-04) 결제는 토스 결제창만(실물·앱 밖 서비스용), IAP 는 디지털 판매 프로젝트가 생길 때. 재설정은 앱 화면 + 앱 링크 도메인 연결은 프로젝트 몫. 게시판·푸시·결제 화면은 apps/sample(찍을 때 빠짐). 형이 질문을 잘 모르겠다고 해 쉬운 설명 후 추천안으로 진행.
 6. (3단계 결제 확정, 2026-11-04) 당분간 실물이 없어 앱 결제는 IAP 가 기본이고 지역 스위치(웹 링크)는 기본 꺼짐 자리만 둔다. 3단계에서 토스 WebView · 샘플 결제 화면 · 카탈로그 payment 항목은 만들지 않는다(시도는 로컬 브랜치 `stage3-toss-payment`). IAP 는 kotlin 영수증 검증 모듈이 생긴 뒤 별도 묶음.
    - 비밀번호 재설정: 앱이 있으면 앱, 없으면 웹 — App Links / Universal Links 로 한다(Firebase Dynamic Links 는 종료되어 쓰지 않는다). 링크 도메인 연결은 프로젝트 몫.
+
+## 13. 인앱결제
+
+서버 계약(정본): kotlin-skeleton `docs/superpowers/specs/2026-11-04-iap-design.md` · `docs/modules/payment-iap.md` · `auth-web-handoff.md` · `payment-http-contract.md` §12.1. 형 결정: 실물이 없으니 앱 결제는 인앱결제(IAP)가 기본이고, 앱 밖 웹 결제 링크는 서버의 지역 스위치가 켤 때만 보인다(기본 꺼짐). 웹으로 넘길 때는 서버가 주는 1회용 자동 로그인 링크를 바깥 브라우저로 연다.
+
+### 13.1 목적 · 패키지 경계
+
+- 새 패키지 `packages/iap`(`skeleton_iap`): `in_app_purchase` 로 상품 조회 · 구매 · 복원, 결과를 서버 검증 API 로 보내고, 서버가 `GRANTED` 를 준 뒤에만 `completePurchase`. 웹 결제 링크 발급과 바깥 브라우저 열기, 탈퇴 전 「스토어에서 해지하세요」 판정.
+- `api_client` 만 안다. `auth` 를 import 하지 않는다(로그인 여부는 `push` 처럼 앱이 `iapSignedInProvider` 로 알린다). 패키지는 권한을 열지 않는다 — 결과 사건(`IapOutcome`)을 내보낼 뿐이고, 권한은 서버(`GET /subscriptions/me` · 주문)가 정본이다.
+- 화면(상품 목록 · 구매 · 복원 · 내 구독 · 탈퇴 앞 안내)은 `apps/sample`(B1). `starter` 는 건드리지 않는다.
+
+### 13.2 흐름
+
+1. `GET /payments/iap/config?platform=&storefront=` → `channel` · `appAccountToken` · `products`. 상품 id 로 `queryProductDetails`.
+2. 구매: `PurchaseParam.applicationUserName` = 서버가 준 `appAccountToken` 그대로(앱이 만들지 않는다). 소모성 자동 소비는 끈다(서버 확인 전에 소비하지 않는다).
+3. `purchaseStream`(앱 시작 때 남은 미완료 구매와 복원 포함)의 `purchased` · `restored` 는 모두 `POST /payments/iap/{store}/purchases`: appstore `{transactionId}` · googleplay `{productId, purchaseToken}`.
+4. 응답 → 앱이 할 일(서버 계약 표 그대로):
+
+| 응답 | 완료(`completePurchase`) | 권한 |
+|---|---|---|
+| `200 GRANTED` | 한다 | 서버가 연 것을 읽는다 |
+| `202 PENDING` | 안 한다(기다림) | 없음 |
+| `404 IAP_PURCHASE_NOT_FOUND` · `409 ALREADY_SUBSCRIBED` · `422 IAP_*` | 한다(영구 거절) | 없음 |
+| `409 IAP_PURCHASE_OWNED_ELSEWHERE` | 안 한다(원래 계정이 다시 보낸다) | 없음 |
+| `429` · `503` · 네트워크 · 그 밖 | 안 한다(다음 실행 · `retryUnfinished()` 에 다시) | 없음 |
+
+5. 웹 결제: `config.channel` 이 `IAP_AND_WEB` · `WEB_ONLY` 일 때만 단추를 보인다. 누르면 `POST /payments/iap/web-checkout-link` → `{url}` → `url_launcher` `LaunchMode.externalApplication`(WebView 금지).
+6. 탈퇴 전: `GET /payments/subscriptions/me` 의 `provider` 가 `appstore` · `googleplay` 이고 `status` 가 이용 중(`ACTIVE` · `CANCELING` · `PAST_DUE`)이면 「스토어에서 해지하세요」(서버는 스토어 구독을 끊지 못한다). 판정만 패키지가 하고 화면은 B1.
+
+### 13.3 막을 진짜 문제
+
+- 서버 확인 전 권한 열기 · 완료: `GRANTED` 외에는 완료하지 않고 `granted` 사건도 내지 않는다.
+- 다른 계정 토큰: 토큰은 서버 `/config` 값만 쓴다(캐시한 값을 계정이 바뀐 뒤에 쓰지 않도록 로그인 상태가 바뀌면 서비스를 새로 만든다).
+- 같은 구매의 중복 전송 · 중복 완료: 구매 키(`purchaseID`, 없으면 검증 데이터)로 진행 중 · 완료를 기억한다.
+- 웹 링크의 1회용 코드가 로그 · 예외 메시지에 남는 것: 링크를 찍지 않고, 열기 실패는 링크 없는 고정 예외로 바꾼다.
+
+### 13.4 시험
+
+실제 스토어 호출 없음: `InAppPurchasePlatform` 을 가짜로 바꾸고 서버는 `FakeAdapter`. 새 회귀 시험은 돈 · 보안에만(서버 확인 전 완료 · 권한, 서버 토큰만 사용, 중복 완료, 링크 무노출). 서버 실물 시험은 B1 이후 kotlin `apps/sample` 에 대고 `--tags backend` 로 따로 둘 수 있다.
+
+### 13.5 작업 목록
+
+| 키 | 내용 |
+|---|---|
+| A1 | 이 절 |
+| A2 | `packages/iap`: API · 서비스 · providers · 가짜 플랫폼 시험 · README |
+| B1 | `apps/sample` 화면(상품 목록 · 구매 · 복원 · 내 구독 · 웹 결제 단추 · 탈퇴 앞 안내) · `capabilities.json` · `new-project --packages` 조합 |
+
+### 13.6 확인 못 한 것
+
+- 실제 App Store · Google Play 구매(Xcode · Android SDK · 스토어 계정 없음). `applicationUserName` 이 안드로이드에서 `setObfuscatedAccountId` 로 가는지, iOS 에서 `appAccountToken` 이 되는지(서버 설계서도 같은 미확인).
+- 구글 구독의 기본 요금제(`basePlanId`)가 여럿일 때 어느 `ProductDetails` 를 고르는지, 안드로이드에서 앱 시작 때 남은 구매를 `purchaseStream` 이 다시 주는지, 스토어 나라(`storefront`)를 읽는 법.
+- 소모성 · 비소모성 구분: 서버 계약에 없어 단건(`ONE_TIME`)은 소모성, 구독은 비소모성으로 둔다.

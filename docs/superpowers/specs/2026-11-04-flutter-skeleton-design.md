@@ -215,9 +215,165 @@ F2 와 F4 는 나란히 갈 수 있다. 1단계 = F1~F5 이고, F5 가 끝나면
    - **flutter 쪽 `backend` 가 정본이고, kotlin 에는 `siblings.mobile` 한 줄만 (추천)**: kotlin 을 거의 안 건드린다. 「이 모듈의 모바일 짝」은 flutter 카탈로그에서 찾는다.
    - kotlin 모듈 항목마다 `mobile` 짝도 적고 양쪽에서 검사한다: 찾기는 가장 쉽다. 대신 모듈 129개의 카탈로그와 가드를 고쳐야 하고, flutter 패키지가 늘 때마다 kotlin PR 이 따라간다.
 
+## 12. 3단계 — 기본 서비스
+
+형 지시 원문: "계속 쭉 해. 일단 기본 서비스 할 수 있는 수준으로. 가입, 푸시, 게시판 개념, 결제 위주로"
+
+**3단계(최소 버전)**: 스타터에서 가입(메일 6자리 코드) → 바로 로그인 → 비밀번호 재설정 → 탈퇴까지 된다. 참조 앱 `apps/sample` 에서는 게시판(글 · 댓글 · 반응), 푸시(기기 등록 · 종류별 끄기 · 시험 알림 · 눌러서 이동), 토스 결제(주문 → 결제창 → 승인 → 내 결제 내역)를 kotlin `apps/sample` 에 대고 끝에서 끝까지 돌린다.
+
+### 12.1 비목표(3단계에서 하지 않는 것)
+
+- 소셜 · 매직 링크 로그인, MFA, 로그인 아이디, 이메일 변경, 연락 이메일, 세션 목록, 탈퇴 취소 화면
+- 게시판: 비회원 글, 첨부 · 사진, 운영자 도구(숨김 · 고정 · 승인), 검색 · 정렬 바꾸기, 임시저장, 작성자 프로필 고르기 화면
+- 푸시: 클릭 열람 보고(`POST /push/opened` — kotlin FCM 전달기가 아직 `open` 을 안 싣는다), 광고 동의, 내 다른 기기 목록, 알림함(`notifications`), 앱이 켜져 있을 때 안드로이드 시스템 알림 띄우기
+- 결제: 카카오페이 · 네이버페이 직접 연동, Paddle, 구독, 환불 요청, 쿠폰, 인앱결제(IAP)
+- 캡차(kotlin 은 기본 꺼짐), 다국어, iOS 빌드 CI, 기기 통합 시험
+
+### 12.2 무엇을 어디에 둘지
+
+| 패키지(id) | 짝 백엔드 | 하는 일 | 확장 지점 |
+|---|---|---|---|
+| `auth`(넓힘) | `auth` · `auth-session` + `account` · `account-jdbc` | 지금 것 + `AccountApi`(sign-up · verification/resend · verify-email · password forgot/reset/policy · delete), 위젯 `SignUpForm` · `VerifyCodeForm` · `ForgotPasswordForm` · `ResetPasswordForm` · `DeleteAccountForm` | `authRedirect(publicPaths:)`, `AuthSession.signInWith(AuthResult)`(코드 확인이 곧 로그인), `signOutHooksProvider`(로그아웃 직전에 부를 일 목록), `SignUpForm` 의 동의 칸 자리, 문구 매개변수 |
+| `legal`(새) | `legal` · `legal-jdbc` | 문서 읽기(`GET /legal/documents` · `/{type}`), 가입 동의 체크 목록, 동의 화면(`missing` 을 받아 `POST /legal/consents`), `403 LEGAL.RECONSENT_REQUIRED` 를 받으면 「동의 필요」 상태로 바꾸는 인터셉터 + redirect 도우미 | 문구 매개변수 |
+| `board`(새) | `board` · `board-jdbc` (선택 `author-profile` · `idempotency`) | `BoardApi`, `PostListView`(쪽 넘김 · 당겨서 새로고침) · `PostDetailView`(본문 · 반응 · 댓글 트리) · `PostEditor`(쓰기 · 고치기) · 지우기 | 게시판 코드는 매개변수, `boardAuthorResolverProvider`(`authorRequired` 서버에서 글쓴이 id 를 주는 함수), 반응 종류별 라벨 · 아이콘 맵 |
+| `push`(새) | `notification-push` · `notification-push-jdbc` · `notification-fcm` | `PushApi`(config · devices · preferences · test), `PushController`(못 씀 · 안 물음 · 거절 · 켜짐), `PushPrompt`(앱 안 띠 → 눌러야 권한 요청), `PushSettingsView`(이 기기 스위치 · 종류별 스위치 · 시험 알림), 탭한 알림의 `link` 넘기기 | `PushTokenSource` 인터페이스(Firebase 구현 + 시험용 가짜), `onOpenLink` 콜백(이동은 앱 라우터가 한다) |
+| `payment`(새) | `payment` · `payment-jdbc` · `payment-toss` | `PaymentApi`(config · orders · confirm · order · 내 주문 목록), `purchase()` 흐름(주문 → 결제창 → 승인 → 확인 중이면 되묻기), `TossCheckoutPage`(WebView), `OrderListView` · `PaymentResultView` · 테스트 결제 띠 | `checkout.kind` 로 가르는 한 곳(지금은 `TOSS_PAYMENT_WINDOW` 만, 그 밖은 「지원 안 함」 오류), 결제창 돌아올 주소(successUrl · failUrl) 매개변수 |
+
+결정과 근거:
+
+- **가입 · 재설정 · 탈퇴는 `auth` 안에 둔다(새 패키지 없음).** react 도 `account-lifecycle` 을 `@skeleton/auth` 안의 패턴으로 둔다. 카탈로그는 `auth` 의 `pairsWith.react` 에 `account-lifecycle` · `session-refresh` 를 더한다. 스키마에 `pattern` 종류를 새로 만들지 않는다.
+- **`legal` 패키지를 더한다.** 형이 고른 범위는 아니지만 없으면 가입이 안 된다. kotlin `apps/api` 는 `legal` 이 있어 `terms` · `privacy` 동의 없이 가입하면 `400 LEGAL.CONSENT_REQUIRED` 다. 재동의 필터(`apps/api` · `apps/sample` 이 켬)는 새 판이 나오면 게시판 · 결제 호출을 모두 `403` 으로 막는다. `auth` 와 `legal` 은 서로를 모르고, 동의 목록을 가입 요청에 잇는 일은 스타터가 한다.
+- **스타터는 계정 수명주기까지, 게시판 · 푸시 · 결제는 새 `apps/sample` 에 둔다.**
+  - 새 프로젝트를 찍을 때 고르지 않은 패키지는 지워진다. 그래서 스타터가 `board` 를 import 하면 `--packages` 없이 찍은 프로젝트가 컴파일되지 않는다. react 가 starter · sample 을 나눈 이유와 같다.
+  - 짝 백엔드도 갈린다. 스타터는 kotlin `apps/api`(계정 · 동의만), 샘플은 kotlin `apps/sample`(게시판 · 푸시 · 결제 · 시드 계정 · `general` 게시판 · 응원 상품)이다.
+  - 샘플은 찍을 때 늘 빠진다(`stampFlag.included: never`). 프로젝트는 샘플의 화면 묶음을 보고 자기 앱에 라우트를 붙인다(react 카탈로그 `byHand` 와 같다).
+- **결제는 토스 결제창(API 개별 연동 키 `test_ck_`)을 WebView 로 연다.**
+  - 토스 공식 Flutter SDK(`tosspayments_widget_sdk_flutter`)는 결제위젯 전용이고 결제위젯 키(`gck`)를 쓴다. kotlin `payment-toss` 는 결제창 키(`ck`/`sk`)만 내주므로 그 SDK 로는 승인이 맞지 않는다.
+  - WebView 는 `flutter_inappwebview` 를 쓴다. 토스 웹뷰 안내가 `webview_flutter_android` 3.16.0 이하만 쓰라고 한다(이후 판에서 일부 카드 앱이 안 열림). 오래된 판에 묶이지 않으려고, 토스 자기 Flutter SDK 가 쓰는 쪽을 고른다.
+  - 결제창 페이지는 JS SDK v2 를 싣는 작은 HTML 이고 앱이 그 문자열을 불러온다. 돌아올 주소는 실제로 열리지 않는 고정 주소이고, WebView 가 그 주소로 가려는 순간 가로채 `paymentKey` · `orderId` · `amount` 를 읽는다.
+- **푸시는 `firebase_messaging` 을 쓰고 Firebase 설정 파일은 커밋하지 않는다.**
+  - 공개 레포라 Firebase 프로젝트가 없다. 샘플은 `FirebaseOptions` 를 `env/dev.json` 의 dart-define(`FIREBASE_API_KEY` · `FIREBASE_PROJECT_ID` · `FIREBASE_MESSAGING_SENDER_ID` · `FIREBASE_ANDROID_APP_ID` · `FIREBASE_IOS_APP_ID`)으로 만든다. 값이 없으면 Firebase 를 띄우지 않고 푸시는 「못 씀」 상태로 앱이 그대로 돈다.
+  - 프로젝트가 `flutterfire configure` 로 `firebase_options.dart` 를 만들어 넘겨도 된다. 패키지는 초기화된 Firebase 를 쓰기만 한다(README 에 두 길을 적는다).
+  - `google-services.json` · `GoogleService-Info.plist` 는 `.gitignore` 에 넣는다.
+- **인앱결제 규정**: 앱 안에서 쓰는 디지털 상품(이용권 · 아이템 · 창작자 후원)은 Apple 3.1.1 · Google Play 결제 정책에 따라 IAP 가 강제된다. 앱 밖에서 받는 실물 · 서비스(3.1.3(e))는 반대로 PG 를 쓴다. 그래서 `payment` 카탈로그의 `notFor` 와 README 에 「실물 · 앱 밖 서비스용, 디지털 상품은 IAP(아직 없음)」를 적는다. 샘플의 `cheer`(응원)는 kotlin 견본 상품을 빌린 시연일 뿐 그대로 출시하면 심사에 걸린다는 것도 적는다.
+
+### 12.3 패키지마다 막아야 할 진짜 문제
+
+**auth(가입 · 재설정 · 탈퇴)**
+- 가입 시도(`signUpId` · `expiresAt`)를 저장소에 둔다. 메일 앱으로 넘어간 사이 안드로이드가 앱을 죽여도 코드 입력 화면으로 돌아와야 한다. 확인되거나 만료되면 지운다.
+- `resendAvailableAt: null` 이면 다시 보내기 단추를 숨긴다. 카운트다운은 기기 시계로 하고 판정은 서버(`410 CODE_EXPIRED`)를 따른다. `400 ACCOUNT.CODE_INVALID` 는 `data.attemptsLeft` 를 보인다.
+- 로그아웃 상태에서도 `/sign-up` · `/verify` · `/forgot-password` · `/reset-password` 로 갈 수 있어야 한다. 지금 redirect 는 모두 `/login` 으로 보낸다 → `publicPaths` 를 더한다.
+- 재설정 링크는 `<link-base-url>/reset-password?token=`(웹 주소)다. 앱에 같은 경로의 라우트를 두어, 프로젝트가 App Links · Universal Links 를 걸면 그대로 앱이 연다(도메인 · `assetlinks.json` · AASA 는 프로젝트 몫, README 에 적음). 성공하면 모든 세션이 끝나므로 로컬도 로그아웃한다. 토큰은 로그에 남기지 않는다.
+- **탈퇴는 앱 안에 있어야 한다.** 가입이 있는 앱은 Apple 5.1.1(v) 가 이것을 요구한다. 비밀번호로 다시 인증하고, `Idempotency-Key` 는 제출 한 번에 하나다(재시도는 같은 키). `202` 를 받으면 로컬도 로그아웃하고, `409 ACCOUNT.DELETION_BLOCKED` 는 문구로 보인다.
+- `GET /account/password/policy` 로 힌트를 보인다. 길이 상한은 UTF-8 **바이트**(`maxBytes`)다.
+
+**legal**
+- 가입 폼은 `requiredAtSignUp` 문서마다 체크를 둔다. 선택 문서는 체크하지 않은 채로 둔다. 실은 판(`version`)을 그대로 보내고, `400 LEGAL.CONSENT_REQUIRED` 면 문서를 다시 읽는다.
+- `403 LEGAL.RECONSENT_REQUIRED` 는 로그아웃 · 갱신 대상이 아니다. 동의 화면으로 보내고 끝나면 원래 화면으로 돌아간다. 막힌 호출을 붙잡아 다시 보내지는 않는다 — 돌아간 화면이 다시 읽는다.
+- 문서 본문은 마크다운 원문을 그대로 고른 글자로 보인다(렌더러는 다음).
+
+**board**
+- 본문은 평문으로만 그린다(HTML 해석 없음). 지워진 · 가린 댓글은 `body: null` 이다. 자리를 남겨 스레드 모양을 지킨다.
+- 「내 글」 판정은 서버의 `mine` 이다. `accountId` 와 비교하지 않는다(작성자 프로필 서버에서는 늘 다르다).
+- `GET /config` 의 `authorRequired` 가 참인데 resolver 가 없으면 쓰기 단추를 감추고 이유를 보인다(죽지 않는다).
+- 글 · 댓글 만들기는 제출마다 `Idempotency-Key` 를 하나 쓰고, 보내는 동안 단추를 막는다(두 번 눌러 두 글).
+- 댓글 깊이 상한(config)에 닿은 댓글에는 답글 단추가 없다. 길이 상한도 config 에서 읽는다.
+- 상세 GET 은 조회수를 올린다. 댓글 · 반응 뒤에는 그 부분만 다시 읽는다.
+- `403 ACCOUNT.EMAIL_REQUIRED` · `LOGIN_ID_REQUIRED`(샘플 서버의 관문)는 문구로 보인다. 그 화면은 비목표다.
+
+**push**
+- 권한은 앱 안 띠를 사람이 눌렀을 때만 묻는다. iOS 는 한 번 거절하면 앱에서 다시 못 묻는다. Android 13+ 는 `POST_NOTIFICATIONS` 다. 거절되면 설정으로 가는 안내만 한다.
+- 등록(`PUT /devices/{installationId}`)은 로그인 상태이고 `config.fcm == true` 일 때만 한다. 앱 시작, 로그인 직후, `onTokenRefresh` 마다 보낸다. `400 PUSH.KIND_DISABLED` 는 「못 씀」으로 본다.
+- `installationId` 는 설치마다 하나(`[A-Za-z0-9_-]{16,64}`)이고 `shared_preferences` 에 둔다. 앱을 지우면 같이 사라진다. iOS Keychain 은 다시 깔아도 남아 「설치마다」가 깨진다.
+- 로그아웃 **전에** `DELETE /devices/{id}` 를 한다. auth 의 `signOutHooksProvider` 에 걸고 시간 상한을 둔다(오프라인이라도 로그아웃은 멈추지 않는다).
+- 알림을 탭하면 `data.link` 로 간다. `/` 로 시작하고 `//` · 스킴이 없는 앱 안 경로만 받고 나머지는 버린다. 꺼진 앱이 탭으로 켜지면(`getInitialMessage`) 세션 복원이 끝난 뒤에 이동한다.
+- 앞에 켜져 있을 때: iOS 는 표시 옵션을 켠다. Android 는 시스템이 안 띄우므로 메시지 스트림만 내고 샘플이 SnackBar 로 보인다. 토큰은 로그에 남기지 않는다.
+
+**payment**
+- 금액은 클라이언트가 정하지 않는다. 주문은 `(itemType, itemRef, quantity)` 로만 만든다. 승인에 보내는 `amount` 는 **서버 주문의 금액**이다. 돌아온 주소의 `amount` · `orderId` 가 주문과 다르면 승인하지 않는다.
+- `Idempotency-Key` 는 「구매」 한 번에 하나다. 같은 시도를 다시 보내면 같은 주문(`200`)을 받는다.
+- WebView 안의 처리:
+  - 돌아올 주소는 로드 전에 가로챈다.
+  - Android 의 `intent://` 는 앱 스킴으로 바꿔 연다. 앱이 없으면 `market://` 으로 보낸다. 그 밖의 비 http 스킴은 `url_launcher` 로 연다.
+  - 샘플 네이티브 설정에 카드 · 은행 앱 목록을 넣는다(Android `<queries>`, iOS `LSApplicationQueriesSchemes`, 토스 문서의 목록).
+  - 이 판단은 순수 함수(`classifyCheckoutNavigation` · intent 변환)로 빼서 시험한다.
+- 승인 결과:
+  - `200` → 결제됨.
+  - `202 CONFIRMING` → `GET /orders/{id}` 를 간격을 늘리며 되묻는다(횟수 상한, 넘으면 「확인 중 — 내역에서 확인」).
+  - `402 DECLINED` → `data.category` 로 문구를 고른다.
+  - 창을 닫으면 → 「취소함」. 주문은 서버 만료 작업이 닫는다.
+- 앱이 승인 전에 죽으면 토스는 승인 API 전까지 돈을 옮기지 않는다. 다음에 「내 결제 내역」이 서버 상태를 보인다.
+- `available: false` → 「지금은 결제할 수 없어요」. `testMode` → 테스트 결제 띠를 늘 보인다. 결제는 테스트 키로만 한다(토스 문서의 공개 테스트 키).
+
+### 12.4 작업 목록
+
+| 키 | 내용 | 의존 | 크기 |
+|---|---|---|---|
+| F8 | `api_client`: `newIdempotencyKey()`(UUID v4 모양, `Random.secure`) + 시험 — 여러 패키지가 같이 쓰는 것이라 먼저 넣는다(지휘가 직접 해도 된다) | — | 작음 |
+| F9 | `auth` 넓히기: `AccountApi` · 가입 시도 저장 · `signInWith` · `publicPaths` · `signOutHooksProvider` · 다섯 폼 위젯(문구 매개변수), 단위 · 위젯 시험, 백엔드 계약 시험(`apps/api`) | F8 | 큼 |
+| F10 | `legal` 새 패키지: 문서 · 동의 API, 가입 체크 목록, 동의 화면, 재동의 인터셉터 + redirect 도우미, 시험, 계약 시험(`apps/api`) | F8 | 중간 |
+| F11 | `starter`: `/sign-up` · `/verify` · `/forgot-password` · `/reset-password` · `/account`(탈퇴) · `/consent` 라우트, 가입 폼에 동의 체크 목록 잇기, 위젯 시험(가입 → 코드 → 로그인, 재설정, 탈퇴), README(재설정 링크 · 앱 링크) | F9, F10 | 중간 |
+| F12 | `board` 새 패키지: API · 목록 · 상세(반응 · 댓글 트리) · 편집기 · 지우기, author resolver 자리, 시험, 계약 시험(`apps/sample`, 시드 계정 + `general`) | F8 | 큼 |
+| F13 | `push` 새 패키지: API · `PushTokenSource`(Firebase 구현 + 가짜) · `PushController` · `PushPrompt` · `PushSettingsView` · 링크 거르기, 시험, 계약 시험(`apps/sample`: config · preferences · 기기 등록은 `fcm` 이 켜져 있을 때 200, 아니면 400 `KIND_DISABLED`) | F8 | 중간 |
+| F14 | `payment` 새 패키지: API · `purchase()` · `TossCheckoutPage`(flutter_inappwebview) · 돌아올 주소와 intent 순수 함수 · 결과 · 내역 · 테스트 띠, 시험, 계약 시험(`apps/sample` + 토스 테스트 키: config · 주문 만들기 · 같은 키 재전송 · 내역) | F8 | 큼 |
+| F15 | `apps/sample`(flutter create, android · ios): 로그인 → 탭(게시판 · 결제 · 설정), board resolver(`GET /author-profiles` 첫 프로필), 푸시 잇기(Firebase dart-define · sign-out hook · 링크 이동 · SnackBar), 결제 화면(`cheer-3000`), 네이티브 설정(`<queries>` · `POST_NOTIFICATIONS` · `LSApplicationQueriesSchemes` · 푸시 entitlements · 디버그 전용 cleartext), 위젯 시험, CI 에 `flutter build apk --debug` 추가 | F9, F10, F12, F13, F14 | 큼 |
+| F16 | 카탈로그 · 찍기: `legal`(always) · `board` · `push` · `payment`(flag) · `app-sample`(`never` — 스키마에 값 더함) 항목, `auth` 요약 · 백엔드 · `pairsWith` 고치기, stamp 가 `apps/sample` 을 지우고 `--packages board,push,payment` 를 따르게, `test-new-project.sh` 에 그 조합 한 번, CLAUDE.md · README · CHANGELOG | F11, F15 | 중간 |
+
+**서로 기다리지 않는 묶음**: F8 이 끝나면 **F9 · F10 · F12 · F13 · F14 다섯이 나란히** 간다. 서로의 파일을 건드리지 않는다. push 의 sign-out 연결은 샘플(F15)에서 하므로 F13 은 F9 를 기다리지 않는다. 그다음 F11 과 F15 가 나란히 가고(F11 은 F9 · F10 끝나는 대로), 마지막이 F16 이다. 다섯을 나란히 띄우면 developer 다섯이 동시에 돈다(비용).
+
+### 12.5 시험 전략
+
+- **국소 시험**: 바뀐 패키지 폴더에서만 `flutter test` 를 돌린다. 전체 `melos run analyze` · `melos run test` 는 묶음이 끝날 때 지휘가 한 번 돌린다.
+- **HTTP 가짜**: 지금의 `skeleton_api_client/testing.dart` 의 `FakeAdapter` 를 그대로 쓴다. 반드시 덮을 것:
+  - 가입: 시도 저장과 복원, `attemptsLeft`, `resendAvailableAt: null`
+  - 탈퇴: 같은 키로 재시도
+  - 재동의: 403 이 로그아웃으로 새지 않는다
+  - 게시판: 지워진 댓글 자리, `authorRequired` 인데 resolver 없음
+  - 푸시: 로그인 전 · `fcm:false` 면 등록 안 함, 로그아웃 전 DELETE 순서, 바깥 링크 버림, 꺼진 앱 탭이 복원 뒤에 이동
+  - 결제: 금액이 다른 돌아온 주소는 승인 안 함, 202 되묻기 상한, 402 category 문구
+- **순수 함수 시험**: 결제의 돌아올 주소 판정과 intent → 앱 스킴 변환. 토스 문서의 intent 예시 몇 개를 넣는다. WebView 위젯 자체는 플랫폼이 없어 시험하지 않으므로 얇게 둔다.
+- **백엔드 계약 시험**(태그 `backend`, 순수 Dart, 환경변수가 있을 때만):
+  - 스타터 쪽은 kotlin `apps/api` 에 대고 돈다. 동의 없는 가입이 `400 LEGAL.CONSENT_REQUIRED`, 동의 있는 가입이 `202 signUpId`, 틀린 코드가 `400 CODE_INVALID`, forgot 이 `202`, 두 번째 시드 계정 탈퇴가 `202` 인지 본다. 메일의 코드는 못 읽으니 「코드 확인 → 로그인」은 위젯 시험으로 덮는다.
+  - 샘플 쪽은 kotlin `apps/sample` 로컬 프로필(시드 `user@example.com`, 토스 테스트 키)에 대고 돈다. 서버는 F3 처럼 scratchpad 복사본 + 별도 compose 프로젝트로 띄우고 끝나면 내린다. kotlin 레포는 고치지 않는다.
+- **CI**: `flutter build apk --debug` 를 starter · sample 둘에 돌린다. 플러그인(Firebase · WebView)의 Gradle · 매니페스트 · minSdk 깨짐을 잡는다. 계약 시험은 CI 에서 돌리지 않는다.
+- **이 맥에서 확인할 수 없는 것**(Android SDK · Xcode 시뮬레이터 없음): 푸시 실수신과 탭 이동, 토스 결제창 표시와 카드 앱 전환, 재설정 링크의 앱 열림, iOS 빌드. 실기기 확인은 형 기기가 생길 때 qa 에 넘길 목록으로 README 에 남긴다.
+
+### 12.6 다음에 넓힐 것(순서는 추천)
+
+1. 인앱결제(`in_app_purchase` + kotlin 영수증 검증 모듈 — 백엔드부터) · 환불 요청 · 구독
+2. 카카오페이 · 네이버페이 직접 연동(`*_REDIRECT` 를 같은 WebView 가로채기로), Paddle 은 모바일에서 빼는 게 맞는지 확인
+3. 알림함(`notifications`) · 푸시 클릭 열람 보고(kotlin FCM 전달기가 `open` 을 실은 뒤) · 내 다른 기기 목록 · 광고 동의
+4. 게시판 첨부(`storage`) · 작성자 프로필(`author-profile`) · 운영자 도구 · 검색
+5. 소셜 로그인 · 로그인 아이디 · 이메일 필수 관문 화면, 문서 마크다운 렌더링, `--with-sample`, iOS 빌드 CI
+
+## 정해야 할 것(3단계)
+
+1. **결제 범위**(이번에 무엇을 만드는지가 바뀐다)
+   - **토스 결제창(WebView)만, 실물 · 앱 밖 서비스용으로 못 박기 (추천)**: kotlin 이 지금 받아 주는 길이고 국내 PG 앱의 관행이다. 디지털 상품용 IAP 는 백엔드 영수증 검증부터 필요해 따로 간다.
+   - IAP 까지 이번에: 디지털 상품 앱도 바로 쓸 수 있다. 대신 kotlin 에 Apple · Google 영수증 검증 모듈이 먼저 있어야 한다(지금 없음).
+   - 카카오페이 · 네이버페이 직접 연동도 이번에: 토스 계약 없이 쓰는 프로젝트를 덮는다. 대신 F14 가 두 배가 되고 기기 확인 못 한 경로가 늘어난다.
+2. **비밀번호 재설정 링크를 앱에서 어떻게 받을지**
+   - **앱에 `/reset-password` 라우트와 화면을 두고, 앱 링크 연결은 프로젝트가 도메인으로 (추천)**: 백엔드는 그대로다. 링크가 안 걸린 프로젝트에서는 웹(react) 재설정 화면이 받는다.
+   - 앱은 요청만 하고 재설정은 늘 웹에서: 앱이 가장 작다. 대신 웹이 없는 모바일 단독 프로젝트는 재설정을 못 한다.
+   - kotlin 에 「메일 6자리 코드로 재설정」을 더한다: 링크 · 도메인 없이 앱 안에서 끝난다. 대신 kotlin 레포를 고쳐야 하고 보안 검토가 다시 필요하다.
+3. **게시판 · 푸시 · 결제 화면을 둘 자리**
+   - **새 참조 앱 `apps/sample`, 찍을 때 늘 빠짐 (추천)**: 고르지 않은 패키지가 지워져도 스타터가 컴파일된다. react 의 starter · sample 과 같다.
+   - 스타터에 다 넣고 찍을 때 고르지 않은 화면 코드를 도려낸다: 앱이 하나로 끝난다. 대신 stamp 가 Dart 코드를 잘라 내는 일을 맡아 깨지기 쉽다.
+
+## 확인 못 한 것(3단계)
+
+- **토스 JS SDK v2 를 `loadHtmlString` 으로 띄운 WebView**(origin 이 우리가 준 baseUrl)에서 결제창이 뜨는지 확인하지 않았다. 열리지 않는 고정 돌아올 주소를 토스가 받아 주는지도 확인하지 않았다. 안 되면 결제창 HTML 을 정적 파일로 어딘가 올려야 한다(백엔드 또는 웹). F14 첫 단계에서 실제 테스트 키로 재 본다(기기 없이는 Android 에뮬레이터 대신 데스크톱 브라우저로 같은 HTML 을 열어 보는 정도).
+- `flutter_inappwebview` 로 카드 · 은행 앱 전환이 되는지는 기기에서만 알 수 있다. 토스의 `webview_flutter_android` ≤ 3.16.0 경고가 지금 판에도 맞는지 확인하지 않았다.
+- `google-services.json` 없이 Dart 의 `FirebaseOptions` 만으로 Android FCM 토큰이 나오는지는 검색으로 확정하지 못했다. 안 되면 샘플만 Google Services Gradle 플러그인을 쓰고, 파일은 gitignore 한 채 없으면 플러그인을 건너뛰게 한다.
+- iOS 푸시(APNs entitlement · Background Modes · Firebase 에 APNs 키 올리기)는 Xcode 가 없어 빌드조차 확인하지 못한다.
+- Flutter 3.27 부터 딥 링크가 기본으로 켜진다는 것을 기억으로만 안다. App Links · Universal Links 는 도메인이 있어야 확인할 수 있다.
+- Apple 심사 지침 3.1.1 · 3.1.3(e) 원문을 이번에 다시 읽지 않았다(검색 결과의 2차 자료). 한국 스토어의 외부 결제 허용(StoreKit External Purchase)도 이번 판단에 넣지 않았다.
+- kotlin 로컬 메일이 어디로 가는지(코드를 시험이 읽을 수 있는지) 보지 않았다. 못 읽는다고 보고 시험 전략을 짰다.
+
 ## 결정됨 (2026-11-04, 형)
 
 1. 상태관리: Riverpod 3 (손으로 쓴 provider, generator 없음).
 2. 레포: 별도 공개 레포 `flutter-skeleton` (GitHub 공개 레포 생성까지 허락).
 3. 카탈로그: flutter 쪽 `backend` 가 정본, kotlin 에는 `siblings.mobile` 한 줄만.
 4. Flutter SDK: brew cask 로 설치, Melos 는 `dart pub global activate melos`.
+5. (3단계, 2026-11-04) 결제는 토스 결제창만(실물·앱 밖 서비스용), IAP 는 디지털 판매 프로젝트가 생길 때. 재설정은 앱 화면 + 앱 링크 도메인 연결은 프로젝트 몫. 게시판·푸시·결제 화면은 apps/sample(찍을 때 빠짐). 형이 질문을 잘 모르겠다고 해 쉬운 설명 후 추천안으로 진행.

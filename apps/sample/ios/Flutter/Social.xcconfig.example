@@ -1,0 +1,25 @@
+// Copy to Social.xcconfig (git-ignored) and put your own values in. Debug.xcconfig
+// and Release.xcconfig include it; without the file every value below is empty
+// and the app builds, with the social buttons not working.
+//
+// The values here are examples only. An xcconfig comment starts with two
+// slashes, so a value must not contain a URL.
+//
+// The Kakao key is also in env/<env>.json (KAKAO_NATIVE_APP_KEY): keep both the same.
+
+// Google: the iOS OAuth client id and its reversed form (the URL scheme),
+// both in the GoogleService-Info.plist / OAuth client of your Google Cloud
+// project; the web client id is the one the server's auth-social-google uses.
+GOOGLE_CLIENT_ID = 000000000000-example.apps.googleusercontent.com
+GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.000000000000-example
+GOOGLE_SERVER_CLIENT_ID = 000000000000-exampleweb.apps.googleusercontent.com
+
+// Kakao: "Native app key" of Kakao Developers.
+KAKAO_NATIVE_APP_KEY = 0123456789abcdef0123456789abcdef
+
+// Naver: Naver Developers, Application, "Naver Login". The URL scheme is the
+// one registered there for the iOS app.
+NAVER_CLIENT_ID = exampleClientId
+NAVER_CLIENT_SECRET = exampleClientSecret
+NAVER_APP_NAME = Example App
+NAVER_URL_SCHEME = exampleapp

@@ -1,5 +1,6 @@
 package com.example.sample
 
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 
-class MainActivity : FlutterActivity()
+// The Naver SDK needs a FragmentActivity.
+class MainActivity : FlutterFragmentActivity()

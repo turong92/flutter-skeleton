@@ -6,13 +6,14 @@ The reference app: everything the starter has (sign up with the consent boxes, c
 |---|---|---|
 | Board | the posts of board `general`, post detail with reactions and comments, write and edit | `board` |
 | Store | products to buy, restore purchases, web checkout when the server allows it, my subscription | `iap` |
-| Settings | who is signed in, this device's push switch and one switch per notification kind, a test notification, account settings (delete), sign out | `push`, `auth` |
+| Settings | who is signed in, this device's push switch and one switch per notification kind, a test notification, social sign-in links, account settings (delete), sign out | `push`, `auth`, `social-login` |
 
 The starter is the smaller app (accounts only). Pick the packages you need from here; this app is not meant to ship as it is.
 
 ```
 lib/main.dart           ProviderScope + MaterialApp.router; Firebase only when its values are set; push hook and foreground SnackBar
-lib/config.dart         AppConfig: API_BASE_URL, FIREBASE_* values, board code
+lib/config.dart         AppConfig: API_BASE_URL, FIREBASE_* and social values, board code
+lib/social_support.dart the providers this build has, the account's sign-in methods, social re-auth, failure texts
 lib/firebase_setup.dart FirebaseOptions from the dart-define values (null = no Firebase)
 lib/wiring.dart         where the packages meet: legal, board (+ author resolver), push, iap on auth's ApiClient
 lib/router.dart         routes, auth gate then consent gate, two-tab shell (go_router StatefulShellRoute)
@@ -48,10 +49,27 @@ The Store tab is in-app purchase (`iap`): the products the server lists and the 
 
 It needs the kotlin-skeleton server with `payment`, `payment-iap` and `payment-appstore` or `payment-googleplay` turned on (the `iap` switch is off by default). Without them the tab says the products could not load; the rest of the app works. No store account is in this repo: create the products in App Store Connect / Play Console and put them in the server's product map. iOS needs the In-App Purchase capability on the app id in Xcode; Android needs the app uploaded to a Play testing track before the billing library lists products. None of this was run on a device here.
 
+## Social sign-in
+
+The sign-in screen shows a button for each provider that this build has **and** the server lists with an app-token entrance (`GET /auth/methods`, `nativeToken`). Google and Kakao are in the build only when their value is set; Apple only on iOS (Apple's own `SignInWithAppleButton`); Naver is always in, its values are in the native files. Settings > "Social sign-in" links another provider to the account (the proof first: password, a mailed code, or, for an account with no address, a fresh sign-in with a linked provider). Deleting the account asks for the same kind of proof; an account with Sign in with Apple has Apple told to drop its access first ("Remove Apple access", App Review). Backing out of a provider's sheet shows nothing; `409 ACCOUNT.SOCIAL_EMAIL_CONFLICT` says to sign in with the existing account and link the provider in Settings; a provider account nobody linked says "No account is registered".
+
+Values, in three places (all examples in the repo, your real ones git-ignored):
+
+| Where | What | Template |
+|---|---|---|
+| `env/<env>.json` (dart-define) | `GOOGLE_SERVER_CLIENT_ID` (web client id), `GOOGLE_IOS_CLIENT_ID` (empty = `GIDClientID` of the plist), `KAKAO_NATIVE_APP_KEY`; empty hides that button | `env/dev.json.example` |
+| `ios/Flutter/Social.xcconfig` | Google client ids and reversed id, Kakao key, Naver id, secret, app name and URL scheme; `Debug` and `Release.xcconfig` include it if it exists | `Social.xcconfig.example` |
+| `android/social.properties` | Kakao key, Naver id, secret and name, read by `app/build.gradle.kts` into the manifest; no file = empty values, the build still works | `social.properties.example` |
+
+The Kakao key is in the json and in both native files: keep the three the same. Google on Android needs the package name and the SHA-1 registered in the Google Cloud console (no file). Apple needs the "Sign in with Apple" capability on your App ID and signing team (`Runner.entitlements` has it).
+
+Buttons: Google white with an outline, Kakao `#FEE500`, Naver `#03C75A`, labelled in text only. **The logos are not in this repo**; add them following each guide: [Google](https://developers.google.com/identity/branding-guidelines), [Apple](https://developer.apple.com/design/human-interface-guidelines/sign-in-with-apple), [Kakao](https://developers.kakao.com/docs/latest/en/kakaologin/design-guide), [Naver](https://developers.naver.com/docs/login/bi/bi.md).
 
 ## Native settings in this app
 
 - Android: `POST_NOTIFICATIONS`; `INTERNET` in `src/main`; cleartext http for `10.0.2.2` and `localhost` in `src/debug` only.
+- Android social: the Kakao plugin's `AuthCodeHandlerActivity` with the `kakao<key>://oauth` intent filter (checked in the plugin source: its redirect is `kakao<key>://oauth`), the Naver `com.naver.sdk.*` meta-data, `MainActivity` is a `FlutterFragmentActivity`.
+- iOS social: `CFBundleURLTypes` (Google reversed id, `kakao<key>`, Naver scheme), `GIDClientID` / `GIDServerClientID`, `LSApplicationQueriesSchemes`, the `Nid*` keys (all from `Social.xcconfig`), `com.apple.developer.applesignin` in `Runner.entitlements`, and Naver's `handleURL` in `SceneDelegate` (the app uses scenes) and `AppDelegate`.
 - iOS: `UIBackgroundModes` `remote-notification` and `Runner.entitlements` (`aps-environment`) for push; the Debug configuration uses `Info-Debug.plist` (`Info.plist` plus local-network http). When you change one plist, change the other. Enable the Push Notifications capability for your own App ID and signing team in Xcode.
 
 ## Test
@@ -66,4 +84,5 @@ No Android SDK or Xcode ran here, so `flutter build apk`, an iOS build and every
 
 - push: a real notification arrives, a tap opens its link, the permission dialog, the iOS foreground banner
 - a mailed password-reset link opens the app (App Links / Universal Links need your own domain, see the starter README)
+- social sign-in with real provider apps: the Google, Apple, Kakao and Naver sheets, the Kakao and Naver return to the app (Android intent filter, iOS `handleURL` in the scene delegate), `import NidThirdPartyLogin` compiling in the Runner target
 - the iOS build with the entitlements and Background Modes under your own signing team

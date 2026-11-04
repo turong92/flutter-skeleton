@@ -432,3 +432,13 @@ F2 와 F4 는 나란히 갈 수 있다. 1단계 = F1~F5 이고, F5 가 끝나면
 - 실제 App Store · Google Play 구매(Xcode · Android SDK · 스토어 계정 없음). `applicationUserName` 이 iOS 에서 `appAccountToken` 이 되는지는 실기기로 확인하지 못했다(안드로이드의 `setObfuscatedAccountId` 는 플러그인 소스 `MethodCallHandlerImpl.java` 로 확인됨).
 - 스토어 나라(`storefront`)를 읽는 법. (요금제 거름과 Android 재수신은 소스로 확인해 코드에 넣었고, 실기기 동작은 못 봤다.)
 - 소모성 · 비소모성 구분: 서버 계약에 없어 단건(`ONE_TIME`)은 소모성, 구독은 비소모성으로 둔다.
+
+## 14. 소셜 로그인
+
+앱은 네이티브 SDK 로 토큰을 받고, 서버가 그 토큰을 확인한 뒤에만 우리 세션을 준다(업계 관행). 설계 정본은 kotlin-skeleton `docs/superpowers/specs/2026-11-04-social-native-design.md` 의 「flutter 절」이다. 서버 계약은 같은 레포 `docs/account-http-contract.md`(`POST /auth/social/{provider}/token`, `GET /auth/methods` 의 `nativeToken`, 연결 · `socialReauth` 의 `idToken`/`accessToken`).
+
+- 패키지 다섯: `social_login`(코어: `SocialCredential` · `SocialProvider` · nonce · `SocialAuthApi` · 컨트롤러 · `nativeToken` 으로 단추 거르기, 취소는 오류가 아니다) + 제공자별 `social_login_google` · `social_login_apple` · `social_login_kakao` · `social_login_naver`. 프로젝트는 쓰는 SDK 만 들인다(`--packages`).
+- 애플은 iOS 앱에만 둔다(심사 4.8). 네이버는 SDK 액세스 토큰을 서버가 프로필 API 로 확인하는 관행을 따른다.
+- `auth` 는 `social_login` 을 import 하지 않는다. 소셜 전용 계정의 탈퇴는 `deleteAccount` 가 앱이 넘긴 다시 인증 함수(`socialReauth`)를 부른다.
+- 키는 `env/*.json` 과 git 밖 설정 파일(`Social.xcconfig` · `social.properties`)에 두고 레포에는 `.example` 만 둔다. 실제 SDK · 콘솔 · 실기기는 시험하지 못한다.
+- 작업: F1 코어 · F2 `auth` 탈퇴 · F3 구글 · 애플 · F4 카카오 · 네이버 · F5 sample 화면 · 플랫폼 설정 · 카탈로그.

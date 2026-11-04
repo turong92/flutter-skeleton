@@ -189,8 +189,9 @@ class PasswordPolicy {
   /// breached passwords and stays the judge).
   List<PasswordViolation> violations(String password, {String? email}) {
     final found = <PasswordViolation>[];
-    if (password.runes.length < minLength)
+    if (password.runes.length < minLength) {
       found.add(PasswordViolation.tooShort);
+    }
     if (utf8.encode(password).length > maxBytes) {
       found.add(PasswordViolation.tooLong);
     }

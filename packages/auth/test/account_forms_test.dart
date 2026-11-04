@@ -410,11 +410,12 @@ void main() {
         var call = 0;
         final h = _Harness((o) {
           if (o.path == '/auth/me') return ok(principalJson());
-          if (call++ == 0)
+          if (call++ == 0) {
             throw DioException.connectionError(
               requestOptions: o,
               reason: 'down',
             );
+          }
           return _accepted({
             'status': 'DELETION_SCHEDULED',
             'purgeAfter': '2026-02-01T00:00:00Z',

@@ -13,6 +13,7 @@ workspace:
   - packages/lints
   - packages/api_client
   - packages/auth
+  - packages/ui
 
 dev_dependencies:
   melos: ^8.10.0

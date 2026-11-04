@@ -11,4 +11,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `skeleton_api_client`: Dio client with the `value` / `values` / `pagination` envelopes, `ApiRequestError` (status, code, message, trace id, field errors), `ErrorCodes` for the codes the skeleton uses, header providers and an error hook.
 - `skeleton_auth`: token stores (secure, memory), `AuthApi`, an interceptor that renews the access token on 401 with a single in-flight refresh, `AuthSession` (Riverpod notifier: checking, signed out, signed in), go_router redirect helpers, `LoginForm`. Backend contract test (tag `backend`) against a real kotlin-skeleton `apps/api`.
+- `skeleton_ui`: design tokens as Dart constants, light and dark Material 3 themes, `LoadingView` and `ErrorView`.
 - Repository skeleton: Pub Workspaces root, Melos scripts (`analyze`, `format`, `test`), `skeleton_lints`, CI (format, analyze, test).

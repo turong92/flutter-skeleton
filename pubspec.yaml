@@ -11,6 +11,7 @@ environment:
 # Pub workspaces do not take globs: every member is listed by path.
 workspace:
   - packages/lints
+  - packages/api_client
 
 dev_dependencies:
   melos: ^8.10.0
@@ -25,6 +26,7 @@ melos:
       run: dart format .
     test:
       description: Run the tests of every package that has a test/ folder
-      exec: flutter test
+      # flutter test needs flutter_test; a pure Dart package (api_client) uses dart test
+      exec: if grep -q 'sdk. flutter' pubspec.yaml; then flutter test; else dart test; fi
       packageFilters:
         dirExists: test

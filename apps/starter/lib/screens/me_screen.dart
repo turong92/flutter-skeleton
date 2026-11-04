@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
@@ -34,6 +35,10 @@ class MeScreen extends ConsumerWidget {
         data: (principal) => ListView(
           padding: const EdgeInsets.all(SkeletonSpace.md),
           children: [
+            OutlinedButton(
+              onPressed: () => context.go('/account'),
+              child: const Text('Account settings'),
+            ),
             ListTile(
               title: Text(principal.email ?? principal.accountId),
               subtitle: Text('Roles: ${principal.roles.join(', ')}'),

@@ -5,6 +5,7 @@ import 'package:skeleton_ui/skeleton_ui.dart';
 
 import 'config.dart';
 import 'router.dart';
+import 'wiring.dart';
 
 void main() {
   // Not an assert: a release build without the define would otherwise start
@@ -21,6 +22,10 @@ void main() {
           const AuthConfig(apiBaseUrl: AppConfig.apiBaseUrl),
         ),
         tokenStoreProvider.overrideWithValue(SecureTokenStore()),
+        signUpAttemptStoreProvider.overrideWithValue(
+          SecureSignUpAttemptStore(),
+        ),
+        ...starterWiring,
       ],
       child: const StarterApp(),
     ),

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
+
+import 'form_page.dart';
 
 /// The auth package's form in a page. Pass `LoginLabels` here to translate it.
 class LoginScreen extends StatelessWidget {
@@ -8,19 +11,21 @@ class LoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Starter')),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(SkeletonSpace.lg),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
-              child: const LoginForm(),
-            ),
-          ),
+    return FormPage(
+      title: 'Starter',
+      children: [
+        const LoginForm(),
+        const SizedBox(height: SkeletonSpace.md),
+        OutlinedButton(
+          onPressed: () => context.go('/sign-up'),
+          child: const Text('Create account'),
         ),
-      ),
+        const SizedBox(height: SkeletonSpace.sm),
+        OutlinedButton(
+          onPressed: () => context.go('/forgot-password'),
+          child: const Text('Forgot password?'),
+        ),
+      ],
     );
   }
 }

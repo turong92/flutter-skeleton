@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-/// The three tabs. Each keeps its own place when another tab is open.
+/// The two tabs. Each keeps its own place when another tab is open.
 class ShellScreen extends StatelessWidget {
   const ShellScreen({super.key, required this.shell});
 
@@ -21,11 +21,6 @@ class ShellScreen extends StatelessWidget {
             icon: Icon(Icons.forum_outlined),
             selectedIcon: Icon(Icons.forum),
             label: 'Board',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.payments_outlined),
-            selectedIcon: Icon(Icons.payments),
-            label: 'Payment',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),

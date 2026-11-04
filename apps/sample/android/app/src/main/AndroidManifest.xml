@@ -36,61 +36,11 @@
             android:name="flutterEmbedding"
             android:value="2" />
     </application>
-    <!-- Package visibility (Android 11+). Without these entries the payment
-         window cannot see the card and bank apps it hands over to.
-         The package list is Toss Payments' list of card and bank apps; extend it
-         with the apps your buyers use. -->
     <queries>
         <!-- Used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
-        <!-- The three kinds of address the payment window opens. -->
-        <intent>
-            <action android:name="android.intent.action.VIEW"/>
-            <category android:name="android.intent.category.BROWSABLE"/>
-            <data android:scheme="intent"/>
-        </intent>
-        <intent>
-            <action android:name="android.intent.action.VIEW"/>
-            <data android:scheme="market"/>
-        </intent>
-        <intent>
-            <action android:name="android.intent.action.VIEW"/>
-            <category android:name="android.intent.category.BROWSABLE"/>
-            <data android:scheme="https"/>
-        </intent>
-        <!-- Card and bank apps. -->
-        <package android:name="viva.republica.toss"/>
-        <package android:name="com.kakao.talk"/>
-        <package android:name="com.kakaobank.channel"/>
-        <package android:name="com.nhn.android.search"/>
-        <package android:name="com.samsung.android.spay"/>
-        <package android:name="com.samsung.android.spaylite"/>
-        <package android:name="com.kbcard.cxh.appcard"/>
-        <package android:name="com.kbstar.liivbank"/>
-        <package android:name="com.kbstar.reboot"/>
-        <package android:name="com.kbstar.kbbank"/>
-        <package android:name="kvp.jjy.MispAndroid320"/>
-        <package android:name="com.hyundaicard.appcard"/>
-        <package android:name="com.shcard.smartpay"/>
-        <package android:name="com.shinhan.smartcaremgr"/>
-        <package android:name="com.shinhancard.smartshinhan"/>
-        <package android:name="kr.co.samsungcard.mpocket"/>
-        <package android:name="com.lcacApp"/>
-        <package android:name="com.lottemembers.android"/>
-        <package android:name="com.hanaskcard.paycla"/>
-        <package android:name="com.hanaskcard.rocomo.potal"/>
-        <package android:name="kr.co.citibank.citimobile"/>
-        <package android:name="com.wooricard.smartapp"/>
-        <package android:name="com.wooribank.smart.npib"/>
-        <package android:name="nh.smart.nhallonepay"/>
-        <package android:name="com.nonghyup.nhcardpay"/>
-        <package android:name="com.nhnent.payapp"/>
-        <package android:name="com.kftc.bankpay.android"/>
-        <package android:name="com.ahnlab.v3mobileplus"/>
-        <package android:name="kr.co.shiftworks.vguardweb"/>
-        <package android:name="com.TouchEn.mVaccine.webs"/>
     </queries>
 </manifest>

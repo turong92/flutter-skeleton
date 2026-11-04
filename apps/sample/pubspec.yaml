@@ -1,5 +1,5 @@
 name: sample
-description: Reference app of flutter-skeleton. Sign in, board, payment, push and settings tabs on the sample server of kotlin-skeleton.
+description: Reference app of flutter-skeleton. Sign in, board, push and settings tabs on the sample server of kotlin-skeleton.
 publish_to: none
 version: 1.0.0+1
 resolution: workspace
@@ -18,7 +18,6 @@ dependencies:
   skeleton_auth: any # workspace sibling
   skeleton_board: any # workspace sibling
   skeleton_legal: any # workspace sibling
-  skeleton_payment: any # workspace sibling
   skeleton_push: any # workspace sibling
   skeleton_ui: any # workspace sibling
 

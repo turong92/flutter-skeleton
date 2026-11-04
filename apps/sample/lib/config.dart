@@ -21,13 +21,4 @@ abstract final class AppConfig {
     'FIREBASE_ANDROID_APP_ID',
   );
   static const firebaseIosAppId = String.fromEnvironment('FIREBASE_IOS_APP_ID');
-
-  /// Return addresses of the payment window. They are never opened: the window
-  /// is stopped on the way there. Any fixed https addresses of your project.
-  static final paymentSuccessUrl = Uri.parse(
-    'https://checkout.example.com/pay/success',
-  );
-  static final paymentFailUrl = Uri.parse(
-    'https://checkout.example.com/pay/fail',
-  );
 }

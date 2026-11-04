@@ -10,7 +10,6 @@ import 'screens/account_screen.dart';
 import 'screens/board_screens.dart';
 import 'screens/forgot_password_screen.dart';
 import 'screens/login_screen.dart';
-import 'screens/payment_screen.dart';
 import 'screens/reset_password_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/shell_screen.dart';
@@ -129,14 +128,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                     ],
                   ),
                 ],
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/payment',
-                builder: (context, state) => const PaymentScreen(),
               ),
             ],
           ),

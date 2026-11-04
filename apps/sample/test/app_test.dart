@@ -109,17 +109,6 @@ class _Backend {
           'pagination': _pagination,
           'meta': _meta,
         });
-      case ('GET', '/payments/config'):
-        return FakeAdapter.json(200, {
-          'value': {'available': true, 'testMode': true},
-          'meta': _meta,
-        });
-      case ('GET', '/payments/orders'):
-        return FakeAdapter.json(200, {
-          'values': <Object?>[],
-          'cursor': {'nextCursor': null, 'hasNext': false},
-          'meta': _meta,
-        });
       case ('GET', '/push/config'):
         return FakeAdapter.json(200, {
           'value': {
@@ -233,20 +222,6 @@ void main() {
     );
   });
 
-  testWidgets('the payment tab offers cheer-3000 under the test strip', (
-    tester,
-  ) async {
-    await tester.pumpWidget(_app(_Backend()));
-    await _signIn(tester);
-
-    await tester.tap(find.text('Payment'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Test payment: no real money moves.'), findsOneWidget);
-    expect(find.text('Cheer 3,000 KRW'), findsOneWidget);
-    expect(find.text('Pay 3,000 KRW'), findsOneWidget);
-  });
-
   testWidgets('sign out removes this device from the server first', (
     tester,
   ) async {
@@ -291,7 +266,7 @@ void main() {
   ) async {
     final source = FakePushTokenSource(
       permission: PushPermission.granted,
-      initial: PushMessage(title: 'x', link: '/payment'),
+      initial: PushMessage(title: 'x', link: '/settings'),
     );
     final store = MemoryTokenStore();
     await store.save(
@@ -302,6 +277,6 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Cheer 3,000 KRW'), findsOneWidget);
+    expect(find.text('Sign out'), findsOneWidget);
   });
 }

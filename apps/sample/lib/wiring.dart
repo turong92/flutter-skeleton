@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_board/skeleton_board.dart';
 import 'package:skeleton_legal/skeleton_legal.dart';
-import 'package:skeleton_payment/skeleton_payment.dart';
 import 'package:skeleton_push/skeleton_push.dart';
 
 import 'router.dart';
@@ -38,8 +37,5 @@ final sampleWiring = <Override>[
   pushOpenLinkProvider.overrideWith(
     (ref) =>
         (link) => ref.read(routerProvider).go(link),
-  ),
-  paymentApiProvider.overrideWith(
-    (ref) => PaymentApi(ref.watch(apiClientProvider)),
   ),
 ];

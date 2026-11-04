@@ -17,7 +17,6 @@ workspace:
   - packages/legal
   - packages/board
   - packages/push
-  - packages/payment
   - apps/starter
   - apps/sample
   - tool

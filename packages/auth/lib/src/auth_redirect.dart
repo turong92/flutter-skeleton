@@ -10,13 +10,19 @@ import 'models.dart';
 /// - checking: the splash route
 /// - signed out: the login route
 /// - signed in: off the login and splash routes, to [signedInPath]
+///
+/// [publicPaths] (sign-up, verify, forgot and reset password) stay open in
+/// every state, so a reset link survives the splash and a signed-out user can
+/// reach the account pages.
 String? authRedirectFor(
   AuthState state,
   String location, {
   String loginPath = '/login',
   String signedInPath = '/me',
   String splashPath = '/splash',
+  Set<String> publicPaths = const {},
 }) {
+  if (publicPaths.contains(location)) return null;
   switch (state) {
     case AuthChecking():
       return location == splashPath ? null : splashPath;
@@ -35,6 +41,7 @@ GoRouterRedirect authRedirect(
   String loginPath = '/login',
   String signedInPath = '/me',
   String splashPath = '/splash',
+  Set<String> publicPaths = const {},
 }) {
   return (context, routerState) => authRedirectFor(
     ref.read(authSessionProvider),
@@ -42,6 +49,7 @@ GoRouterRedirect authRedirect(
     loginPath: loginPath,
     signedInPath: signedInPath,
     splashPath: splashPath,
+    publicPaths: publicPaths,
   );
 }
 

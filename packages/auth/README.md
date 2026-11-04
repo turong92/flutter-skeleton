@@ -2,7 +2,7 @@
 
 Email + password sign-in, token storage, silent refresh and session state for the kotlin-skeleton backend. Flutter + Riverpod 3 (hand-written providers, no generator). Web counterpart: react-skeleton `@skeleton/auth`.
 
-Targets: `auth` (`/api/v1/auth/login` · `/me`) + `auth-session` (`/auth/refresh` · `/logout`), **body delivery** (the default): the refresh token comes in the response body. Contract: kotlin-skeleton `docs/modules/auth.md`, `docs/modules/auth-session.md`, `docs/account-http-contract.md`. Not here: sign-up, password reset, social login, MFA.
+Targets: `auth` (`/api/v1/auth/login` · `/me`) + `auth-session` (`/auth/refresh` · `/logout`), **body delivery** (the default): the refresh token comes in the response body. Contract: kotlin-skeleton `docs/modules/auth.md`, `docs/modules/auth-session.md`, `docs/account-http-contract.md`. Account flows (`account` module: sign-up, password reset, deletion) are below. Not here: social login, MFA.
 
 ## What the app gives, what it gets
 
@@ -37,6 +37,31 @@ ProviderScope(
 - A sign-out or a new sign-in while a refresh is in flight wins: the late refresh result is not stored.
 - On app start with an unreachable server the state is `SignedOut` but the tokens are kept for the next start.
 - Tokens are never logged: no interceptor prints headers, `TokenPair` and the store `toString`s are redacted.
+
+## Sign-up, password reset, account deletion
+
+Targets the backend `account` module. Every widget takes its texts as a `*Labels` parameter (default English); none navigates, the app does in the callbacks.
+
+```dart
+// ProviderScope overrides, besides the two above:
+signUpAttemptStoreProvider.overrideWithValue(SecureSignUpAttemptStore()),
+// GoRouter: let signed-out users reach the account pages
+redirect: authRedirect(ref, publicPaths: {'/sign-up', '/verify', '/forgot-password', '/reset-password'}),
+```
+
+| Export | Meaning |
+|---|---|
+| `AccountApi` (`accountApiProvider`) | `signUp` · `verifyEmail` (returns `AuthResult`) · `resendVerification` · `forgotPassword` · `resetPassword` · `passwordPolicy` · `deleteAccount`. Stores nothing. |
+| `SignUpForm(onSignedUp:, consentBuilder:, onConsentRejected:)` | Email + password. A 202 saves the attempt (`signUpId`, `expiresAt`, `resendAvailableAt`) in `signUpAttemptStoreProvider`. `consentBuilder` is the slot for consent checkboxes: it gets a `ConsentSlotController`; the slot calls `update(ready:, claims:)` and submit stays disabled until `ready`. The auth package does not know `legal`. |
+| `VerifyCodeForm(attempt:, onVerified:, onExpired:)` | 6-digit code. A right code is the login (`AuthSession.signInWith`) and removes the attempt. `400 CODE_INVALID` shows `attemptsLeft`; `410 CODE_EXPIRED` removes the attempt and calls `onExpired`. `resendAvailableAt == null` hides the resend button; the countdown uses the device clock, the server decides. |
+| `restoreSignUpAttempt(store)` | The attempt to continue after the app was killed; an expired one is removed and gives null. |
+| `ForgotPasswordForm` | Always says "if an account exists...": the backend answers 202 either way. |
+| `ResetPasswordForm(token:, onReset:)` | Token from `<link-base-url>/reset-password?token=`. The server ends every session, so on success this device signs out locally (`AuthSession.signOutLocally`). The token is never shown or logged. |
+| `DeleteAccountForm(onDeleted:)` | Password again; one submit = one `Idempotency-Key`, a retry reuses it. `202` signs out locally; `409 DELETION_BLOCKED` shows `labels.blocked`. |
+| `PasswordPolicyHint` · `PasswordPolicy.violations` | Hint from `GET /account/password/policy`. `maxBytes` is UTF-8 **bytes** (a non-ASCII character takes 2 to 4), `minLength` counts characters. The server stays the judge (common and breached passwords). |
+| `signOutHooksProvider` | `SignOutHooks.add(hook)` registers work to do just before `logout()` (for example `push` deleting this device), while the tokens still work. Hooks run together with a time limit (3 s); a failing or slow hook never blocks the sign-out. |
+
+Reset links: the mail opens a web address. To open the app instead, the project adds App Links / Universal Links for its own domain (`assetlinks.json`, AASA) and a route with the same path; that is the project's part.
 
 ## Tests
 

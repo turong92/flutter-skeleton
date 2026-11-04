@@ -3,9 +3,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:skeleton_api_client/skeleton_api_client.dart';
 
+import 'account_api.dart';
+import 'account_models.dart';
 import 'auth_api.dart';
 import 'auth_client.dart';
 import 'models.dart';
+import 'sign_out_hooks.dart';
+import 'sign_up_attempt_store.dart';
 import 'token_store.dart';
 
 /// What the app gives the auth package. The providers below throw until the
@@ -45,6 +49,26 @@ final apiClientProvider = Provider<ApiClient>((ref) {
 
 final authApiProvider = Provider<AuthApi>(
   (ref) => AuthApi(ref.watch(apiClientProvider)),
+);
+
+final accountApiProvider = Provider<AccountApi>(
+  (ref) => AccountApi(ref.watch(apiClientProvider)),
+);
+
+/// Where a pending sign-up is kept. The app overrides it (for example with
+/// `SecureSignUpAttemptStore()`); only the sign-up screens read it.
+final signUpAttemptStoreProvider = Provider<SignUpAttemptStore>(
+  (ref) => throw UnimplementedError(
+    'Override signUpAttemptStoreProvider in the ProviderScope',
+  ),
+);
+
+/// Things to do just before a sign-out; other packages call `add` on it.
+final signOutHooksProvider = Provider<SignOutHooks>((ref) => SignOutHooks());
+
+/// `GET /account/password/policy`, read once for the hints.
+final passwordPolicyProvider = FutureProvider<PasswordPolicy>(
+  (ref) => ref.watch(accountApiProvider).passwordPolicy(),
 );
 
 final authSessionProvider = NotifierProvider<AuthSession, AuthState>(
@@ -91,12 +115,20 @@ class AuthSession extends Notifier<AuthState> {
     final result = await ref
         .read(authApiProvider)
         .login(email: email, password: password);
+    await signInWith(result);
+  }
+
+  /// Takes a sign-in the app already has (the code check of a sign-up is a
+  /// login): stores the tokens and signs in.
+  Future<void> signInWith(AuthResult result) async {
     await ref.read(tokenStoreProvider).save(result.tokens);
     _set(SignedIn(result.principal));
   }
 
-  /// Ends the server session when it can, and always signs out locally.
+  /// Ends the server session when it can, and always signs out locally. The
+  /// sign-out hooks run first, while the tokens still work.
   Future<void> logout() async {
+    await ref.read(signOutHooksProvider).run();
     final store = ref.read(tokenStoreProvider);
     final tokens = await store.read();
     if (tokens != null) {
@@ -107,6 +139,14 @@ class AuthSession extends Notifier<AuthState> {
       }
     }
     await store.clear();
+    _set(const SignedOut());
+  }
+
+  /// Signs out on this device only, with no server call and no hooks: for when
+  /// the server already ended every session (password reset, account
+  /// deletion).
+  Future<void> signOutLocally() async {
+    await ref.read(tokenStoreProvider).clear();
     _set(const SignedOut());
   }
 

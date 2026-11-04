@@ -410,6 +410,7 @@ void main() {
         var call = 0;
         final h = _Harness((o) {
           if (o.path == '/auth/me') return ok(principalJson());
+          if (o.path == '/account/me') return ok({'hasPassword': true});
           if (call++ == 0) {
             throw DioException.connectionError(
               requestOptions: o,
@@ -446,6 +447,80 @@ void main() {
         expect(h.container.read(authSessionProvider), isA<SignedOut>());
       },
     );
+
+    ResponseBody scheduled() => _accepted({
+      'status': 'DELETION_SCHEDULED',
+      'purgeAfter': '2026-02-01T00:00:00Z',
+    });
+
+    testWidgets('an account without a password but with an address mails a '
+        'code and deletes with it', (t) async {
+      final h = _Harness((o) {
+        if (o.path == '/auth/me') return ok(principalJson());
+        if (o.path == '/account/me') {
+          return ok({'hasPassword': false, 'email': 'user@example.com'});
+        }
+        if (o.path == '/account/delete/confirmation') {
+          return _accepted({
+            'status': 'ACCEPTED',
+            'expiresAt': '2099-01-01T00:10:00Z',
+            'resendAvailableAt': null,
+          });
+        }
+        return scheduled();
+      });
+      await h.store.save(const TokenPair(accessToken: 'a', refreshToken: 'r'));
+      await t.pumpWidget(h.app(const DeleteAccountForm()));
+      await t.pumpAndSettle();
+
+      expect(find.byKey(DeleteAccountForm.passwordKey), findsNothing);
+      await t.tap(find.widgetWithText(TextButton, 'Send me a code'));
+      await t.pumpAndSettle();
+      await _type(t, DeleteAccountForm.codeKey, '123456');
+      await t.tap(find.widgetWithText(FilledButton, 'Delete my account'));
+      await t.pumpAndSettle();
+
+      expect(h.calls('/account/delete/confirmation'), hasLength(1));
+      expect(h.calls('/account/delete').single.data, {
+        'confirmationCode': '123456',
+      });
+      expect(await h.store.read(), isNull);
+    });
+
+    testWidgets('an account without a password or address deletes with the '
+        'social proof the app hands over', (t) async {
+      final h = _Harness((o) {
+        if (o.path == '/auth/me') return ok(principalJson());
+        if (o.path == '/account/me') {
+          return ok({'hasPassword': false, 'email': null});
+        }
+        return scheduled();
+      });
+      await h.store.save(const TokenPair(accessToken: 'a', refreshToken: 'r'));
+      await t.pumpWidget(
+        h.app(
+          DeleteAccountForm(
+            socialReauth: () async => {
+              'provider': 'naver',
+              'accessToken': 'fake-access-token',
+            },
+          ),
+        ),
+      );
+      await t.pumpAndSettle();
+
+      await t.tap(find.widgetWithText(FilledButton, 'Delete my account'));
+      await t.pumpAndSettle();
+
+      expect(h.calls('/account/delete').single.data, {
+        'socialReauth': {
+          'provider': 'naver',
+          'accessToken': 'fake-access-token',
+        },
+      });
+      expect(h.calls('/account/delete/confirmation'), isEmpty);
+      expect(await h.store.read(), isNull);
+    });
 
     testWidgets(
       '409 DELETION_BLOCKED shows the sentence and keeps the user signed in',

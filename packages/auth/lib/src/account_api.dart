@@ -94,16 +94,41 @@ class AccountApi {
     decode: PasswordPolicy.fromJson,
   );
 
-  /// `POST /account/delete` (202). The same [idempotencyKey] on a retry of the
-  /// same submit; `409 ACCOUNT.DELETION_BLOCKED` when another module blocks it.
+  /// `GET /account/me`, reduced to what picks the deletion proof.
+  Future<AccountMe> me() =>
+      _client.value('/account/me', decode: AccountMe.fromJson);
+
+  /// `POST /account/delete/confirmation` (202): mails a 6-digit code to an
+  /// account that has an address and no password. Nothing is sent to an
+  /// account without an address (it uses [deleteAccount]'s `socialReauth`).
+  Future<CodeIssued> requestDeleteConfirmation() {
+    return _client.value(
+      '/account/delete/confirmation',
+      method: 'POST',
+      decode: CodeIssued.fromJson,
+    );
+  }
+
+  /// `POST /account/delete` (202). Send the one proof that fits the account:
+  /// [currentPassword], else the mailed [confirmationCode], else (no address)
+  /// [socialReauth] (`{provider, idToken | accessToken | authorizationCode,
+  /// nonce?, ...}` as the social package builds it; its tokens are never
+  /// logged). The same [idempotencyKey] on a retry of the same submit; `409
+  /// ACCOUNT.DELETION_BLOCKED` when another module blocks it.
   Future<DeletionScheduled> deleteAccount({
-    required String currentPassword,
+    String? currentPassword,
+    String? confirmationCode,
+    Map<String, Object?>? socialReauth,
     required String idempotencyKey,
   }) {
     return _client.value(
       '/account/delete',
       method: 'POST',
-      json: {'currentPassword': currentPassword},
+      json: {
+        'currentPassword': ?currentPassword,
+        'confirmationCode': ?confirmationCode,
+        'socialReauth': ?socialReauth,
+      },
       headers: {'Idempotency-Key': idempotencyKey},
       decode: DeletionScheduled.fromJson,
     );

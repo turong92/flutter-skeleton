@@ -11,6 +11,7 @@ abstract final class AccountErrorCodes {
   static const passwordPolicy = 'ACCOUNT.PASSWORD_POLICY';
   static const currentPasswordInvalid = 'ACCOUNT.CURRENT_PASSWORD_INVALID';
   static const reauthFailed = 'ACCOUNT.REAUTH_FAILED';
+  static const reauthRequired = 'ACCOUNT.REAUTH_REQUIRED';
   static const deletionBlocked = 'ACCOUNT.DELETION_BLOCKED';
   static const emailTaken = 'ACCOUNT.EMAIL_TAKEN';
 
@@ -120,6 +121,20 @@ class CodeIssued {
 
   final DateTime expiresAt;
   final DateTime? resendAvailableAt;
+}
+
+/// What `GET /account/me` says about how the person can prove who they are:
+/// a password, else the address (mailed code), else only a social provider.
+class AccountMe {
+  const AccountMe({required this.hasPassword, this.email});
+
+  factory AccountMe.fromJson(Map<String, Object?> json) => AccountMe(
+    hasPassword: json['hasPassword'] == true,
+    email: json['email'] as String?,
+  );
+
+  final bool hasPassword;
+  final String? email;
 }
 
 class DeletionScheduled {

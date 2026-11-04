@@ -51,13 +51,13 @@ redirect: authRedirect(ref, publicPaths: {'/sign-up', '/verify', '/forgot-passwo
 
 | Export | Meaning |
 |---|---|
-| `AccountApi` (`accountApiProvider`) | `signUp` · `verifyEmail` (returns `AuthResult`) · `resendVerification` · `forgotPassword` · `resetPassword` · `passwordPolicy` · `deleteAccount`. Stores nothing. |
+| `AccountApi` (`accountApiProvider`) | `signUp` · `verifyEmail` (returns `AuthResult`) · `resendVerification` · `forgotPassword` · `resetPassword` · `passwordPolicy` · `me` (`hasPassword`, `email`) · `requestDeleteConfirmation` · `deleteAccount({currentPassword?, confirmationCode?, socialReauth?})`. Stores nothing. |
 | `SignUpForm(onSignedUp:, consentBuilder:, onConsentRejected:)` | Email + password. A 202 saves the attempt (`signUpId`, `expiresAt`, `resendAvailableAt`) in `signUpAttemptStoreProvider`. `consentBuilder` is the slot for consent checkboxes: it gets a `ConsentSlotController`; the slot calls `update(ready:, claims:)` and submit stays disabled until `ready`. The auth package does not know `legal`. |
 | `VerifyCodeForm(attempt:, onVerified:, onExpired:)` | 6-digit code. A right code is the login (`AuthSession.signInWith`) and removes the attempt. `400 CODE_INVALID` shows `attemptsLeft`; `410 CODE_EXPIRED` removes the attempt and calls `onExpired`. `resendAvailableAt == null` hides the resend button; the countdown uses the device clock, the server decides. |
 | `restoreSignUpAttempt(store)` | The attempt to continue after the app was killed; an expired one is removed and gives null. |
 | `ForgotPasswordForm` | Always says "if an account exists...": the backend answers 202 either way. |
 | `ResetPasswordForm(token:, onReset:)` | Token from `<link-base-url>/reset-password?token=`. The server ends every session, so on success this device signs out locally (`AuthSession.signOutLocally`). The token is never shown or logged. |
-| `DeleteAccountForm(onDeleted:)` | Password again; one submit = one `Idempotency-Key`, a retry reuses it. `202` signs out locally; `409 DELETION_BLOCKED` shows `labels.blocked`. |
+| `DeleteAccountForm(onDeleted:, socialReauth:)` | Proof by `GET /account/me`: password again; no password + address = mailed code (`POST /account/delete/confirmation`); no address = the app's `socialReauth` hook (`Future<Map<String, Object?>?> Function()`, null = backed out; `auth` never imports `social_login`). While `me` is unread or fails the password shows; one submit = one `Idempotency-Key`, a retry reuses it. `202` signs out locally; `409 DELETION_BLOCKED` shows `labels.blocked`. |
 | `PasswordPolicyHint` · `PasswordPolicy.violations` | Hint from `GET /account/password/policy`. `maxBytes` is UTF-8 **bytes** (a non-ASCII character takes 2 to 4), `minLength` counts characters. The server stays the judge (common and breached passwords). |
 | `signOutHooksProvider` | `SignOutHooks.add(hook)` registers work to do just before `logout()` (for example `push` deleting this device), while the tokens still work. Hooks run together with a time limit (3 s); a failing or slow hook never blocks the sign-out. |
 

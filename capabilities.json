@@ -4,6 +4,12 @@
   "mode": "skeleton",
   "name": "flutter-skeleton",
   "summary": "Flutter mobile skeleton (Pub Workspaces + Melos): encapsulated packages and a starter app a new project picks from. The backend is the sibling kotlin-skeleton, the web twin is react-skeleton.",
+  "newProject": {
+    "script": "scripts/new-project.sh",
+    "usage": "scripts/new-project.sh <target-dir> <name> [--packages a,b] [--org com.example] [--prefix acme]",
+    "positional": ["target-dir", "name"],
+    "flags": ["--packages", "--org", "--prefix"]
+  },
   "siblings": {
     "kotlin": { "repo": "kotlin-skeleton", "catalog": "capabilities.json", "llms": "llms.txt" },
     "react": { "repo": "react-skeleton", "catalog": "capabilities.json", "llms": "llms.txt" }

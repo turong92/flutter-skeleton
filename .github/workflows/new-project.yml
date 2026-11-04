@@ -1,0 +1,55 @@
+name: new-project
+# Stamps two projects and resolves, analyzes and tests them. Slow, so it only runs
+# when something the stamper reads or rewrites changed (keep both lists the same).
+on:
+  push:
+    branches: [main]
+    paths:
+      - scripts/new-project.sh
+      - scripts/test-new-project.sh
+      - tool/**
+      - capabilities.json
+      - pubspec.yaml
+      - analysis_options.yaml
+      - packages/*/pubspec.yaml
+      - apps/starter/pubspec.yaml
+      - apps/starter/android/**
+      - apps/starter/ios/**
+      - apps/starter/lib/**
+      - apps/starter/test/**
+      - .github/workflows/ci.yml
+      - .github/workflows/new-project.yml
+  pull_request:
+    paths:
+      - scripts/new-project.sh
+      - scripts/test-new-project.sh
+      - tool/**
+      - capabilities.json
+      - pubspec.yaml
+      - analysis_options.yaml
+      - packages/*/pubspec.yaml
+      - apps/starter/pubspec.yaml
+      - apps/starter/android/**
+      - apps/starter/ios/**
+      - apps/starter/lib/**
+      - apps/starter/test/**
+      - .github/workflows/ci.yml
+      - .github/workflows/new-project.yml
+
+concurrency:
+  group: new-project-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  stamp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version-file: pubspec.yaml
+          cache: true
+      - run: flutter pub get
+      - run: scripts/test-new-project.sh

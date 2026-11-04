@@ -2,6 +2,11 @@
 
 > Flutter mobile skeleton (Pub Workspaces + Melos): encapsulated packages and a starter app a new project picks from. The backend is the sibling kotlin-skeleton, the web twin is react-skeleton.
 
+## New project
+
+- `scripts/new-project.sh <target-dir> <name> [--packages a,b] [--org com.example] [--prefix acme]`
+- Details: docs/capabilities.md
+
 ## Capabilities
 
 - `lints`: Shared lint rules (flutter_lints plus avoid_print and unawaited_futures) every package and app includes.

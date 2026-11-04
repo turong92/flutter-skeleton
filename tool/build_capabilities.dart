@@ -112,7 +112,11 @@ List<String> checkSchema(Json catalog, Json schema) {
 
 // ---------------------------------------------------------------------------- the catalog against this repo
 
-List<String> checkCatalog(Directory root, Json catalog) {
+List<String> checkCatalog(
+  Directory root,
+  Json catalog, [
+  String prefix = packagePrefix,
+]) {
   final problems = <String>[];
   final entries = entriesOf(catalog);
   final byId = <String, Json>{};
@@ -123,7 +127,7 @@ List<String> checkCatalog(Directory root, Json catalog) {
     byId[e['id']! as String] = e;
   }
 
-  final packages = readPackages(root);
+  final packages = readPackages(root, prefix);
   final idOfName = {for (final p in packages) p.name: p.id};
   final always = packages.any((p) => p.dir == 'apps/starter')
       ? alwaysIds(packages)
@@ -283,6 +287,8 @@ List<String> checkSiblings(Directory root, Json catalog) {
 
 const _generatedNote =
     '<!-- Generated from capabilities.json by tool/build_capabilities.dart. Do not edit by hand. -->';
+const _projectNote =
+    '<!-- Written from capabilities.json when the project was stamped. Keep the two in step by hand. -->';
 
 String _code(String s) => '`$s`';
 String _cell(String s) => s.replaceAll('|', r'\|').replaceAll('\n', ' ');
@@ -312,7 +318,7 @@ String _howToTake(Json e) {
 String renderMd(Json catalog) {
   final entries = entriesOf(catalog);
   final out = StringBuffer()
-    ..writeln(_generatedNote)
+    ..writeln(catalog['mode'] == 'project' ? _projectNote : _generatedNote)
     ..writeln()
     ..writeln('# Capabilities — ${catalog['name']}')
     ..writeln()

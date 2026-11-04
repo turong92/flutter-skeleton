@@ -2,7 +2,7 @@
 
 Flutter 모바일 앱 스켈레톤 — **Pub Workspaces + Melos**. kotlin-skeleton 백엔드, react-skeleton 웹과 같은 기조로, 캡슐화된 패키지를 모아 두고 프로젝트가 필요한 것만 골라 쓴다. 스켈레톤 자체가 돌아가고 시험되는 레포다(생성기 스크립트가 아니다).
 
-> 상태: **1단계(최소 버전)**. 스타터 앱에서 이메일 · 비밀번호로 로그인하고, `GET /api/v1/auth/me` 로 내 정보를 보고, 로그아웃한다. 액세스 토큰이 만료되면 리프레시 토큰으로 조용히 갱신하고, 갱신에 실패하면 로그인 화면으로 돌아간다. 기능 카탈로그는 `capabilities.json`(`docs/capabilities.md` · `llms.txt` 가 거기서 만들어진다). `new-project.sh`(골라 찍기)는 2단계다.
+> 상태: **1단계(최소 버전)**. 스타터 앱에서 이메일 · 비밀번호로 로그인하고, `GET /api/v1/auth/me` 로 내 정보를 보고, 로그아웃한다. 액세스 토큰이 만료되면 리프레시 토큰으로 조용히 갱신하고, 갱신에 실패하면 로그인 화면으로 돌아간다. 기능 카탈로그는 `capabilities.json`(`docs/capabilities.md` · `llms.txt` 가 거기서 만들어진다). 새 프로젝트는 `scripts/new-project.sh` 로 골라 찍는다(아래).
 
 ## 구조
 
@@ -32,6 +32,14 @@ dart format --output=none --set-exit-if-changed .  # CI 가 보는 포맷 검사
 ```
 
 작업 중에는 바뀐 패키지 폴더에서만 돌린다: `cd packages/api_client && dart test` · `cd packages/auth && flutter test`.
+
+## 새 프로젝트
+
+```bash
+scripts/new-project.sh <target-dir> <name> [--packages a,b] [--org com.example] [--prefix acme]
+```
+
+레포를 복사해 `apps/starter` 를 `apps/<name>` 으로 바꾸고(pubspec 이름 · Android namespace/applicationId/MainActivity 폴더 · iOS 번들 id · 표시 이름), 스타터가 쓰는 패키지 + `--packages` 만 남긴다. `--prefix acme` 는 `skeleton_` 를 `acme_` 로 바꾼다. 바꿀 문자열을 못 찾으면 멈춘다. `scripts/test-new-project.sh` 가 기본 찍기와 `--packages` 찍기를 해 보고 찍힌 곳에서 pub get · analyze · test 를 돌린다(CI 에서는 관련 파일이 바뀔 때만).
 
 ## 설정
 

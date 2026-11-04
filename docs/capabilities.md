@@ -6,6 +6,12 @@ Flutter mobile skeleton (Pub Workspaces + Melos): encapsulated packages and a st
 
 The source is `capabilities.json` (schema `docs/capabilities.schema.json`); this file and `llms.txt` are made from it.
 
+## new-project.sh
+
+- `scripts/new-project.sh <target-dir> <name> [--packages a,b] [--org com.example] [--prefix acme]`
+
+`--packages` takes ids from the table; what a package needs comes along. The backend side is built with kotlin-skeleton `new-project.sh --modules` from the modules in the Backend column.
+
 ## Entries
 
 | id | What it gives | How to take it | Backend modules | Pairs with (react) |

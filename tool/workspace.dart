@@ -29,9 +29,9 @@ class PubPackage {
 String? pubspecName(String pubspec) =>
     RegExp(r'^name:\s*(\S+)', multiLine: true).firstMatch(pubspec)?.group(1);
 
-Set<String> skeletonDeps(String pubspec) => {
+Set<String> skeletonDeps(String pubspec, [String prefix = packagePrefix]) => {
   for (final m in RegExp(
-    '^  ($packagePrefix[a-z0-9_]+):',
+    '^  (${RegExp.escape(prefix)}[a-z0-9_]+):',
     multiLine: true,
   ).allMatches(pubspec))
     m.group(1)!,
@@ -66,7 +66,7 @@ Set<String> alwaysIds(List<PubPackage> all) {
 }
 
 /// Every `packages/*` and `apps/*` folder that has a pubspec.
-List<PubPackage> readPackages(Directory root) {
+List<PubPackage> readPackages(Directory root, [String prefix = packagePrefix]) {
   final found = <PubPackage>[];
   for (final group in ['packages', 'apps']) {
     final dir = Directory('${root.path}/$group');
@@ -81,7 +81,7 @@ List<PubPackage> readPackages(Directory root) {
         PubPackage(
           pubspecName(text)!,
           '$group/${folder.path.split('/').last}',
-          skeletonDeps(text),
+          skeletonDeps(text, prefix),
         ),
       );
     }

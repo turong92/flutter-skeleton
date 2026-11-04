@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# Test of scripts/new-project.sh: bad arguments, then two real stamps that must resolve, analyze and test.
+#
+#   scripts/test-new-project.sh
+#
+#   1. bad arguments are refused with exit 2 and create nothing
+#   2. default stamp (acme_app, com.example): renames, no leftovers, pub get + analyze + test of the whole workspace
+#   3. --packages auth --org com.shop --prefix shop (shop_app): the same, with the prefix and org applied
+#
+# Needs the Flutter SDK and network for `flutter pub get` (a few minutes). The temp folder goes away at the end (KEEP=1 keeps it).
+# Texts that cannot be found stopping the stamp is tested in tool/test/stamp_test.dart.
+set -euo pipefail
+
+SRC="$(cd "$(dirname "$0")/.." && pwd -P)"
+SCRIPT="$SRC/scripts/new-project.sh"
+TMP="$(mktemp -d "${TMPDIR:-/tmp}/new-project-test.XXXXXX")"
+trap '[ "${KEEP:-0}" = 1 ] || rm -rf "$TMP"' EXIT
+
+FAILURES=0
+pass() { echo "  ok   $1"; }
+fail() { echo "  FAIL $1"; FAILURES=$((FAILURES + 1)); }
+check() { # check "<what>" <command...> passes when the command succeeds
+  local what="$1"; shift
+  if "$@" >/dev/null 2>&1; then pass "$what"; else fail "$what"; fi
+}
+LAST_OUTPUT=""
+expect_exit() { # expect_exit <code> "<what>" <command...>
+  local want="$1" what="$2"; shift 2
+  local got=0
+  LAST_OUTPUT="$("$@" 2>&1)" || got=$?
+  if [ "$got" = "$want" ]; then pass "$what (exit $got)"; else fail "$what: exit $got, expected $want: $(echo "$LAST_OUTPUT" | head -3)"; fi
+}
+leftovers() { # leftovers <dir> <pattern>: files that still contain the pattern (generated and lock files are ignored)
+  grep -rIl --exclude-dir=.dart_tool --exclude-dir=build --exclude=pubspec.lock -e "$2" "$1" || true
+}
+
+echo "== 1. arguments"
+expect_exit 2 "no arguments" bash "$SCRIPT"
+expect_exit 2 "an unknown package" bash "$SCRIPT" "$TMP/x1" acme_app --packages no-such-package
+echo "$LAST_OUTPUT" | grep -q "api-client" && pass "the error lists the valid packages" || fail "no package list: $LAST_OUTPUT"
+mkdir "$TMP/exists"
+expect_exit 2 "a target that exists" bash "$SCRIPT" "$TMP/exists" acme_app
+expect_exit 2 "a name with a hyphen" bash "$SCRIPT" "$TMP/x2" acme-app
+expect_exit 2 "an org that is not reverse-domain" bash "$SCRIPT" "$TMP/x3" acme_app --org acme
+expect_exit 2 "the prefix skeleton" bash "$SCRIPT" "$TMP/x4" acme_app --prefix skeleton
+expect_exit 2 "an unknown option" bash "$SCRIPT" "$TMP/x5" acme_app --nope
+expect_exit 2 "a target inside the repo" bash "$SCRIPT" "$SRC/stamped-inside" acme_app
+[ ! -e "$SRC/stamped-inside" ] && pass "nothing is created inside the repo" || { fail "created inside the repo"; rm -rf "$SRC/stamped-inside"; }
+[ ! -e "$TMP/x1" ] && pass "a refused call creates nothing" || fail "$TMP/x1 exists"
+
+# workspace-wide pub get + analyze + test of a stamped project
+verify() { # verify <dir>
+  local dir="$1"
+  ( cd "$dir" && flutter pub get ) >"$TMP/log" 2>&1 && pass "flutter pub get" || { fail "flutter pub get: $(tail -5 "$TMP/log")"; return; }
+  ( cd "$dir" && dart run melos run analyze ) >"$TMP/log" 2>&1 && pass "analyze (every package)" || fail "analyze: $(tail -15 "$TMP/log")"
+  ( cd "$dir" && dart run melos run test ) >"$TMP/log" 2>&1 && pass "test (every package)" || fail "test: $(tail -15 "$TMP/log")"
+}
+
+echo "== 2. default stamp"
+P1="$TMP/acme"
+expect_exit 0 "stamp acme_app" bash "$SCRIPT" "$P1" acme_app
+check "the app is apps/acme_app and apps/starter is gone" test -d "$P1/apps/acme_app" -a ! -e "$P1/apps/starter"
+check "the new-project tools did not come along" test ! -e "$P1/tool" -a ! -e "$P1/scripts" -a ! -e "$P1/.github/workflows/new-project.yml"
+check "the Android package folder moved" test -f "$P1/apps/acme_app/android/app/src/main/kotlin/com/example/acme_app/MainActivity.kt" -a ! -e "$P1/apps/acme_app/android/app/src/main/kotlin/com/example/starter"
+check "applicationId is com.example.acme_app" grep -q 'applicationId = "com.example.acme_app"' "$P1/apps/acme_app/android/app/build.gradle.kts"
+check "the iOS bundle id has a hyphen, not an underscore" grep -q 'PRODUCT_BUNDLE_IDENTIFIER = com.example.acme-app;' "$P1/apps/acme_app/ios/Runner.xcodeproj/project.pbxproj"
+check "the workspace lists the app and not tool" bash -c "grep -q '  - apps/acme_app' '$P1/pubspec.yaml' && ! grep -q '  - tool' '$P1/pubspec.yaml'"
+check "no env/*.json, no .git, no generated platform files came along" bash -c "[ ! -e '$P1/.git' ] && [ ! -e '$P1/apps/acme_app/env/dev.json' ] && [ ! -e '$P1/apps/acme_app/ios/Flutter/Generated.xcconfig' ]"
+[ -z "$(leftovers "$P1" 'com.example.starter\|package:starter/')" ] && pass "no starter id left" || fail "starter left in: $(leftovers "$P1" 'com.example.starter\|package:starter/')"
+check "the catalog is a project catalog" grep -q '"mode": "project"' "$P1/capabilities.json"
+verify "$P1"
+
+echo "== 3. --packages auth --org com.shop --prefix shop"
+P2="$TMP/shop"
+expect_exit 0 "stamp shop_app" bash "$SCRIPT" "$P2" shop_app --packages auth --org com.shop --prefix shop
+check "the package is shop_auth, the folder stays packages/auth" grep -q '^name: shop_auth' "$P2/packages/auth/pubspec.yaml"
+check "applicationId is com.shop.shop_app" grep -q 'applicationId = "com.shop.shop_app"' "$P2/apps/shop_app/android/app/build.gradle.kts"
+check "imports use the prefix" grep -q "package:shop_auth/shop_auth.dart" "$P2/apps/shop_app/lib/main.dart"
+[ -z "$(leftovers "$P2" 'skeleton_')" ] && pass "no skeleton_ left" || fail "skeleton_ left in: $(leftovers "$P2" 'skeleton_')"
+verify "$P2"
+
+echo
+if [ "$FAILURES" -eq 0 ]; then echo "all passed"; else echo "$FAILURES failed"; exit 1; fi

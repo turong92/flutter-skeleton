@@ -27,10 +27,16 @@ kotlin-skeleton `docs/account-http-contract.md`, `docs/modules/auth.md`, `docs/m
 
 ## 현재 범위
 
-1단계(로그인 → 내 정보 → 로그아웃, 조용한 갱신) + 카탈로그. 가입 · 재설정 · 소셜 · 푸시 · 실시간 · 다국어 · `new-project.sh` 는 아직 없다.
+1단계(로그인 → 내 정보 → 로그아웃, 조용한 갱신) + 카탈로그 + `new-project.sh`(2단계). 가입 · 재설정 · 소셜 · 푸시 · 실시간 · 다국어는 아직 없다.
 
 ## 카탈로그
 
 - `capabilities.json` 이 정본이고 `docs/capabilities.md` · `llms.txt` 는 거기서 만든다: `dart tool/build_capabilities.dart`(쓰고 검사) · `--check`(CI). 패키지나 앱을 더하면 항목을 붙인다(안 붙이면 검사가 막는다).
 - 백엔드 짝은 이 카탈로그의 `backend` 가 정본이다(kotlin 쪽에는 `siblings.mobile` 한 줄뿐). 옆에 `../kotlin-skeleton` · `../react-skeleton` 이 클론돼 있으면 모듈 이름 · 문서 경로 · `pairsWith.react` id 를 읽어 맞춰 본다(옆 레포는 고치지 않는다).
 - `tool/` 은 워크스페이스 패키지(`skeleton_tool`)라 `melos run test` 가 시험도 돌린다.
+
+## new-project
+
+- `scripts/new-project.sh` 가 순서를 정하고 문자열 작업은 `tool/new_project/stamp.dart`. **바꿀 문자열이나 파일을 못 찾으면 조용히 넘기지 않고 멈춘다** — 스타터의 android/ios 파일을 고치면 stamp.dart 의 바꾸는 목록도 같이 본다.
+- 패키지를 더하면 `stampFlag.included`(스타터가 쓰면 `always`, 아니면 `flag` + `--packages <id>`)를 맞춘다. 검사가 어긋남을 막는다.
+- 확인: `scripts/test-new-project.sh`(몇 분, 네트워크). 바뀐 파일이 stamp 와 관계없으면 돌리지 않는다.

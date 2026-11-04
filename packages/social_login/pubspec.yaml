@@ -1,0 +1,20 @@
+name: skeleton_social_login
+description: Sign in with a social provider's app SDK token, checked by the kotlin-skeleton auth-social modules.
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.13.0
+  flutter: 3.47.9
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^3.4.3
+  skeleton_api_client: any # workspace sibling
+  skeleton_auth: any # workspace sibling
+
+dev_dependencies:
+  dio: ^5.11.1
+  flutter_test:
+    sdk: flutter

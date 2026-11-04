@@ -12,8 +12,10 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_riverpod: ^3.4.3
+  go_router: ^18.1.2
   skeleton_api_client: any # workspace sibling
 
 dev_dependencies:
+  skeleton_auth: any # workspace sibling, test only: the 403 must not reach its sign-out
   flutter_test:
     sdk: flutter

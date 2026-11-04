@@ -91,7 +91,7 @@ class _AdvertisingSettingsViewState
       ),
     );
     if (agreed != true) return;
-    ref.invalidate(_advertisingProvider);
+    if (mounted) ref.invalidate(_advertisingProvider);
     messenger.showSnackBar(SnackBar(content: Text(labels.agreed(_stamp))));
   }
 
@@ -142,7 +142,7 @@ class _AdvertisingSettingsViewState
       failed = true;
     }
     // read again either way: a half-done withdrawal must not stay shown as on
-    ref.invalidate(_advertisingProvider);
+    if (mounted) ref.invalidate(_advertisingProvider);
     if (!failed) {
       messenger.showSnackBar(SnackBar(content: Text(labels.withdrawn(_stamp))));
     }

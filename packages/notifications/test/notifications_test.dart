@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:skeleton_notifications/skeleton_notifications.dart';
 
@@ -99,6 +100,34 @@ void main() {
     expect(find.text('title a'), findsNothing);
     await tester.pumpAndSettle();
     expect(find.text('title a'), findsNothing);
+  });
+
+  test('a list invalidated while the next page loads raises nothing', () async {
+    final server = FakeInbox()
+      ..pages = [
+        [itemJson('a')],
+        [itemJson('b')],
+      ];
+    final container = ProviderContainer(
+      overrides: [
+        notificationsApiProvider.overrideWithValue(server.api),
+        notificationsAccountProvider.overrideWithValue('acc_1'),
+      ],
+    );
+    addTearDown(container.dispose);
+    final provider = notificationListProvider('acc_1');
+    container.listen(provider, (_, _) {});
+    await container.read(provider.future);
+
+    final loading = container.read(provider.notifier).loadMore();
+    container.invalidate(provider);
+    final fresh = container.read(provider.future);
+
+    await loading;
+    await fresh;
+    // the late page is dropped: the list is the freshly read first page
+    expect(container.read(provider).requireValue.items.map((i) => i.id), ['a']);
+    expect(container.read(provider).requireValue.loadingMore, false);
   });
 
   testWidgets('signed out, nothing is called', (tester) async {

@@ -90,6 +90,9 @@ class NotificationListNotifier extends AsyncNotifier<NotificationListState> {
   Future<void> loadMore() async {
     final current = state.value;
     if (current == null || !current.hasNext || current.loadingMore) return;
+    // The list may be read again (or dropped) while the page is on its way;
+    // this ref is the one of the build that asked for it.
+    final mine = ref;
     state = AsyncData(
       current.copyWith(loadingMore: true, loadMoreFailed: false),
     );
@@ -97,6 +100,7 @@ class NotificationListNotifier extends AsyncNotifier<NotificationListState> {
       final page = await ref
           .read(notificationsApiProvider)
           .list(page: current.nextPage);
+      if (!mine.mounted) return;
       // A new notification pushes rows down a page: the same row can come
       // twice. The row's id is the key.
       final seen = {for (final item in current.items) item.id};
@@ -112,6 +116,7 @@ class NotificationListNotifier extends AsyncNotifier<NotificationListState> {
         ),
       );
     } on ApiRequestError {
+      if (!mine.mounted) return;
       state = AsyncData(
         current.copyWith(loadingMore: false, loadMoreFailed: true),
       );

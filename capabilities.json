@@ -425,7 +425,7 @@
       "stampFlag": { "flag": null, "included": "never" },
       "needs": ["api-client", "auth", "board", "iap", "legal", "notifications", "push", "realtime", "social-login", "social-login-apple", "social-login-google", "social-login-kakao", "social-login-naver", "ui"],
       "backend": {
-        "modules": ["auth", "auth-session", "account", "legal", "board", "notification", "notification-jdbc", "notification-sse", "notification-push", "notification-fcm", "payment", "payment-iap", "platform", "auth-social", "auth-social-google", "auth-social-apple", "auth-social-kakao", "auth-social-naver"],
+        "modules": ["auth", "auth-session", "account", "legal", "board", "notification", "notification-jdbc", "notification-sse", "notification-push", "notification-push-legal", "notification-fcm", "payment", "payment-iap", "platform", "auth-social", "auth-social-google", "auth-social-apple", "auth-social-kakao", "auth-social-naver"],
         "oneOfModules": [["payment-appstore", "payment-googleplay"]],
         "optionalModules": ["author-profile", "idempotency", "auth-web-handoff"],
         "basePaths": ["/api/v1/auth", "/api/v1/account", "/api/v1/legal", "/api/v1/boards", "/api/v1/push", "/api/v1/notifications", "/api/v1/payments/iap", "/api/v1/payments/subscriptions"],

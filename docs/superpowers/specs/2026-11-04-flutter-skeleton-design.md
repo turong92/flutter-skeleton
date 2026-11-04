@@ -442,3 +442,22 @@ F2 와 F4 는 나란히 갈 수 있다. 1단계 = F1~F5 이고, F5 가 끝나면
 - `auth` 는 `social_login` 을 import 하지 않는다. 소셜 전용 계정의 탈퇴는 `deleteAccount` 가 앱이 넘긴 다시 인증 함수(`socialReauth`)를 부른다.
 - 키는 `env/*.json` 과 git 밖 설정 파일(`Social.xcconfig` · `social.properties`)에 두고 레포에는 `.example` 만 둔다. 실제 SDK · 콘솔 · 실기기는 시험하지 못한다.
 - 작업: F1 코어 · F2 `auth` 탈퇴 · F3 구글 · 애플 · F4 카카오 · 네이버 · F5 sample 화면 · 플랫폼 설정 · 카탈로그.
+
+## 15. 알림함 · 푸시 연동 · 광고 알림
+
+「광고」는 **광고성 알림(마케팅 푸시)과 그 수신 동의**로 읽었다(정보통신망법 §50 관행). 서버(kotlin-skeleton)에 알림함 · SSE · 광고 동의 · 야간 · 2년 재확인이 이미 있어 서버 작업은 없다. 설계 원문은 `.superpowers/sdd/2026-11-04-flutter-inbox/2026-11-04-inbox-push-ads-design.md`.
+
+- 범위: 알림 탭(배지 · 목록 · 쪽 넘김 · 당겨서 새로고침 · 안 읽음 · 묶인 수 · 모두 읽음) · 앞 창 실시간(SSE) · 푸시 탭 이동(`link` 없으면 알림 탭) · 설정 > 알림에 광고 수신 · 야간 수신 동의 · 철회 · 2년 재확인.
+- 비목표: 앱 안 배너 · 전면 광고(AdMob), 광고를 보내는 화면, 「모든 채널 끄기」 화면, 푸시 클릭 열람 보고, 앱 아이콘 숫자 배지, 앞 창 시스템 알림, WebSocket(STOMP). 스타터에는 넣지 않는다.
+- 패키지:
+
+| id | 새/넓힘 | 하는 일 |
+|---|---|---|
+| `notifications` | 새 | `NotificationsApi` · `unreadCountProvider` · 목록 · `notificationsChanged` · `NotificationListView` · `UnreadBadge` · 안전 링크 · `notificationOpenProvider` |
+| `realtime` | 새 | SSE 하나(`SseConnection`): Bearer · 토큰 갱신은 앱 `Dio` 를 탄다, 끊기면 다시 붙기 |
+| `push` | 넓힘 | `pushFallbackLinkProvider`, `advertising.dart`(`AdvertisingApi` · `AdvertisingSettingsView`) |
+| `legal` | 넓힘 | `LegalApi.withdraw(type)` |
+| `apps/sample` | 넓힘 | 「알림」 탭 · `/notifications` · `/settings/notifications` · 잇기 |
+
+- 정한 것: 경계는 `notifications` 가 `push` · `realtime` 을 모르고 `push` 가 `notifications` 를 모른다(앱이 잇는다). 푸시를 눌러도 읽음 처리하지 않는다(서버가 「눌러 연 것」과 「읽은 것」을 따로 센다). 읽음은 줄의 `eventId`. 계정이 바뀌면 목록 · 안 읽은 수가 새로 생기고 로그아웃이면 호출하지 않는다. 쪽 넘김은 줄 `id` 로 중복을 거른다. SSE 는 앞 창 + 로그인일 때만, 사건이 오면 숫자를 더하지 않고 서버에서 다시 읽는다, 404 면 그만 붙는다. 광고 동의는 문서를 보고 체크를 직접 켠 판으로만 기록한다(스위치 한 번 · 일괄 동의 없음). 앱 라우트는 웹과 같은 경로, `link` 는 `/` 로 시작하는 앱 안 경로만 따른다.
+- 작업: F1 `notifications` · F2 `realtime` · F3 `legal.withdraw` + `push` 넓히기 · F4 `apps/sample` · 카탈로그.

@@ -54,9 +54,11 @@ flutter test      # sign in/out, sign up → code → signed in, reset, delete, 
 
 ## Reset links and App Links / Universal Links
 
-The backend mails a web address such as `https://app.example.com/reset-password?token=...` (its `link-base-url` setting). The route above already handles that path, but a tap on the link opens the app only if the project connects its own domain:
+The backend mails one https link, `https://app.example.com/reset-password?token=...` (its `link-base-url` setting). With the app installed it opens the `/reset-password` route (App Links / Universal Links); without it the same link opens the web page. The starter carries the native entries for `app.example.com`: the `intent-filter` in `AndroidManifest.xml` and `ios/Runner/Runner.entitlements` (`applinks:`; not linked to the Runner target, because a free personal team cannot sign Associated Domains. With a paid team add the capability and set `CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements`).
 
-- Android: an `intent-filter` with `android:autoVerify="true"` for the domain and `/.well-known/assetlinks.json` served from it.
-- iOS: the Associated Domains entitlement `applinks:app.example.com` and `/.well-known/apple-app-site-association` served from it.
+The project's part:
 
-The domain, those two files and the native entries are the project's part (they depend on its domain and signing keys), so the starter ships none of them. Until then the link opens in the browser. Not checked on a device here.
+- Change the domain in those two files and in the backend's `link-base-url`.
+- Serve `/.well-known/assetlinks.json` (package name, signing SHA-256) and `/.well-known/apple-app-site-association` (appID, path `/reset-password*`) from that domain.
+
+Not checked on a device here.

@@ -29,10 +29,18 @@
   - take: `--packages board`; needs: api-client
   - backend: modules `board` · `board-jdbc` · more when present `author-profile` · `idempotency` · paths `/api/v1/boards`; react twin: board
   - keywords: 게시판, 글, 댓글, 대댓글, 반응, 좋아요 / board, posts, comments, replies, reactions, likes
-- `push`: Push notifications through FCM: device registration, permission prompt, per-kind settings, a test notification, tapped-link handling and removing the device on sign-out. The app initializes Firebase.
-  - take: `--packages push`; needs: api-client
+- `push`: Push notifications through FCM: device registration, permission prompt, per-kind settings, a test notification, tapped-link handling (with a fallback path for a push without a link), removing the device on sign-out, and the consent screen for promotional push (advertising and night delivery, withdrawal, two-year reconfirmation) in package:skeleton_push/advertising.dart. The app initializes Firebase.
+  - take: `--packages push`; needs: api-client, legal
   - backend: modules `notification-push` · `notification-push-jdbc` · `notification-fcm` · more when present `notification-push-legal` · paths `/api/v1/push`; react twin: push
   - keywords: 푸시, 알림, FCM, 기기 등록, 알림 권한 / push, notifications, fcm, device token, notification permission
+- `notifications`: The notification inbox: the list with paging and pull to refresh, unread marks, folded rows, mark one and mark all as read, an unread badge for a tab, and one "read it again" call for a realtime event, a push in front or the app coming back. Everything is keyed by the signed-in account. The app builds the tab and the route.
+  - take: `--packages notifications`; needs: api-client
+  - backend: modules `notification` · `notification-jdbc` · more when present `notification-sse` · `notification-push` · paths `/api/v1/notifications`; react twin: notifications
+  - keywords: 알림함, 알림 목록, 안 읽은 알림, 읽음 처리, 알림 배지 / notification inbox, notification list, unread badge, mark as read
+- `realtime`: Server-sent events for the notification stream: one connection over the app's own Dio (Bearer and token refresh apply), every event but the greeting handed to the app, reopened after a drop or a silent line with a capped back-off, and not tried again after a 404. Pure Dart, no screens; the app opens it only in front and signed in.
+  - take: `--packages realtime`; needs: api-client
+  - backend: modules `notification` · `notification-sse` · paths `/api/v1/notifications/sse`; react twin: realtime
+  - keywords: 실시간, SSE, 서버 푸시 연결, 알림 실시간 / realtime, server-sent events, sse, live notifications
 - `iap`: In-app purchase through the App Store and Google Play: the server's product list as the store prices it, buy and restore with the server's account token, every purchase checked by the server before anything opens or finishes, left-over purchases at start, a web checkout address opened in the outside browser (only when the server's channel has the web), and the lookup that tells a person to cancel a store subscription before deleting the account. No screens.
   - take: `--packages iap`; needs: api-client
   - backend: modules `payment` · `payment-iap` · one of `payment-appstore` | `payment-googleplay` · more when present `auth-web-handoff` · `payment-jdbc` · paths `/api/v1/payments/iap` · `/api/v1/payments/subscriptions`; react twin: —
@@ -65,7 +73,7 @@
   - take: in every project; needs: api-client, auth, legal, ui
   - backend: modules `auth` · `auth-session` · `account` · `legal` · `platform` · paths `/api/v1/auth` · `/api/v1/account` · `/api/v1/legal`; react twin: app-starter
   - keywords: 스타터, 시작 템플릿, 새 앱, 모바일 시작 / starter, boilerplate, new app, mobile start
-- `app-sample`: The reference app: the starter's flows plus a board tab, a store tab (products, buy, restore, web checkout, my subscription, the cancel-in-the-store notice before account deletion), social sign-in buttons with linking in settings, push settings and a settings tab, wired the way a project would. Read it for wiring; a stamp removes it.
-  - take: never stamped (reference app); needs: api-client, auth, board, iap, legal, push, social-login, social-login-apple, social-login-google, social-login-kakao, social-login-naver, ui
-  - backend: modules `auth` · `auth-session` · `account` · `legal` · `board` · `notification-push` · `notification-fcm` · `payment` · `payment-iap` · `platform` · `auth-social` · `auth-social-google` · `auth-social-apple` · `auth-social-kakao` · `auth-social-naver` · one of `payment-appstore` | `payment-googleplay` · more when present `author-profile` · `idempotency` · `auth-web-handoff` · paths `/api/v1/auth` · `/api/v1/account` · `/api/v1/legal` · `/api/v1/boards` · `/api/v1/push` · `/api/v1/payments/iap` · `/api/v1/payments/subscriptions`; react twin: app-sample
+- `app-sample`: The reference app: the starter's flows plus a board tab, a store tab (products, buy, restore, web checkout, my subscription, the cancel-in-the-store notice before account deletion), social sign-in buttons with linking in settings, a notifications tab (inbox with an unread badge, realtime while in front, a push in front or a tapped push reading the inbox again), notification settings (push and promotional push consent) and a settings tab, wired the way a project would. Read it for wiring; a stamp removes it.
+  - take: never stamped (reference app); needs: api-client, auth, board, iap, legal, notifications, push, realtime, social-login, social-login-apple, social-login-google, social-login-kakao, social-login-naver, ui
+  - backend: modules `auth` · `auth-session` · `account` · `legal` · `board` · `notification` · `notification-jdbc` · `notification-sse` · `notification-push` · `notification-fcm` · `payment` · `payment-iap` · `platform` · `auth-social` · `auth-social-google` · `auth-social-apple` · `auth-social-kakao` · `auth-social-naver` · one of `payment-appstore` | `payment-googleplay` · more when present `author-profile` · `idempotency` · `auth-web-handoff` · paths `/api/v1/auth` · `/api/v1/account` · `/api/v1/legal` · `/api/v1/boards` · `/api/v1/push` · `/api/v1/notifications` · `/api/v1/payments/iap` · `/api/v1/payments/subscriptions`; react twin: app-sample
   - keywords: 샘플 앱, 참조 앱, 연결 예시 / sample app, reference app, wiring example

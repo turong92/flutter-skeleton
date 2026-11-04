@@ -139,11 +139,11 @@
     {
       "id": "push",
       "kind": "package",
-      "summary": "Push notifications through FCM: device registration, permission prompt, per-kind settings, a test notification, tapped-link handling and removing the device on sign-out. The app initializes Firebase.",
+      "summary": "Push notifications through FCM: device registration, permission prompt, per-kind settings, a test notification, tapped-link handling (with a fallback path for a push without a link), removing the device on sign-out, and the consent screen for promotional push (advertising and night delivery, withdrawal, two-year reconfirmation) in package:skeleton_push/advertising.dart. The app initializes Firebase.",
       "package": "skeleton_push",
       "path": "packages/push",
       "stampFlag": { "flag": "--packages push", "included": "flag" },
-      "needs": ["api-client"],
+      "needs": ["api-client", "legal"],
       "backend": {
         "modules": ["notification-push", "notification-push-jdbc", "notification-fcm"],
         "oneOfModules": [],
@@ -160,6 +160,58 @@
       "keywords": {
         "ko": ["푸시", "알림", "FCM", "기기 등록", "알림 권한"],
         "en": ["push", "notifications", "fcm", "device token", "notification permission"]
+      }
+    },
+    {
+      "id": "notifications",
+      "kind": "package",
+      "summary": "The notification inbox: the list with paging and pull to refresh, unread marks, folded rows, mark one and mark all as read, an unread badge for a tab, and one \"read it again\" call for a realtime event, a push in front or the app coming back. Everything is keyed by the signed-in account. The app builds the tab and the route.",
+      "package": "skeleton_notifications",
+      "path": "packages/notifications",
+      "stampFlag": { "flag": "--packages notifications", "included": "flag" },
+      "needs": ["api-client"],
+      "backend": {
+        "modules": ["notification", "notification-jdbc"],
+        "oneOfModules": [],
+        "optionalModules": ["notification-sse", "notification-push"],
+        "basePaths": ["/api/v1/notifications"],
+        "docs": ["docs/modules/notification.md", "docs/modules/notification-jdbc.md"]
+      },
+      "pairsWith": { "react": ["notifications"] },
+      "docs": ["packages/notifications/README.md"],
+      "notFor": [
+        "Sending notifications or announcements: the server's modules do that",
+        "The app icon badge number and system notifications in front: not built"
+      ],
+      "keywords": {
+        "ko": ["알림함", "알림 목록", "안 읽은 알림", "읽음 처리", "알림 배지"],
+        "en": ["notification inbox", "notification list", "unread badge", "mark as read"]
+      }
+    },
+    {
+      "id": "realtime",
+      "kind": "package",
+      "summary": "Server-sent events for the notification stream: one connection over the app's own Dio (Bearer and token refresh apply), every event but the greeting handed to the app, reopened after a drop or a silent line with a capped back-off, and not tried again after a 404. Pure Dart, no screens; the app opens it only in front and signed in.",
+      "package": "skeleton_realtime",
+      "path": "packages/realtime",
+      "stampFlag": { "flag": "--packages realtime", "included": "flag" },
+      "needs": ["api-client"],
+      "backend": {
+        "modules": ["notification", "notification-sse"],
+        "oneOfModules": [],
+        "optionalModules": [],
+        "basePaths": ["/api/v1/notifications/sse"],
+        "docs": ["docs/modules/notification-sse.md"]
+      },
+      "pairsWith": { "react": ["realtime"] },
+      "docs": ["packages/realtime/README.md"],
+      "notFor": [
+        "WebSocket (STOMP): only SSE is built",
+        "Delivery while the app is in the background: push does that"
+      ],
+      "keywords": {
+        "ko": ["실시간", "SSE", "서버 푸시 연결", "알림 실시간"],
+        "en": ["realtime", "server-sent events", "sse", "live notifications"]
       }
     },
     {
@@ -367,16 +419,16 @@
     {
       "id": "app-sample",
       "kind": "app",
-      "summary": "The reference app: the starter's flows plus a board tab, a store tab (products, buy, restore, web checkout, my subscription, the cancel-in-the-store notice before account deletion), social sign-in buttons with linking in settings, push settings and a settings tab, wired the way a project would. Read it for wiring; a stamp removes it.",
+      "summary": "The reference app: the starter's flows plus a board tab, a store tab (products, buy, restore, web checkout, my subscription, the cancel-in-the-store notice before account deletion), social sign-in buttons with linking in settings, a notifications tab (inbox with an unread badge, realtime while in front, a push in front or a tapped push reading the inbox again), notification settings (push and promotional push consent) and a settings tab, wired the way a project would. Read it for wiring; a stamp removes it.",
       "package": "sample",
       "path": "apps/sample",
       "stampFlag": { "flag": null, "included": "never" },
-      "needs": ["api-client", "auth", "board", "iap", "legal", "push", "social-login", "social-login-apple", "social-login-google", "social-login-kakao", "social-login-naver", "ui"],
+      "needs": ["api-client", "auth", "board", "iap", "legal", "notifications", "push", "realtime", "social-login", "social-login-apple", "social-login-google", "social-login-kakao", "social-login-naver", "ui"],
       "backend": {
-        "modules": ["auth", "auth-session", "account", "legal", "board", "notification-push", "notification-fcm", "payment", "payment-iap", "platform", "auth-social", "auth-social-google", "auth-social-apple", "auth-social-kakao", "auth-social-naver"],
+        "modules": ["auth", "auth-session", "account", "legal", "board", "notification", "notification-jdbc", "notification-sse", "notification-push", "notification-fcm", "payment", "payment-iap", "platform", "auth-social", "auth-social-google", "auth-social-apple", "auth-social-kakao", "auth-social-naver"],
         "oneOfModules": [["payment-appstore", "payment-googleplay"]],
         "optionalModules": ["author-profile", "idempotency", "auth-web-handoff"],
-        "basePaths": ["/api/v1/auth", "/api/v1/account", "/api/v1/legal", "/api/v1/boards", "/api/v1/push", "/api/v1/payments/iap", "/api/v1/payments/subscriptions"],
+        "basePaths": ["/api/v1/auth", "/api/v1/account", "/api/v1/legal", "/api/v1/boards", "/api/v1/push", "/api/v1/notifications", "/api/v1/payments/iap", "/api/v1/payments/subscriptions"],
         "docs": ["docs/sample.md"]
       },
       "pairsWith": { "react": ["app-sample"] },

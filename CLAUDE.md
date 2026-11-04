@@ -27,7 +27,7 @@ kotlin-skeleton `docs/account-http-contract.md`, `docs/modules/auth.md`, `docs/m
 
 ## 현재 범위
 
-1~2단계(로그인 → 내 정보 → 로그아웃, 조용한 갱신) + 카탈로그 + `new-project.sh`. 3단계: 가입 · 메일 인증 · 비밀번호 재설정 · 탈퇴(`auth`), 약관 동의와 재동의(`legal`, 스타터가 쓴다), 게시판(`board`) · 푸시(`push`)(둘 다 `--packages` 로 고른다), 이 둘을 연결해 보여 주는 참조 앱 `apps/sample`(찍을 때 늘 지워진다). 소셜 로그인(`social-login` 코어 + `social-login-google|apple|kakao|naver`, `--packages` 로 고른다): 제공자 앱 SDK 의 토큰을 kotlin `auth-social` 이 확인한 뒤에만 세션을 연다. 값 파일(`apps/sample/ios/Flutter/Social.xcconfig` · `android/social.properties`)은 gitignore 이고 `.example` 만 커밋한다. 실시간 · 다국어는 아직 없다.
+1~2단계(로그인 → 내 정보 → 로그아웃, 조용한 갱신) + 카탈로그 + `new-project.sh`. 3단계: 가입 · 메일 인증 · 비밀번호 재설정 · 탈퇴(`auth`), 약관 동의와 재동의(`legal`, 스타터가 쓴다), 게시판(`board`) · 푸시(`push`, 광고성 푸시 수신 동의 `skeleton_push/advertising.dart` 포함) · 알림함(`notifications`) · 실시간 SSE(`realtime`, 앞 창 + 로그인일 때만 연결)(모두 `--packages` 로 고른다), 이들을 연결해 보여 주는 참조 앱 `apps/sample`(찍을 때 늘 지워진다). 소셜 로그인(`social-login` 코어 + `social-login-google|apple|kakao|naver`, `--packages` 로 고른다): 제공자 앱 SDK 의 토큰을 kotlin `auth-social` 이 확인한 뒤에만 세션을 연다. 값 파일(`apps/sample/ios/Flutter/Social.xcconfig` · `android/social.properties`)은 gitignore 이고 `.example` 만 커밋한다. 다국어는 아직 없다(실시간은 알림 SSE 하나뿐, WebSocket 없음).
 
 결제: 인앱결제(`iap`, `--packages` 로 고른다) — 스토어 구매를 kotlin `payment-iap` 이 검증한 뒤에만 권한이 열린다. 앱 밖 웹 결제는 서버 지역 스위치가 켤 때만 1회용 링크를 바깥 브라우저로 연다(기본 꺼짐). 앱 안 WebView 결제는 두지 않는다. Firebase 설정 파일(`google-services.json` · `GoogleService-Info.plist`)은 gitignore 이고 프로젝트가 갖는다.
 

@@ -6,7 +6,7 @@
 #   1. bad arguments are refused with exit 2 and create nothing
 #   2. default stamp (acme_app, com.example): renames, no leftovers, pub get + analyze + test of the whole workspace
 #   3. --packages auth --org com.shop --prefix shop (shop_app): the same, with the prefix and org applied
-#   4. --packages board,push: both stay, apps/sample is gone, the same checks
+#   4. --packages board,push,notifications,realtime: all four stay, apps/sample is gone, the same checks
 #
 # Needs the Flutter SDK and network for `flutter pub get` (a few minutes). The temp folder goes away at the end (KEEP=1 keeps it).
 # Texts that cannot be found stopping the stamp is tested in tool/test/stamp_test.dart.
@@ -83,11 +83,11 @@ check "imports use the prefix" grep -q "package:shop_auth/shop_auth.dart" "$P2/a
 [ -z "$(leftovers "$P2" 'skeleton_')" ] && pass "no skeleton_ left" || fail "skeleton_ left in: $(leftovers "$P2" 'skeleton_')"
 verify "$P2"
 
-echo "== 4. --packages board,push"
+echo "== 4. --packages board,push,notifications,realtime"
 P3="$TMP/shop2"
-expect_exit 0 "stamp shop_app with board and push" bash "$SCRIPT" "$P3" shop_app --packages board,push
-check "board and push are kept, apps/sample is gone" test -d "$P3/packages/board" -a -d "$P3/packages/push" -a ! -e "$P3/apps/sample"
-check "the workspace lists board and push and not the sample" bash -c "grep -q '  - packages/board' '$P3/pubspec.yaml' && grep -q '  - packages/push' '$P3/pubspec.yaml' && ! grep -q 'apps/sample' '$P3/pubspec.yaml'"
+expect_exit 0 "stamp shop_app with board, push, notifications and realtime" bash "$SCRIPT" "$P3" shop_app --packages board,push,notifications,realtime
+check "the four are kept, apps/sample is gone" test -d "$P3/packages/board" -a -d "$P3/packages/push" -a -d "$P3/packages/notifications" -a -d "$P3/packages/realtime" -a ! -e "$P3/apps/sample"
+check "the workspace lists the four and not the sample" bash -c "grep -q '  - packages/board' '$P3/pubspec.yaml' && grep -q '  - packages/push' '$P3/pubspec.yaml' && grep -q '  - packages/notifications' '$P3/pubspec.yaml' && grep -q '  - packages/realtime' '$P3/pubspec.yaml' && ! grep -q 'apps/sample' '$P3/pubspec.yaml'"
 check "the CI file builds only the app" bash -c "! grep -q 'apps/sample' '$P3/.github/workflows/ci.yml'"
 verify "$P3"
 

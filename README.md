@@ -15,7 +15,9 @@ packages/
 ├── auth/            # skeleton_auth — 토큰 저장소 · 로그인 · 가입 · 재설정 · 탈퇴 · 401 갱신 · AuthSession
 ├── legal/           # skeleton_legal — 약관 동의 체크 · 문서 화면 · 403 재동의
 ├── board/           # skeleton_board — 글 · 댓글 · 반응 (--packages board)
-├── push/            # skeleton_push — FCM 기기 등록 · 설정 (--packages push)
+├── push/            # skeleton_push — FCM 기기 등록 · 설정 · 광고성 푸시 수신 동의 (--packages push)
+├── notifications/   # skeleton_notifications — 알림함 · 안 읽은 배지 (--packages notifications)
+├── realtime/        # skeleton_realtime — SSE 연결 (순수 Dart, --packages realtime)
 ├── iap/             # skeleton_iap — 인앱결제 · 서버 확인 · 웹 결제 링크 (--packages iap)
 ├── social_login/    # skeleton_social_login — 소셜 로그인 코어: 앱 SDK 토큰 → 서버 확인 → 세션 (--packages social-login)
 ├── social_login_google/ · _apple/ · _kakao/ · _naver/   # 제공자별 SDK (--packages social-login-<제공자>)

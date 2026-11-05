@@ -97,6 +97,7 @@ Future<ProviderContainer> pumpBoard(
   FakeBoard server,
   Widget child, {
   BoardAuthorResolver? resolver,
+  ThemeData? theme,
 }) async {
   final container = ProviderContainer(
     overrides: [
@@ -109,7 +110,10 @@ Future<ProviderContainer> pumpBoard(
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
-      child: MaterialApp(home: Scaffold(body: child)),
+      child: MaterialApp(
+        theme: theme,
+        home: Scaffold(body: child),
+      ),
     ),
   );
   await tester.pumpAndSettle();

@@ -163,6 +163,7 @@ class _CommentComposerState extends ConsumerState<CommentComposer> {
                   listenable: _text,
                   builder: (context, _) => FilledButton(
                     key: const ValueKey('comment-send'),
+                    style: inlineFilledStyle,
                     onPressed: _sending || _text.text.trim().isEmpty
                         ? null
                         : () => _send(config),

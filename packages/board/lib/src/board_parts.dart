@@ -2,6 +2,13 @@ import 'package:flutter/material.dart';
 
 import 'board_labels.dart';
 
+/// For a filled button inside a Row or Wrap. An app theme may give filled
+/// buttons `Size.fromHeight(48)` (infinite minimum width), which cannot be laid
+/// out where the width is unbounded and blanks the whole screen.
+final inlineFilledStyle = FilledButton.styleFrom(
+  minimumSize: const Size(0, 40),
+);
+
 /// A failed read: the message and a button that reads again.
 class LoadError extends StatelessWidget {
   const LoadError({super.key, required this.labels, required this.onRetry});

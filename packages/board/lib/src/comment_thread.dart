@@ -266,6 +266,7 @@ class _CommentTileState extends State<_CommentTile> {
               listenable: _text,
               builder: (context, _) => FilledButton(
                 key: ValueKey('edit-save-${comment.id}'),
+                style: inlineFilledStyle,
                 onPressed: widget.busy || _text.text.trim().isEmpty
                     ? null
                     : _save,

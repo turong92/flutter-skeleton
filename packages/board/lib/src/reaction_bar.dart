@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'board_parts.dart';
 import 'models.dart';
 
 /// How a reaction type is shown.
@@ -65,6 +66,7 @@ class ReactionBar extends StatelessWidget {
     final compact = ButtonStyle(
       visualDensity: VisualDensity.compact,
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      minimumSize: inlineFilledStyle.minimumSize,
     );
     return picked
         ? FilledButton.tonalIcon(

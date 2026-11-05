@@ -18,6 +18,7 @@ lib/social_support.dart the providers this build has, the account's sign-in meth
 lib/firebase_setup.dart FirebaseOptions from the dart-define values (null = no Firebase)
 lib/wiring.dart         where the packages meet: legal, board (+ author resolver), push (+ advertising, fallback link), notifications (+ account, row to path), iap on auth's ApiClient
 lib/inbox_realtime.dart the notification stream: open only signed in and in front, closed on sign-out, account change or background
+lib/deletion_pending_gate.dart  a sign-in (password or social) into the deletion grace sends everyone to /deletion-pending while `pendingDeletionProvider` holds the offer; the restore token is never in the route
 lib/email_gate.dart     an account without an address: `me.emailRequired` blocks at sign-in (reads too); `me.emailRequiredToWrite` only warns (a strip above the board, and the write button opens /email first) and a refused write (`403 ACCOUNT.EMAIL_REQUIRED`) opens /email, which can then be closed with "Later"; the blocked write is not sent again
 lib/login_id_gate.dart  an account without a login ID (`/account/me` `loginId: null`, or any call `403 ACCOUNT.LOGIN_ID_REQUIRED`) is sent to /login-id first; the server answers nothing else until it has one
 lib/nickname_gate.dart  an account without a nickname is sent to /nickname after sign-in (sign-up asks for one: the kotlin sample server is `required-on-sign-up`)

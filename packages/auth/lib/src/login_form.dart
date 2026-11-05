@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:skeleton_api_client/skeleton_api_client.dart';
 
+import 'account_models.dart';
 import 'auth_session.dart';
 
 /// The texts of [LoginForm]. The package does not translate: the app passes its
@@ -83,7 +84,11 @@ class _LoginFormState extends ConsumerState<LoginForm> {
             password: _password.text,
           );
     } catch (e) {
-      if (mounted) setState(() => _error = _messageFor(e));
+      // A deletion grace is not an error: the app shows the offer to cancel it
+      // (`pendingDeletionProvider`).
+      if (mounted && deletionPendingOf(e) == null) {
+        setState(() => _error = _messageFor(e));
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }

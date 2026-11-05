@@ -8,11 +8,13 @@ import 'package:skeleton_board/skeleton_board.dart';
 import 'package:skeleton_legal/skeleton_legal.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
+import 'deletion_pending_gate.dart';
 import 'email_gate.dart';
 import 'login_id_gate.dart';
 import 'nickname_gate.dart';
 import 'screens/account_screen.dart';
 import 'screens/board_screens.dart';
+import 'screens/deletion_pending_screen.dart';
 import 'screens/email_screen.dart';
 import 'screens/forgot_password_screen.dart';
 import 'screens/login_id_screen.dart';
@@ -35,6 +37,8 @@ const publicPaths = {
   '/verify',
   '/forgot-password',
   '/reset-password',
+  // The offer to cancel a deletion is shown to someone not signed in.
+  '/deletion-pending',
 };
 
 /// `/splash` while the stored tokens are checked, `/login` when signed out,
@@ -77,6 +81,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     if (next is SignedOut) ref.read(reconsentProvider.notifier).clear();
   });
 
+  final deletionGate = deletionPendingRedirect(ref);
   final authGate = authRedirect(
     ref,
     publicPaths: publicPaths,
@@ -111,12 +116,14 @@ final routerProvider = Provider<GoRouter>((ref) {
     // session ends; until then a signed-out router must not be sent to a gate
     // screen, or it bounces between that and /login for ever.
     redirect: (context, state) =>
+        deletionGate(context, state) ??
         authGate(context, state) ??
         (ref.read(authSessionProvider) is SignedIn
             ? accountGates(context, state)
             : null),
     refreshListenable: Listenable.merge([
       authRefreshListenable(ref),
+      deletionPendingRefreshListenable(ref),
       loginIdRefreshListenable(ref),
       emailRefreshListenable(ref),
       nicknameRefreshListenable(ref),
@@ -162,6 +169,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const LoginIdScreen(),
       ),
       GoRoute(path: '/email', builder: (context, state) => const EmailScreen()),
+      GoRoute(
+        path: '/deletion-pending',
+        builder: (context, state) => const DeletionPendingScreen(),
+      ),
       GoRoute(
         path: '/consent',
         builder: (context, state) => Consumer(

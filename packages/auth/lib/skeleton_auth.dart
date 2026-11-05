@@ -11,6 +11,7 @@ export 'src/auth_interceptor.dart';
 export 'src/auth_redirect.dart';
 export 'src/auth_session.dart';
 export 'src/delete_account_form.dart';
+export 'src/deletion_pending_form.dart';
 export 'src/display_name_form.dart';
 export 'src/email_register_form.dart';
 export 'src/email_required_interceptor.dart';

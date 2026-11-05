@@ -88,6 +88,25 @@ final accountMeProvider = FutureProvider.autoDispose<AccountMe>(
   (ref) => ref.watch(accountApiProvider).me(),
 );
 
+/// The offer to cancel a deletion, after a sign-in answered `403
+/// AUTH.ACCOUNT_DELETION_PENDING` (password: [AuthSession.login] sets it; a
+/// social sign-in sets it too). Null otherwise. Memory only: it holds the
+/// single-use restore token.
+final pendingDeletionProvider =
+    NotifierProvider<PendingDeletionNotifier, DeletionPending?>(
+      PendingDeletionNotifier.new,
+    );
+
+class PendingDeletionNotifier extends Notifier<DeletionPending?> {
+  @override
+  DeletionPending? build() => null;
+
+  void set(DeletionPending pending) => state = pending;
+
+  /// The person said no, or the offer is over: drop the token.
+  void clear() => state = null;
+}
+
 final authSessionProvider = NotifierProvider<AuthSession, AuthState>(
   AuthSession.new,
 );
@@ -133,10 +152,32 @@ class AuthSession extends Notifier<AuthState> {
     String? username,
     required String password,
   }) async {
-    final result = await ref
-        .read(authApiProvider)
-        .login(email: email, username: username, password: password);
+    final AuthResult result;
+    try {
+      result = await ref
+          .read(authApiProvider)
+          .login(email: email, username: username, password: password);
+    } on ApiRequestError catch (e) {
+      // A right password for an account in its deletion grace: no session, but
+      // the offer to cancel. The error still goes on to the caller.
+      final pending = deletionPendingOf(e);
+      if (pending != null) {
+        ref.read(pendingDeletionProvider.notifier).set(pending);
+      }
+      rethrow;
+    }
     await signInWith(result);
+  }
+
+  /// Cancels the deletion [pendingDeletionProvider] holds and signs in with
+  /// the answer. `410 ACCOUNT.TOKEN_INVALID` (too late) is thrown; the caller
+  /// then sends the person back to sign in. Nothing happens without a token.
+  Future<void> cancelDeletion() async {
+    final token = ref.read(pendingDeletionProvider)?.restoreToken;
+    if (token == null) return;
+    final result = await ref.read(accountApiProvider).cancelDeletion(token);
+    await signInWith(result);
+    ref.read(pendingDeletionProvider.notifier).clear();
   }
 
   /// Takes a sign-in the app already has (the code check of a sign-up is a

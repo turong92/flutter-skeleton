@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sample/main.dart';
+import 'package:sample/router.dart';
 import 'package:sample/screens/email_screen.dart';
 import 'package:sample/wiring.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -62,9 +63,15 @@ class _Backend {
     this.fcm = false,
     this.accountMe,
     this.boardLoginIdRequired = false,
+    this.deletionGrace = false,
   });
 
   final bool fcm;
+
+  /// The account is in its deletion grace: the sign-in answers `403
+  /// AUTH.ACCOUNT_DELETION_PENDING` with a restore token until it is used.
+  bool deletionGrace;
+  static const restoreToken = 'restore-token-for-the-test';
 
   /// `GET /account/me`; null = the endpoint is not there (404).
   Map<String, Object?>? accountMe;
@@ -72,6 +79,17 @@ class _Backend {
   /// The board answers `403 ACCOUNT.LOGIN_ID_REQUIRED`.
   final bool boardLoginIdRequired;
   late final adapter = FakeAdapter(_handle);
+
+  ResponseBody _loginResponse() => FakeAdapter.json(200, {
+    'value': {
+      'accessToken': 'access-1',
+      'tokenType': 'Bearer',
+      'expiresAt': '2026-01-01T00:15:00Z',
+      'principal': _principal,
+      'refreshToken': 'refresh-1',
+    },
+    'meta': _meta,
+  });
 
   ResponseBody _handle(RequestOptions options) {
     final me = accountMe;
@@ -109,17 +127,29 @@ class _Backend {
       case ('POST', '/account/email/change/confirm'):
       case ('POST', '/account/discard'):
         return FakeAdapter.empty(204);
-      case ('POST', '/auth/login'):
-        return FakeAdapter.json(200, {
-          'value': {
-            'accessToken': 'access-1',
-            'tokenType': 'Bearer',
-            'expiresAt': '2026-01-01T00:15:00Z',
-            'principal': _principal,
-            'refreshToken': 'refresh-1',
+      case ('POST', '/auth/login') when deletionGrace:
+        return FakeAdapter.json(403, {
+          'code': 'AUTH.ACCOUNT_DELETION_PENDING',
+          'title': 'Account deletion pending',
+          'status': 403,
+          'data': {
+            'purgeAfter': '2026-12-05T12:00:00Z',
+            'restoreToken': restoreToken,
+            'restoreTokenExpiresAt': '2026-11-05T00:15:00Z',
           },
-          'meta': _meta,
         });
+      case ('POST', '/account/delete/cancel'):
+        if ((options.data as Map)['restoreToken'] != restoreToken) {
+          return FakeAdapter.json(410, {
+            'code': 'ACCOUNT.TOKEN_INVALID',
+            'title': 'x',
+            'status': 410,
+          });
+        }
+        deletionGrace = false;
+        return _loginResponse();
+      case ('POST', '/auth/login'):
+        return _loginResponse();
       case ('GET', '/auth/me'):
         return FakeAdapter.json(200, {'value': _principal, 'meta': _meta});
       case ('POST', '/auth/logout'):
@@ -431,6 +461,46 @@ void main() {
 
     expect(find.byType(EmailRegisterForm), findsNothing);
     expect(find.text('Sign in'), findsOneWidget);
+  });
+
+  testWidgets('a sign-in into the deletion grace offers to cancel it, and the '
+      'restore token stays out of the route, the log and the screen', (
+    tester,
+  ) async {
+    final logged = <String>[];
+    final oldDebugPrint = debugPrint;
+    debugPrint = (message, {wrapWidth}) => logged.add(message ?? '');
+    final backend = _Backend(deletionGrace: true);
+    await tester.pumpWidget(_app(backend));
+    await _signIn(tester);
+
+    // The offer: the date, and the way to say yes or no.
+    expect(find.byType(DeletionPendingForm), findsOneWidget);
+    expect(find.textContaining('2026-12-05'), findsOneWidget);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(DeletionPendingForm)),
+    );
+    final location = container
+        .read(routerProvider)
+        .routeInformationProvider
+        .value
+        .uri
+        .toString();
+    expect(location, isNot(contains(_Backend.restoreToken)));
+    expect(find.textContaining(_Backend.restoreToken), findsNothing);
+    expect(logged.join('\n'), isNot(contains(_Backend.restoreToken)));
+    // nothing is signed in yet
+    expect(container.read(authSessionProvider), isA<SignedOut>());
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Cancel the deletion'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('First post'), findsOneWidget);
+    expect(container.read(authSessionProvider), isA<SignedIn>());
+    expect(container.read(pendingDeletionProvider), isNull);
+    // (the invariant check runs before tearDown callbacks: restore it here)
+    debugPrint = oldDebugPrint;
+    expect(logged.join('\n'), isNot(contains(_Backend.restoreToken)));
   });
 
   testWidgets('the app runs with push unavailable (no Firebase)', (

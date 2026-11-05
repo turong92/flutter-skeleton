@@ -21,6 +21,10 @@ abstract final class AccountErrorCodes {
   static const emailRequired = 'ACCOUNT.EMAIL_REQUIRED';
   static const discardNotAllowed = 'ACCOUNT.DISCARD_NOT_ALLOWED';
 
+  /// 403 on a sign-in whose proof was right while the account is in its
+  /// deletion grace (an `AUTH.` code that only the account flows read).
+  static const deletionPending = 'AUTH.ACCOUNT_DELETION_PENDING';
+
   /// From the `legal` module: sign-up without a required consent.
   static const legalConsentRequired = 'LEGAL.CONSENT_REQUIRED';
 }
@@ -190,6 +194,38 @@ class AccountMe {
       : displayTag == null
       ? displayName
       : '$displayName#$displayTag';
+}
+
+/// What `403 AUTH.ACCOUNT_DELETION_PENDING` says: the account is in its
+/// deletion grace. [restoreToken] comes only when the server runs
+/// `deletion.self-restore`; without it the person is only told the date.
+///
+/// The token is single-use proof of a correct sign-in: keep it in memory only
+/// (`pendingDeletionProvider`), never in a store, a route, a log or an error
+/// message. [toString] hides it.
+class DeletionPending {
+  const DeletionPending({this.purgeAfter, this.restoreToken});
+
+  /// The account's data is erased at this time.
+  final DateTime? purgeAfter;
+  final String? restoreToken;
+
+  @override
+  String toString() => 'DeletionPending(<redacted>)';
+}
+
+/// The pending deletion [error] reports, or null for any other error.
+DeletionPending? deletionPendingOf(Object error) {
+  if (error is! ApiRequestError ||
+      error.code != AccountErrorCodes.deletionPending) {
+    return null;
+  }
+  final data = error.apiError.data;
+  final token = data is Map ? data['restoreToken'] : null;
+  return DeletionPending(
+    purgeAfter: data is Map ? _time(data['purgeAfter']) : null,
+    restoreToken: token is String && token.isNotEmpty ? token : null,
+  );
 }
 
 /// The length rules of a login ID, from `GET /auth/methods`. The shape rules

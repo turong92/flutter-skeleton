@@ -93,6 +93,15 @@ class SocialLoginController extends Notifier<SocialLoginState> {
     } on SocialCancelled {
       _set(const SocialLoginIdle());
     } on ApiRequestError catch (e) {
+      // A right proof for an account in its deletion grace: hand the offer to
+      // cancel to the auth package's [pendingDeletionProvider]. The failure
+      // keeps no error, so the restore token is not carried here.
+      final pending = deletionPendingOf(e);
+      if (pending != null) {
+        ref.read(pendingDeletionProvider.notifier).set(pending);
+        _set(SocialLoginFailed(provider.id, SocialFailure.deletionPending));
+        return;
+      }
       _set(SocialLoginFailed(provider.id, socialFailureOf(e), error: e));
     } catch (e, stackTrace) {
       // The SDK failed or the app is broken: show the generic text and make

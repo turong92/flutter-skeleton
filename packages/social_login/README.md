@@ -46,7 +46,7 @@ The session is opened only after the server has accepted the token: nothing is s
 | `providerNotAvailable` | `404 AUTH_SOCIAL.PROVIDER_NOT_FOUND` | hide the button |
 | `providerDown` | `502 AUTH_SOCIAL.PROVIDER_GATEWAY_ERROR` | "Try again later." |
 | `blocked` | `403 AUTH.ACCOUNT_SUSPENDED` / `ACCOUNT.REGISTRATION_BLOCKED` | |
-| `deletionPending` | `403 AUTH.ACCOUNT_DELETION_PENDING` | tell the person the account is waiting for deletion (the restore step is the app's) |
+| `deletionPending` | `403 AUTH.ACCOUNT_DELETION_PENDING` | the account is waiting for deletion. The controller also puts the offer to cancel it into the auth package's `pendingDeletionProvider` (the failure carries no error, so no restore token); show `DeletionPendingForm` while that holds one |
 | `mfaRequired` | `403 AUTH.MFA_REQUIRED` | the second step of the app (not in this skeleton) |
 | `network` | no answer | |
 | `sdk` | the provider's SDK threw (also reported with `FlutterError.reportError`) | |

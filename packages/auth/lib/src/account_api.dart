@@ -137,6 +137,21 @@ class AccountApi {
     decode: AccountMe.fromJson,
   );
 
+  /// `POST /account/delete/cancel` (public): the account of a sign-in that
+  /// answered `403 AUTH.ACCOUNT_DELETION_PENDING` is active again and the
+  /// answer is a login. `410 ACCOUNT.TOKEN_INVALID` (used, expired, the grace
+  /// ended, suspended meanwhile): sign in again. The [restoreToken] is never
+  /// logged.
+  Future<AuthResult> cancelDeletion(String restoreToken) {
+    return _client.value(
+      '/account/delete/cancel',
+      method: 'POST',
+      json: {'restoreToken': restoreToken},
+      skipAuth: true,
+      decode: AuthResult.fromJson,
+    );
+  }
+
   /// `POST /account/email/change` (202): mails a 6-digit code to [newEmail]
   /// (the same answer for an address another account owns: the code never
   /// comes). Calling again is the resend. A session older than an hour gets

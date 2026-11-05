@@ -138,9 +138,14 @@ class _EmailRegisterFormState extends ConsumerState<EmailRegisterForm> {
   }
 
   /// Asks for the code (the first time and a resend are the same call).
-  Future<void> _send() async {
-    if (_busy || !_formKey.currentState!.validate()) return;
+  /// A resend skips the form check (the code box is empty then, as in
+  /// `VerifyCodeForm._resend`).
+  Future<void> _send({bool resend = false}) async {
+    if (_busy || (!resend && !_formKey.currentState!.validate())) return;
     final api = ref.read(accountApiProvider);
+    // One press, one key (the reauth retry reuses it); every press a new one,
+    // or the server would replay the stored answer and send no mail.
+    final key = newIdempotencyKey();
     final address = _email.text.trim();
     setState(() {
       _busy = true;
@@ -150,7 +155,7 @@ class _EmailRegisterFormState extends ConsumerState<EmailRegisterForm> {
     try {
       CodeIssued issued;
       try {
-        issued = await api.requestEmailChange(address);
+        issued = await api.requestEmailChange(address, idempotencyKey: key);
       } on ApiRequestError catch (e) {
         final reauth = widget.socialReauth;
         if (e.code != AccountErrorCodes.reauthRequired || reauth == null) {
@@ -159,7 +164,11 @@ class _EmailRegisterFormState extends ConsumerState<EmailRegisterForm> {
         final proof = await reauth();
         // The person backed out of the provider's sheet: nothing to send.
         if (proof == null) return;
-        issued = await api.requestEmailChange(address, socialReauth: proof);
+        issued = await api.requestEmailChange(
+          address,
+          idempotencyKey: key,
+          socialReauth: proof,
+        );
       }
       if (mounted) setState(() => _issued = issued);
     } catch (e) {
@@ -285,7 +294,7 @@ class _EmailRegisterFormState extends ConsumerState<EmailRegisterForm> {
             if (_issued!.resendAvailableAt != null) ...[
               const SizedBox(height: 8),
               OutlinedButton(
-                onPressed: _busy || wait > 0 ? null : _send,
+                onPressed: _busy || wait > 0 ? null : () => _send(resend: true),
                 child: Text(wait > 0 ? labels.resendIn(wait) : labels.resend),
               ),
             ],

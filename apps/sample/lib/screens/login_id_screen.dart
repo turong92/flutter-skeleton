@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
+import '../email_gate.dart';
 import '../login_id_gate.dart';
+import '../social_support.dart';
 import 'form_page.dart';
 
 /// Where an account without a login ID lands (see `login_id_gate.dart`). The
@@ -31,6 +33,11 @@ class LoginIdScreen extends ConsumerWidget {
           onPressed: () => ref.read(authSessionProvider.notifier).logout(),
           child: const Text('Sign out'),
         ),
+        // Under the address rule the ID gate also has the way out (accounts.md).
+        if (ref.watch(emailGateProvider.select((g) => g.blocking || g.toWrite)))
+          DiscardAccountButton(
+            socialReauth: () => reauthWithLinkedProvider(ref),
+          ),
       ],
     );
   }

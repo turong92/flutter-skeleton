@@ -196,15 +196,19 @@ class AccountApi {
   /// (the same answer for an address another account owns: the code never
   /// comes). Calling again is the resend. A session older than an hour gets
   /// `403 ACCOUNT.REAUTH_REQUIRED` for the first address: send [socialReauth]
-  /// (a fresh provider token, as the social package builds it).
+  /// (a fresh provider token, as the social package builds it). The call is
+  /// `@IdempotentOperation` on the server: one press uses one
+  /// [idempotencyKey] (also for the reauth retry), a resend a new one.
   Future<CodeIssued> requestEmailChange(
     String newEmail, {
+    required String idempotencyKey,
     Map<String, Object?>? socialReauth,
   }) {
     return _client.value(
       '/account/email/change',
       method: 'POST',
       json: {'newEmail': newEmail, 'socialReauth': ?socialReauth},
+      headers: {'Idempotency-Key': idempotencyKey},
       decode: CodeIssued.fromJson,
     );
   }

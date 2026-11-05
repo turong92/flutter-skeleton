@@ -93,6 +93,11 @@ void main() {
       );
       expect((change.last.data as Map)['newEmail'], 'ann@example.com');
       expect((change.last.data as Map)['socialReauth'], isNotNull);
+      // The server wants an Idempotency-Key (@IdempotentOperation); the
+      // reauth retry of one press reuses it.
+      final keys = change.map((r) => r.headers['Idempotency-Key']).toSet();
+      expect(keys, hasLength(1));
+      expect(keys.single, isA<String>());
       final confirm = server.requests.singleWhere(
         (r) => r.path == '/account/email/change/confirm',
       );

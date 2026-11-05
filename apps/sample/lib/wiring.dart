@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_board/skeleton_board.dart';
@@ -7,7 +8,20 @@ import 'package:skeleton_notifications/skeleton_notifications.dart';
 import 'package:skeleton_push/advertising.dart';
 import 'package:skeleton_push/skeleton_push.dart';
 
+import 'email_gate.dart';
+import 'login_id_gate.dart';
 import 'router.dart';
+
+/// True when no account gate (ID, address that blocks, re-consent) is up. The
+/// server refuses background reads under a gate with a 403; the push and board
+/// providers depend on this, so they start (again) when the gate closes
+/// instead of keeping the refusal.
+final _gatesClearProvider = Provider<bool>(
+  (ref) =>
+      !ref.watch(needsLoginIdProvider) &&
+      !ref.watch(emailGateProvider.select((g) => g.blocking)) &&
+      ref.watch(reconsentProvider).isEmpty,
+);
 
 /// Where the packages meet. They do not know each other; the app hands each
 /// the one `ApiClient` that `auth` builds, so every call carries the token and
@@ -16,9 +30,11 @@ final sampleWiring = <Override>[
   legalApiProvider.overrideWith(
     (ref) => LegalApi(ref.watch(apiClientProvider)),
   ),
-  boardApiProvider.overrideWith(
-    (ref) => BoardApi(ref.watch(apiClientProvider)),
-  ),
+  boardApiProvider.overrideWith((ref) {
+    // a new BoardApi when the gate closes re-reads the config that a gate refused
+    ref.watch(_gatesClearProvider);
+    return BoardApi(ref.watch(apiClientProvider));
+  }),
   // The sample server wants an author profile for a post; the first one of the
   // account is used. A server without profiles never calls this.
   boardAuthorResolverProvider.overrideWith((ref) {
@@ -35,7 +51,9 @@ final sampleWiring = <Override>[
   // true only once the stored session is checked: a tap that started the app
   // waits until then
   pushSignedInProvider.overrideWith(
-    (ref) => ref.watch(authSessionProvider) is SignedIn,
+    (ref) =>
+        ref.watch(authSessionProvider) is SignedIn &&
+        ref.watch(_gatesClearProvider),
   ),
   iapApiProvider.overrideWith((ref) => IapApi(ref.watch(apiClientProvider))),
   // true only once the stored session is checked, as for push

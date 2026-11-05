@@ -96,6 +96,20 @@ class _Backend {
 
   ResponseBody _handle(RequestOptions options) {
     final me = accountMe;
+    // A server that wants the address for changes (a nickname too).
+    if (me != null &&
+        options.method == 'PATCH' &&
+        options.path == '/account/me') {
+      if (!addressSet) {
+        return FakeAdapter.json(403, {
+          'code': 'ACCOUNT.EMAIL_REQUIRED',
+          'title': 'x',
+          'status': 403,
+        });
+      }
+      me['displayName'] = (options.data as Map)['displayName'];
+      return FakeAdapter.json(200, {'value': me, 'meta': _meta});
+    }
     if (me != null && options.path == '/account/me') {
       return FakeAdapter.json(200, {'value': me, 'meta': _meta});
     }
@@ -386,6 +400,36 @@ void main() {
 
     await registerEmail(tester);
     expect(find.byType(ReconsentScreen), findsOneWidget);
+  });
+
+  testWidgets('saving the nickname refused for want of an address opens the '
+      'email form over the nickname gate and sends the save again', (
+    tester,
+  ) async {
+    final backend = _Backend(
+      accountMe: {'hasPassword': true, 'email': null, 'displayName': null},
+    );
+    await tester.pumpWidget(_app(backend));
+    await _signIn(tester);
+    expect(find.byType(DisplayNameForm), findsOneWidget);
+
+    await tester.enterText(find.byKey(DisplayNameForm.fieldKey), 'Ann');
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+    expect(find.byType(EmailRegisterForm), findsOneWidget);
+
+    await registerEmail(tester);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(EmailRegisterForm), findsNothing);
+    expect(find.byType(DisplayNameForm), findsNothing);
+    expect(find.text('First post'), findsOneWidget);
+    expect(
+      backend.adapter.requests.where(
+        (r) => r.method == 'PATCH' && r.path == '/account/me',
+      ),
+      hasLength(2),
+    );
   });
 
   testWidgets('an address asked for at write time blocks no read, warns '

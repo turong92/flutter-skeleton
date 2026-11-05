@@ -103,6 +103,9 @@ final routerProvider = Provider<GoRouter>((ref) {
     // write is pushed over the current one and lets the other gates through.
     final email = ref.read(emailGateProvider);
     if (email.open && email.blocking) return emailGate(context, state);
+    // The write-time screen is next in line: the gates after it wait, or its
+    // push would be turned into a redirect and the screen never built.
+    if (email.open && state.matchedLocation == '/email') return null;
     if (ref.read(reconsentProvider).isNotEmpty) {
       return consentGate(context, state);
     }
@@ -276,6 +279,20 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.listen(emailGateProvider, (previous, next) {
     if (next.open && !next.blocking && !(previous?.open ?? false)) {
       unawaited(router.push<void>('/email'));
+      // Safety net: the push lands on the next change of the route. If a
+      // redirect swallowed it the screen is never built, so nothing would ever
+      // close the gate or free the held calls: that is "later".
+      void landed() {
+        router.routerDelegate.removeListener(landed);
+        final gate = ref.read(emailGateProvider);
+        final shown =
+            router.routerDelegate.currentConfiguration.uri.path == '/email';
+        if (gate.open && !gate.blocking && !shown) {
+          ref.read(emailGateProvider.notifier).later();
+        }
+      }
+
+      router.routerDelegate.addListener(landed);
     }
   });
   ref.onDispose(router.dispose);

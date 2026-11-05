@@ -278,21 +278,10 @@ final routerProvider = Provider<GoRouter>((ref) {
   // blocking everything is a redirect instead (see `emailRedirect`).
   ref.listen(emailGateProvider, (previous, next) {
     if (next.open && !next.blocking && !(previous?.open ?? false)) {
+      // Nothing redirects /email away: the gates after it (re-consent,
+      // nickname) stand aside while it is open, and the login-ID gate comes
+      // first on the server (403 LOGIN_ID_REQUIRED before EMAIL_REQUIRED).
       unawaited(router.push<void>('/email'));
-      // Safety net: the push lands on the next change of the route. If a
-      // redirect swallowed it the screen is never built, so nothing would ever
-      // close the gate or free the held calls: that is "later".
-      void landed() {
-        router.routerDelegate.removeListener(landed);
-        final gate = ref.read(emailGateProvider);
-        final shown =
-            router.routerDelegate.currentConfiguration.uri.path == '/email';
-        if (gate.open && !gate.blocking && !shown) {
-          ref.read(emailGateProvider.notifier).later();
-        }
-      }
-
-      router.routerDelegate.addListener(landed);
     }
   });
   ref.onDispose(router.dispose);

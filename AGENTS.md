@@ -1,4 +1,4 @@
-# flutter-skeleton — Claude Code 컨텍스트
+# flutter-skeleton — 에이전트 지침
 
 Flutter 모바일 앱 스켈레톤. Pub Workspaces + Melos. 캡슐화된 패키지(`packages/`)와 스타터 앱(`apps/starter`)과 참조 앱(`apps/sample`, 찍을 때 빠진다)을 모아 두고, 프로젝트가 필요한 것만 골라 쓴다. 짝 백엔드는 kotlin-skeleton, 웹판은 react-skeleton(같은 id 의 패키지가 같은 일을 한다).
 

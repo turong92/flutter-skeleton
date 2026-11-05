@@ -9,6 +9,7 @@ import 'package:skeleton_api_client/testing.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_board/skeleton_board.dart';
 import 'package:skeleton_iap/skeleton_iap.dart';
+import 'package:skeleton_legal/skeleton_legal.dart';
 import 'package:skeleton_push/skeleton_push.dart';
 import 'package:skeleton_push/testing.dart';
 import 'package:skeleton_social_login/skeleton_social_login.dart';
@@ -54,12 +55,37 @@ const _pagination = {
 
 /// The part of the sample server the app talks to.
 class _Backend {
-  _Backend({this.fcm = false});
+  _Backend({
+    this.fcm = false,
+    this.accountMe,
+    this.boardLoginIdRequired = false,
+  });
 
   final bool fcm;
+
+  /// `GET /account/me`; null = the endpoint is not there (404).
+  Map<String, Object?>? accountMe;
+
+  /// The board answers `403 ACCOUNT.LOGIN_ID_REQUIRED`.
+  final bool boardLoginIdRequired;
   late final adapter = FakeAdapter(_handle);
 
   ResponseBody _handle(RequestOptions options) {
+    final me = accountMe;
+    if (me != null && options.path == '/account/me') {
+      return FakeAdapter.json(200, {'value': me, 'meta': _meta});
+    }
+    if (me != null && options.path == '/account/login-id') {
+      me['loginId'] = 'ann';
+      return FakeAdapter.json(200, {'value': me, 'meta': _meta});
+    }
+    if (boardLoginIdRequired && options.path.startsWith('/boards/')) {
+      return FakeAdapter.json(403, {
+        'code': 'ACCOUNT.LOGIN_ID_REQUIRED',
+        'title': 'x',
+        'status': 403,
+      });
+    }
     switch ((options.method, options.path)) {
       case ('POST', '/auth/login'):
         return FakeAdapter.json(200, {
@@ -209,6 +235,51 @@ void main() {
       backend.adapter.requests.where((r) => r.path == '/author-profiles'),
       isEmpty,
     );
+  });
+
+  testWidgets('the gates come one after another: ID, consent, nickname', (
+    tester,
+  ) async {
+    final backend = _Backend(
+      accountMe: {'hasPassword': true, 'loginId': null, 'displayName': null},
+    );
+    await tester.pumpWidget(_app(backend));
+    await _signIn(tester);
+    expect(find.byType(LoginIdForm), findsOneWidget);
+
+    // A document waits as well: the ID comes first, the consent does not cut in.
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(LoginIdForm)),
+    );
+    container.read(reconsentProvider.notifier).require(const [
+      MissingConsent(type: 'terms', version: 'v2', reason: 'NEW_VERSION'),
+    ]);
+    await tester.pumpAndSettle();
+    expect(find.byType(LoginIdForm), findsOneWidget);
+    expect(find.byType(ReconsentScreen), findsNothing);
+
+    await tester.enterText(find.byKey(LoginIdForm.fieldKey), 'ann.lee');
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ReconsentScreen), findsOneWidget);
+
+    container.read(reconsentProvider.notifier).clear();
+    await tester.pumpAndSettle();
+    expect(find.byType(DisplayNameForm), findsOneWidget);
+  });
+
+  testWidgets('403 LOGIN_ID_REQUIRED on any call opens the ID form, which has '
+      'a way out', (tester) async {
+    final backend = _Backend(boardLoginIdRequired: true);
+    await tester.pumpWidget(_app(backend));
+    await _signIn(tester);
+    expect(find.byType(LoginIdForm), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Sign out'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LoginIdForm), findsNothing);
+    expect(find.text('Sign in'), findsOneWidget);
   });
 
   testWidgets('the app runs with push unavailable (no Firebase)', (

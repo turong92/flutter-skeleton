@@ -268,6 +268,7 @@ F2 와 F4 는 나란히 갈 수 있다. 1단계 = F1~F5 이고, F5 가 끝나면
 - `GET /account/password/policy` 로 힌트를 보인다. 길이 상한은 UTF-8 **바이트**(`maxBytes`)다.
 - **닉네임**: 서버는 가입에 닉네임이 필요한지 알려 주지 않는다(`required-on-sign-up`). 가입 폼은 `DisplayNameMode`(none 기본 · optional · required)를 앱 설정으로 받고, 앞뒤 공백을 떼어 보낸다. `400` 의 `errors[].field` 는 그 칸 아래에 보이고(`message` 는 로그용이라 안 보인다) 칸에 안 맞는 것만 공통 문구다. `verify-email` 의 `409 DISPLAY_NAME_TAKEN` 은 시도를 소모하지 않으므로 닉네임 칸을 띄워 같은 `signUpId`·코드로 다시 보낸다. 닉네임 없는 계정(`/account/me` 의 `displayName` 이 null)은 `DisplayNameForm`(`PATCH /account/me`)으로 받고, `displayTag` 가 있으면 `이름#태그` 로 보인다.
 - **로그인 아이디**: 앱 설정이 없다. `GET /auth/methods` 에 `loginId{minLength,maxLength}` 키가 있을 때만 가입 폼에 아이디 칸이 생기고(길이는 그 키), 로그인 입력은 「ID or email」이 되며 `@` 없는 입력은 `username` 으로 보낸다. `verify-email` 의 `409 LOGIN_ID_TAKEN` 은 시도를 소모하지 않으므로 닉네임과 같이 칸을 띄워 같은 `signUpId`·코드로 다시 보낸다. 키가 없으면 지금과 똑같다.
+- **계정 게이트**: 서버 순서는 `ACCOUNT.LOGIN_ID_REQUIRED` → (`EMAIL_REQUIRED`) → `LEGAL.RECONSENT_REQUIRED` 이고, 앱의 닉네임이 맨 뒤다. 아이디 없는 계정은 `/account/me` 의 `loginId: null`(키가 있고 null) 또는 어떤 호출의 403 으로 알고, 서버는 아이디 엔드포인트 밖의 모든 호출을 막으므로 아이디 정하기(`LoginIdForm`, `POST /account/login-id`, 한 번뿐)가 먼저다. 라우터는 올라와 있는 게이트 중 **첫 것**만 정해 다음 게이트가 앞 게이트 화면에서 사람을 끌어내지 못하게 한다. 게이트 화면마다 로그아웃 출구가 있어야 앱이 갇히지 않는다. 입력 중 확인(`/account/login-id/availability`)은 조언일 뿐이고 429·실패는 「확인하지 못했다」로 두며 거절하지 않는다.
 
 **legal**
 - 가입 폼은 `requiredAtSignUp` 문서마다 체크를 둔다. 선택 문서는 체크하지 않은 채로 둔다. 실은 판(`version`)을 그대로 보내고, `400 LEGAL.CONSENT_REQUIRED` 면 문서를 다시 읽는다.

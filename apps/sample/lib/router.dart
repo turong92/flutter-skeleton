@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,10 +8,12 @@ import 'package:skeleton_board/skeleton_board.dart';
 import 'package:skeleton_legal/skeleton_legal.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
+import 'login_id_gate.dart';
 import 'nickname_gate.dart';
 import 'screens/account_screen.dart';
 import 'screens/board_screens.dart';
 import 'screens/forgot_password_screen.dart';
+import 'screens/login_id_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/nickname_screen.dart';
 import 'screens/notifications_screens.dart';
@@ -45,6 +49,16 @@ final routerProvider = Provider<GoRouter>((ref) {
           onRequired: ref.read(reconsentProvider.notifier).require,
         ),
       );
+  // A 403 ACCOUNT.LOGIN_ID_REQUIRED only marks "choose an ID first".
+  ref
+      .read(apiClientProvider)
+      .dio
+      .interceptors
+      .add(
+        LoginIdRequiredInterceptor(
+          onRequired: ref.read(needsLoginIdProvider.notifier).require,
+        ),
+      );
   // Whatever ends the session (sign-out, expiry, deletion) also ends a pending
   // agreement, or the next person to sign in is sent to /consent first.
   ref.listen(authSessionProvider, (_, next) {
@@ -56,19 +70,33 @@ final routerProvider = Provider<GoRouter>((ref) {
     publicPaths: publicPaths,
     signedInPath: '/board',
   );
+  final loginIdGate = loginIdRedirect(ref);
   final nicknameGate = nicknameRedirect(ref);
   final consentGate = reconsentRedirect(ref, homePath: '/board');
+  // The account gates, in the server's order (ID -> email -> consent): the
+  // first one that is up decides, so a later gate does not pull the person off
+  // the screen of an earlier one. The nickname is the app's own and comes last.
+  // The email gate (a later piece) goes between the ID and the consent.
+  FutureOr<String?> accountGates(BuildContext context, GoRouterState state) {
+    if (ref.read(needsLoginIdProvider)) return loginIdGate(context, state);
+    if (ref.read(reconsentProvider).isNotEmpty) {
+      return consentGate(context, state);
+    }
+    if (ref.read(needsNicknameProvider)) return nicknameGate(context, state);
+    // Nothing is up: consentGate sends someone still on /consent back.
+    return consentGate(context, state);
+  }
+
   final router = GoRouter(
     initialLocation: '/board',
     // A link the app has no route for (a server link, an old push) lands on
-    // the inbox. The sign-in and consent redirects still come first.
+    // the inbox. The sign-in and gate redirects still come first.
     onException: (context, state, router) => router.go('/notifications'),
     redirect: (context, state) =>
-        authGate(context, state) ??
-        nicknameGate(context, state) ??
-        consentGate(context, state),
+        authGate(context, state) ?? accountGates(context, state),
     refreshListenable: Listenable.merge([
       authRefreshListenable(ref),
+      loginIdRefreshListenable(ref),
       nicknameRefreshListenable(ref),
       reconsentRefreshListenable(ref),
     ]),
@@ -108,8 +136,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const NicknameScreen(),
       ),
       GoRoute(
+        path: '/login-id',
+        builder: (context, state) => const LoginIdScreen(),
+      ),
+      GoRoute(
         path: '/consent',
-        builder: (context, state) => const ReconsentScreen(),
+        builder: (context, state) => Consumer(
+          builder: (context, ref, _) => ReconsentScreen(
+            // The way out for someone who will not agree.
+            onLeave: () => ref.read(authSessionProvider.notifier).logout(),
+          ),
+        ),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => ShellScreen(shell: shell),

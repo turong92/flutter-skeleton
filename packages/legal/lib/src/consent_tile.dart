@@ -35,12 +35,18 @@ class ConsentTile extends StatelessWidget {
           onChanged: (value) => onChanged(value ?? false),
         ),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title),
-              Text(tag, style: Theme.of(context).textTheme.bodySmall),
-            ],
+          child: InkWell(
+            onTap: () => onChanged(!checked),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title),
+                  Text(tag, style: Theme.of(context).textTheme.bodySmall),
+                ],
+              ),
+            ),
           ),
         ),
         OutlinedButton(key: viewKey, onPressed: onView, child: Text(viewLabel)),

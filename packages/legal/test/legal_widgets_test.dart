@@ -240,6 +240,21 @@ void main() {
       expect(find.textContaining('# terms'), findsOneWidget);
     });
 
+    testWidgets('tapping the title toggles the box on and off', (tester) async {
+      await pump(tester, FakeLegal(), SignUpConsents(onChanged: (_) {}));
+      bool checked() => tester
+          .widget<Checkbox>(find.byKey(SignUpConsents.checkKey('terms')))
+          .value!;
+
+      await tester.tap(find.text('terms title en'));
+      await tester.pump();
+      expect(checked(), isTrue);
+
+      await tester.tap(find.text('terms title en'));
+      await tester.pump();
+      expect(checked(), isFalse);
+    });
+
     testWidgets('labels are parameters', (tester) async {
       await pump(
         tester,

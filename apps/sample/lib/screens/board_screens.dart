@@ -49,11 +49,20 @@ class PostDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Post')),
-      body: PostDetailView(
-        board: AppConfig.board,
-        postId: postId,
-        onEdit: (post) => context.push('/board/${post.id}/edit', extra: post),
-        onDeleted: () => context.go('/board'),
+      body: Column(
+        children: [
+          // Comments and reactions are writes too: tell before they are typed.
+          const EmailWriteNotice(),
+          Expanded(
+            child: PostDetailView(
+              board: AppConfig.board,
+              postId: postId,
+              onEdit: (post) =>
+                  context.push('/board/${post.id}/edit', extra: post),
+              onDeleted: () => context.go('/board'),
+            ),
+          ),
+        ],
       ),
     );
   }

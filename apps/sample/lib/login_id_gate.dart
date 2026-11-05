@@ -13,11 +13,15 @@ final needsLoginIdProvider = NotifierProvider<NeedsLoginId, bool>(
 );
 
 class NeedsLoginId extends Notifier<bool> {
+  /// The calls refused for want of an ID, waiting for the form.
+  final _held = HeldCalls();
+
   @override
   bool build() {
     ref.listen(authSessionProvider, (previous, next) async {
       if (next is! SignedIn) {
         state = false;
+        _held.release(resend: false);
         return;
       }
       if (previous is SignedIn) return;
@@ -33,13 +37,21 @@ class NeedsLoginId extends Notifier<bool> {
     return false;
   }
 
-  /// A call was refused: the account has no ID. Ignored while signed out (a
-  /// late answer must not raise the gate for the next person).
-  void require() {
-    if (ref.read(authSessionProvider) is SignedIn) state = true;
+  /// A call was refused: the account has no ID. Raises the gate and holds the
+  /// call: true = the ID is chosen, send it again; false = the person signed
+  /// out, the call ends with its 403. Signed out (a late answer must not raise
+  /// the gate for the next person): false at once.
+  Future<bool> hold() {
+    if (ref.read(authSessionProvider) is! SignedIn) return Future.value(false);
+    state = true;
+    return _held.hold();
   }
 
-  void done() => state = false;
+  /// The ID is chosen: the refused calls are sent again.
+  void done() {
+    state = false;
+    _held.release(resend: true);
+  }
 }
 
 /// A redirect that keeps an account without a login ID on [path] until it has

@@ -25,11 +25,15 @@ final emailGateProvider = NotifierProvider<EmailGateNotifier, EmailGate>(
 );
 
 class EmailGateNotifier extends Notifier<EmailGate> {
+  /// The calls refused for want of an address, waiting for the screen.
+  final _held = HeldCalls();
+
   @override
   EmailGate build() {
     ref.listen(authSessionProvider, (previous, next) async {
       if (next is! SignedIn) {
         state = _closed;
+        _held.release(resend: false);
         return;
       }
       if (previous is SignedIn) return;
@@ -50,8 +54,17 @@ class EmailGateNotifier extends Notifier<EmailGate> {
     return _closed;
   }
 
-  /// A call was refused: the account has no address. Ignored while signed out
-  /// (a late answer must not raise the screen for the next person).
+  /// A call was refused: the account has no address. Opens the screen and
+  /// holds the call: true = the address is confirmed, send it again; false =
+  /// the person left, the call ends with its 403. Signed out (a late answer
+  /// must not raise the screen for the next person): false at once.
+  Future<bool> hold() {
+    if (ref.read(authSessionProvider) is! SignedIn) return Future.value(false);
+    require();
+    return _held.hold();
+  }
+
+  /// Opens the screen (a warning button, or a refused call through [hold]).
   void require() {
     if (ref.read(authSessionProvider) is SignedIn) {
       state = (open: true, blocking: state.blocking, toWrite: state.toWrite);
@@ -67,24 +80,41 @@ class EmailGateNotifier extends Notifier<EmailGate> {
   }
 
   /// "Later": only where the server lets reads through.
-  void later() =>
-      state = (open: false, blocking: state.blocking, toWrite: state.toWrite);
+  /// The refused calls end with their 403.
+  void later() {
+    state = (open: false, blocking: state.blocking, toWrite: state.toWrite);
+    _held.release(resend: false);
+  }
 
-  void registered() => state = _closed;
+  /// The address is confirmed: the refused calls are sent again.
+  void registered() {
+    state = _closed;
+    _held.release(resend: true);
+  }
 }
 
-/// A redirect that keeps an account without an address on [path] while the
-/// screen is open. Null while it is not.
+/// A redirect that keeps an account the server blocks until it has an address
+/// on [path]. Null otherwise: a screen opened only for a write is pushed over
+/// the screen the person is on (see `router.dart`), so what was typed there is
+/// still there afterwards.
 GoRouterRedirect emailRedirect(Ref ref, {String path = '/email'}) {
-  return (context, routerState) =>
-      ref.read(emailGateProvider).open && routerState.matchedLocation != path
-      ? path
-      : null;
+  return (context, routerState) {
+    final gate = ref.read(emailGateProvider);
+    return gate.open && gate.blocking && routerState.matchedLocation != path
+        ? path
+        : null;
+  };
 }
 
 Listenable emailRefreshListenable(Ref ref) {
   final notifier = _Changed();
-  ref.listen(emailGateProvider, (_, _) => notifier.changed());
+  // Only the gate that blocks everything is a redirect. A screen opened for a
+  // write is pushed and popped by hand; a refresh on its way out would parse
+  // the old location again and put the pushed screen back.
+  ref.listen(
+    emailGateProvider.select((g) => g.open && g.blocking),
+    (_, _) => notifier.changed(),
+  );
   ref.onDispose(notifier.dispose);
   return notifier;
 }

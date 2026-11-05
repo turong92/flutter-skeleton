@@ -60,26 +60,22 @@ final routerProvider = Provider<GoRouter>((ref) {
           onRequired: ref.read(reconsentProvider.notifier).require,
         ),
       );
-  // A 403 ACCOUNT.LOGIN_ID_REQUIRED only marks "choose an ID first".
-  ref
-      .read(apiClientProvider)
-      .dio
-      .interceptors
-      .add(
-        LoginIdRequiredInterceptor(
-          onRequired: ref.read(needsLoginIdProvider.notifier).require,
-        ),
-      );
-  // A 403 ACCOUNT.EMAIL_REQUIRED only marks "add an address first".
-  ref
-      .read(apiClientProvider)
-      .dio
-      .interceptors
-      .add(
-        EmailRequiredInterceptor(
-          onRequired: ref.read(emailGateProvider.notifier).require,
-        ),
-      );
+  // A 403 ACCOUNT.LOGIN_ID_REQUIRED means "choose an ID first": the call waits
+  // for the form and is sent again once the ID is chosen.
+  final dio = ref.read(apiClientProvider).dio;
+  dio.interceptors.add(
+    LoginIdRequiredInterceptor(
+      dio: dio,
+      onRequired: ref.read(needsLoginIdProvider.notifier).hold,
+    ),
+  );
+  // A 403 ACCOUNT.EMAIL_REQUIRED means "add an address first": same.
+  dio.interceptors.add(
+    EmailRequiredInterceptor(
+      dio: dio,
+      onRequired: ref.read(emailGateProvider.notifier).hold,
+    ),
+  );
   // Whatever ends the session (sign-out, expiry, deletion) also ends a pending
   // agreement, or the next person to sign in is sent to /consent first.
   ref.listen(authSessionProvider, (_, next) {
@@ -103,7 +99,10 @@ final routerProvider = Provider<GoRouter>((ref) {
   // is up then only after the person opened it (see `email_gate.dart`).
   FutureOr<String?> accountGates(BuildContext context, GoRouterState state) {
     if (ref.read(needsLoginIdProvider)) return loginIdGate(context, state);
-    if (ref.read(emailGateProvider).open) return emailGate(context, state);
+    // Only the gate that blocks everything redirects; a screen opened for a
+    // write is pushed over the current one and lets the other gates through.
+    final email = ref.read(emailGateProvider);
+    if (email.open && email.blocking) return emailGate(context, state);
     if (ref.read(reconsentProvider).isNotEmpty) {
       return consentGate(context, state);
     }
@@ -271,6 +270,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+  // A screen opened only for a write goes OVER the one the person is on (a
+  // redirect would replace it and lose what they were typing); the gate
+  // blocking everything is a redirect instead (see `emailRedirect`).
+  ref.listen(emailGateProvider, (previous, next) {
+    if (next.open && !next.blocking && !(previous?.open ?? false)) {
+      unawaited(router.push<void>('/email'));
+    }
+  });
   ref.onDispose(router.dispose);
   return router;
 });

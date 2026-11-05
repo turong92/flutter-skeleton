@@ -76,6 +76,9 @@ class _Backend {
   /// `GET /account/me`; null = the endpoint is not there (404).
   Map<String, Object?>? accountMe;
 
+  /// The address was confirmed: writes pass from then on.
+  bool addressSet = false;
+
   /// The board answers `403 ACCOUNT.LOGIN_ID_REQUIRED`.
   final bool boardLoginIdRequired;
   late final adapter = FakeAdapter(_handle);
@@ -108,7 +111,9 @@ class _Backend {
       });
     }
     // The address gate refuses writes only (`emailRequiredToWrite`).
-    if (options.method == 'POST' && options.path.startsWith('/boards/')) {
+    if (!addressSet &&
+        options.method == 'POST' &&
+        options.path.startsWith('/boards/')) {
       return FakeAdapter.json(403, {
         'code': 'ACCOUNT.EMAIL_REQUIRED',
         'title': 'x',
@@ -116,6 +121,8 @@ class _Backend {
       });
     }
     switch ((options.method, options.path)) {
+      case ('POST', '/boards/general/posts'):
+        return FakeAdapter.empty(204);
       case ('POST', '/account/email/change'):
         return FakeAdapter.json(202, {
           'value': {
@@ -125,6 +132,8 @@ class _Backend {
           'meta': _meta,
         });
       case ('POST', '/account/email/change/confirm'):
+        addressSet = true;
+        return FakeAdapter.empty(204);
       case ('POST', '/account/discard'):
         return FakeAdapter.empty(204);
       case ('POST', '/auth/login') when deletionGrace:
@@ -419,12 +428,61 @@ void main() {
     expect(find.text('First post'), findsOneWidget);
     expect(find.byType(EmailWriteNotice), findsOneWidget);
     expect(find.text('Add email'), findsNothing);
-    // the refused write is not sent again behind the person's back
+    // "Later" ended the refused write; it is not sent after all
     expect(
       backend.adapter.requests.where(
         (r) => r.method == 'POST' && r.path == '/boards/general/posts',
       ),
       hasLength(1),
+    );
+  });
+
+  testWidgets('a write refused for want of an address waits on the form '
+      'above the screen and is sent again once the address is confirmed', (
+    tester,
+  ) async {
+    final backend = _Backend(
+      accountMe: {
+        'hasPassword': true,
+        'email': null,
+        'emailRequiredToWrite': true,
+        'displayName': 'Ann',
+      },
+    );
+    await tester.pumpWidget(_app(backend));
+    await _signIn(tester);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(EmailWriteNotice)),
+    );
+    final router = container.read(routerProvider);
+    final boardScreens = router.routerDelegate.currentConfiguration.matches;
+
+    var answered = false;
+    unawaited(
+      container
+          .read(apiClientProvider)
+          .noContent('/boards/general/posts', method: 'POST')
+          .then((_) => answered = true),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(EmailRegisterForm), findsOneWidget);
+    expect(answered, isFalse);
+    // the screen under it is kept, not replaced: what was typed there stays
+    expect(
+      router.routerDelegate.currentConfiguration.matches.length,
+      boardScreens.length + 1,
+    );
+
+    await registerEmail(tester);
+
+    expect(answered, isTrue);
+    expect(find.byType(EmailRegisterForm), findsNothing);
+    expect(find.text('First post'), findsOneWidget);
+    expect(
+      backend.adapter.requests.where(
+        (r) => r.method == 'POST' && r.path == '/boards/general/posts',
+      ),
+      hasLength(2),
     );
   });
 

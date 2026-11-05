@@ -29,6 +29,15 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Mailed links open the app (App Links): password reset and
+                 sign-in link. A project changes only the host. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https" android:host="app.example.com" android:pathPrefix="/reset-password"/>
+                <data android:scheme="https" android:host="app.example.com" android:pathPrefix="/magic-link"/>
+            </intent-filter>
         </activity>
         <!-- Kakao login comes back through this activity of the Kakao plugin
              (it declares the activity without an intent filter). The redirect is

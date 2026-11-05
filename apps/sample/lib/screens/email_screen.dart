@@ -18,43 +18,58 @@ class EmailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final gate = ref.watch(emailGateProvider);
-    return FormPage(
-      title: 'Add your email',
-      children: [
-        Text(
-          gate.blocking
-              ? 'This service needs your email address before it goes on.'
-              : 'Changes need your email address. Reading works without it.',
-        ),
-        const SizedBox(height: SkeletonSpace.md),
-        EmailRegisterForm(
-          socialReauth: () => reauthWithLinkedProvider(ref),
-          onRegistered: () {
-            ref.invalidate(accountMeProvider);
-            ref.read(emailGateProvider.notifier).registered();
-            context.go('/board');
-          },
-        ),
-        const SizedBox(height: SkeletonSpace.lg),
-        DiscardAccountButton(socialReauth: () => reauthWithLinkedProvider(ref)),
-        const SizedBox(height: SkeletonSpace.sm),
-        if (!gate.blocking) ...[
-          OutlinedButton(
-            onPressed: () {
-              ref.read(emailGateProvider.notifier).later();
-              context.go('/board');
+    // Opened for a write, the screen lies over the one the person was on;
+    // going back (button, swipe) is "later". The blocking one is not left.
+    return PopScope(
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop && !gate.blocking) {
+          ref.read(emailGateProvider.notifier).later();
+        }
+      },
+      child: FormPage(
+        title: 'Add your email',
+        children: [
+          Text(
+            gate.blocking
+                ? 'This service needs your email address before it goes on.'
+                : 'Changes need your email address. Reading works without it.',
+          ),
+          const SizedBox(height: SkeletonSpace.md),
+          EmailRegisterForm(
+            socialReauth: () => reauthWithLinkedProvider(ref),
+            onRegistered: () {
+              ref.invalidate(accountMeProvider);
+              ref.read(emailGateProvider.notifier).registered();
+              _leave(context);
             },
-            child: const Text('Later'),
+          ),
+          const SizedBox(height: SkeletonSpace.lg),
+          DiscardAccountButton(
+            socialReauth: () => reauthWithLinkedProvider(ref),
           ),
           const SizedBox(height: SkeletonSpace.sm),
+          if (!gate.blocking) ...[
+            OutlinedButton(
+              onPressed: () {
+                ref.read(emailGateProvider.notifier).later();
+                _leave(context);
+              },
+              child: const Text('Later'),
+            ),
+            const SizedBox(height: SkeletonSpace.sm),
+          ],
+          OutlinedButton(
+            onPressed: () => ref.read(authSessionProvider.notifier).logout(),
+            child: const Text('Sign out'),
+          ),
         ],
-        OutlinedButton(
-          onPressed: () => ref.read(authSessionProvider.notifier).logout(),
-          child: const Text('Sign out'),
-        ),
-      ],
+      ),
     );
   }
+
+  /// Back to the screen under this one, or the board when there is none.
+  void _leave(BuildContext context) =>
+      context.canPop() ? context.pop() : context.go('/board');
 }
 
 /// A strip above a screen that leads to a write: shown only while the server

@@ -11,5 +11,12 @@
 	<array>
 		<string>Default</string>
 	</array>
+	<!-- Universal Links for the mailed password-reset and sign-in links. Needs
+	     the Associated Domains capability on your App ID and signing team
+	     (like the two above). A project changes only the domain. -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:app.example.com</string>
+	</array>
 </dict>
 </plist>

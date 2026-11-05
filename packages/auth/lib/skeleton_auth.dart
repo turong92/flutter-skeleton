@@ -17,6 +17,7 @@ export 'src/display_name_form.dart';
 export 'src/email_register_form.dart';
 export 'src/email_required_interceptor.dart';
 export 'src/forgot_login_id_form.dart';
+export 'src/held_calls.dart' show HeldCalls;
 export 'src/form_parts.dart'
     show
         DisplayNameLabels,

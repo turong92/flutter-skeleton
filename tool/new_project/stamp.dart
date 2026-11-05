@@ -539,7 +539,9 @@ The app reads `API_BASE_URL` (with `/api/v1`) from `--dart-define-from-file=env/
 Android `applicationId` is `${o.org}.$name` and the iOS bundle id is `${o.org}.${_camel(name)}` (no underscore on iOS). Change them before the first store upload.
 ''');
 
-  _write(t, 'CLAUDE.md', '''# $name — Claude Code context
+  // Claude Code does not read AGENTS.md directly, so CLAUDE.md is a one-line shell.
+  _write(t, 'CLAUDE.md', '@AGENTS.md\n');
+  _write(t, 'AGENTS.md', '''# $name — Claude Code context
 
 Flutter app stamped from flutter-skeleton. Pub Workspaces + Melos; the app is `apps/$name`, packages are under `packages/`. The backend is kotlin-skeleton (its `docs/account-http-contract.md`, `docs/modules/auth.md` and `docs/modules/auth-session.md` are the contract).
 

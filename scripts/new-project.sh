@@ -15,7 +15,7 @@
 #   4. --prefix acme: every skeleton_ in .dart, .yaml, .json and .md files becomes acme_ (package names, imports,
 #      the main library file name, and also storage keys and widget keys that start with skeleton_).
 #   5. capabilities.json becomes mode "project" (what is kept; the rest under "omitted"), docs/capabilities.md and
-#      llms.txt are regenerated, README / CLAUDE.md / CHANGELOG are rewritten for the project.
+#      llms.txt are regenerated, README / AGENTS.md (+ CLAUDE.md shell) / CHANGELOG are rewritten for the project.
 #   6. The new-project tools (this script, its test, tool/, the workflow) do not come along.
 #
 # Exit codes: 0 done / 1 failed midway (the target is left as it is) / 2 bad arguments (nothing is created).

@@ -70,6 +70,7 @@ check "the iOS bundle id is camelCase (no underscore)" grep -q 'PRODUCT_BUNDLE_I
 check "the workspace lists the app and not tool" bash -c "grep -q '  - apps/acme_app' '$P1/pubspec.yaml' && ! grep -q '  - tool' '$P1/pubspec.yaml'"
 check "no env/*.json, no .git, no generated platform files came along" bash -c "[ ! -e '$P1/.git' ] && [ ! -e '$P1/apps/acme_app/env/dev.json' ] && [ ! -e '$P1/apps/acme_app/ios/Flutter/Generated.xcconfig' ]"
 [ -z "$(leftovers "$P1" 'com.example.starter\|package:starter/')" ] && pass "no starter id left" || fail "starter left in: $(leftovers "$P1" 'com.example.starter\|package:starter/')"
+check "AGENTS.md is written for the project and CLAUDE.md only imports it" bash -c "head -1 '$P1/AGENTS.md' | grep -q 'acme_app' && grep -qx '@AGENTS.md' '$P1/CLAUDE.md'"
 check "the catalog is a project catalog" grep -q '"mode": "project"' "$P1/capabilities.json"
 check "apps/sample, board and push are not in a default stamp" test ! -e "$P1/apps/sample" -a ! -e "$P1/packages/board" -a ! -e "$P1/packages/push"
 verify "$P1"

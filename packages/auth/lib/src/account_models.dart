@@ -14,6 +14,7 @@ abstract final class AccountErrorCodes {
   static const reauthRequired = 'ACCOUNT.REAUTH_REQUIRED';
   static const deletionBlocked = 'ACCOUNT.DELETION_BLOCKED';
   static const emailTaken = 'ACCOUNT.EMAIL_TAKEN';
+  static const displayNameTaken = 'ACCOUNT.DISPLAY_NAME_TAKEN';
 
   /// From the `legal` module: sign-up without a required consent.
   static const legalConsentRequired = 'LEGAL.CONSENT_REQUIRED';
@@ -126,16 +127,44 @@ class CodeIssued {
 /// What `GET /account/me` says about how the person can prove who they are:
 /// a password, else the address (mailed code), else only a social provider.
 class AccountMe {
-  const AccountMe({required this.hasPassword, this.email});
+  const AccountMe({
+    required this.hasPassword,
+    this.email,
+    this.displayName,
+    this.displayTag,
+  });
 
   factory AccountMe.fromJson(Map<String, Object?> json) => AccountMe(
     hasPassword: json['hasPassword'] == true,
     email: json['email'] as String?,
+    displayName: json['displayName'] as String?,
+    displayTag: json['displayTag'] as String?,
   );
 
   final bool hasPassword;
   final String? email;
+
+  /// Null = the account has no nickname yet (a social sign-up, or the server
+  /// generates none): the app asks for one ([DisplayNameForm]).
+  final String? displayName;
+
+  /// The four digits that tell equal nicknames apart; null unless the server
+  /// runs `uniqueness: TAGGED`.
+  final String? displayTag;
+
+  /// `name#tag` when there is a tag, the bare name otherwise, null without a
+  /// nickname.
+  String? get displayLabel => displayName == null
+      ? null
+      : displayTag == null
+      ? displayName
+      : '$displayName#$displayTag';
 }
+
+/// Whether the sign-up form asks for a nickname. The server does not say, so
+/// the app picks the mode that matches its own server settings
+/// (`required-on-sign-up`).
+enum DisplayNameMode { none, optional, required }
 
 class DeletionScheduled {
   const DeletionScheduled({required this.purgeAfter});

@@ -11,7 +11,9 @@ export 'src/auth_interceptor.dart';
 export 'src/auth_redirect.dart';
 export 'src/auth_session.dart';
 export 'src/delete_account_form.dart';
-export 'src/form_parts.dart' show PasswordPolicyHint, PasswordPolicyLabels;
+export 'src/display_name_form.dart';
+export 'src/form_parts.dart'
+    show DisplayNameLabels, PasswordPolicyHint, PasswordPolicyLabels;
 export 'src/login_form.dart';
 export 'src/models.dart';
 export 'src/password_reset_forms.dart';

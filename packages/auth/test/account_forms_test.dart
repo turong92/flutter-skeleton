@@ -23,13 +23,26 @@ ResponseBody _accepted(Object? value) => FakeAdapter.json(202, {
   'meta': {'timestamp': '2026-01-01T00:00:00Z'},
 });
 
-ResponseBody _error(int status, String code, {Object? data}) =>
-    FakeAdapter.json(status, {
-      'code': code,
-      'title': code,
-      'status': status,
-      'data': ?data,
-    });
+ResponseBody _error(
+  int status,
+  String code, {
+  Object? data,
+  List<Map<String, String>>? errors,
+}) => FakeAdapter.json(status, {
+  'code': code,
+  'title': code,
+  'status': status,
+  'data': ?data,
+  'errors': ?errors,
+});
+
+ResponseBody _invalid(String field, String code) => _error(
+  400,
+  'COMMON.VALIDATION_FAILED',
+  errors: [
+    {'field': field, 'code': code, 'message': 'log only'},
+  ],
+);
 
 class _Harness {
   _Harness(FutureOr<ResponseBody> Function(RequestOptions) handler)
@@ -189,6 +202,185 @@ void main() {
         expect(find.textContaining('72 bytes'), findsOneWidget);
       },
     );
+  });
+
+  group('SignUpForm nickname', () {
+    ResponseBody sent() => _accepted({
+      'status': 'VERIFICATION_SENT',
+      'signUpId': 'su_1',
+      'expiresAt': '2099-01-01T00:10:00Z',
+    });
+
+    Future<_Harness> open(
+      WidgetTester t,
+      FutureOr<ResponseBody> Function(RequestOptions) onSignUp, {
+      DisplayNameMode mode = DisplayNameMode.required,
+    }) async {
+      final h = _Harness(
+        (o) => o.path == '/account/password/policy'
+            ? ok(_policyJson)
+            : onSignUp(o),
+      );
+      await t.pumpWidget(
+        h.app(SignUpForm(onSignedUp: (_) {}, displayName: mode)),
+      );
+      await t.pumpAndSettle();
+      return h;
+    }
+
+    Future<void> fillAndSubmit(WidgetTester t, {String? nickname}) async {
+      await _type(t, SignUpForm.emailKey, 'new@example.com');
+      await _type(t, SignUpForm.passwordKey, 'secret-pass');
+      if (nickname != null) {
+        await _type(t, SignUpForm.displayNameKey, nickname);
+      }
+      await t.tap(find.widgetWithText(FilledButton, 'Create account'));
+      await t.pumpAndSettle();
+    }
+
+    testWidgets('required: a blank nickname is not sent', (t) async {
+      final h = await open(t, (_) => sent());
+
+      await fillAndSubmit(t, nickname: '   ');
+
+      expect(h.calls('/account/sign-up'), isEmpty);
+    });
+
+    testWidgets('a typed nickname is sent without the spaces around it', (
+      t,
+    ) async {
+      final h = await open(t, (_) => sent());
+
+      await fillAndSubmit(t, nickname: '  Ann ');
+
+      expect(
+        (h.calls('/account/sign-up').single.data as Map)['displayName'],
+        'Ann',
+      );
+    });
+
+    testWidgets('none (the default): no nickname field and none is sent', (
+      t,
+    ) async {
+      final h = await open(t, (_) => sent(), mode: DisplayNameMode.none);
+
+      expect(find.byKey(SignUpForm.displayNameKey), findsNothing);
+      await fillAndSubmit(t);
+
+      expect(
+        (h.calls('/account/sign-up').single.data as Map).containsKey(
+          'displayName',
+        ),
+        isFalse,
+      );
+    });
+
+    testWidgets('a field error of the server sits under that field', (t) async {
+      await open(t, (_) => _invalid('displayName', 'Reserved'));
+
+      await fillAndSubmit(t, nickname: 'admin');
+
+      expect(
+        find.text(const SignUpLabels().displayName.reserved),
+        findsOneWidget,
+      );
+      expect(find.text(const SignUpLabels().genericError), findsNothing);
+    });
+
+    testWidgets(
+      'a field error the form has no field for gets the common text',
+      (t) async {
+        await open(t, (_) => _invalid('loginId', 'Required'));
+
+        await fillAndSubmit(t, nickname: 'Ann');
+
+        expect(find.text(const SignUpLabels().genericError), findsOneWidget);
+      },
+    );
+  });
+
+  group('VerifyCodeForm nickname', () {
+    final attempt = SignUpAttempt(
+      signUpId: 'su_1',
+      expiresAt: DateTime.utc(2099),
+      resendAvailableAt: null,
+    );
+
+    testWidgets(
+      '409 DISPLAY_NAME_TAKEN asks for another nickname and repeats the same signUpId and code',
+      (t) async {
+        var calls = 0;
+        final h = _Harness((o) {
+          calls++;
+          return calls == 1
+              ? _error(409, 'ACCOUNT.DISPLAY_NAME_TAKEN')
+              : FakeAdapter.json(200, tokenResponse('access-9', 'refresh-9'));
+        });
+        await h.attempts.save(attempt);
+        var verified = 0;
+        await t.pumpWidget(
+          h.app(VerifyCodeForm(attempt: attempt, onVerified: () => verified++)),
+        );
+        expect(find.byKey(VerifyCodeForm.displayNameKey), findsNothing);
+
+        await _type(t, VerifyCodeForm.codeKey, '123456');
+        await t.tap(find.widgetWithText(FilledButton, 'Verify'));
+        await t.pumpAndSettle();
+
+        expect(find.byKey(VerifyCodeForm.displayNameKey), findsOneWidget);
+        expect(
+          find.text(const VerifyCodeLabels().displayName.taken),
+          findsOneWidget,
+        );
+        expect(verified, 0);
+
+        await _type(t, VerifyCodeForm.displayNameKey, ' Bob ');
+        await t.tap(find.widgetWithText(FilledButton, 'Verify'));
+        await t.pumpAndSettle();
+
+        final sent = h.calls('/auth/verify-email').map((r) => r.data).toList();
+        expect(sent, [
+          {'signUpId': 'su_1', 'code': '123456'},
+          {'signUpId': 'su_1', 'code': '123456', 'displayName': 'Bob'},
+        ]);
+        expect(verified, 1);
+      },
+    );
+  });
+
+  group('DisplayNameForm', () {
+    testWidgets('saves the trimmed nickname with PATCH /account/me', (t) async {
+      final h = _Harness(
+        (_) => ok({
+          'hasPassword': true,
+          'displayName': 'Ann',
+          'displayTag': '0417',
+        }),
+      );
+      AccountMe? saved;
+      await t.pumpWidget(h.app(DisplayNameForm(onSaved: (me) => saved = me)));
+
+      await _type(t, DisplayNameForm.fieldKey, ' Ann ');
+      await t.tap(find.widgetWithText(FilledButton, 'Save'));
+      await t.pumpAndSettle();
+
+      final call = h.calls('/account/me').single;
+      expect(call.method, 'PATCH');
+      expect(call.data, {'displayName': 'Ann'});
+      expect(saved!.displayLabel, 'Ann#0417');
+    });
+
+    testWidgets('409 DISPLAY_NAME_TAKEN is a field error', (t) async {
+      final h = _Harness((_) => _error(409, 'ACCOUNT.DISPLAY_NAME_TAKEN'));
+      await t.pumpWidget(h.app(DisplayNameForm(onSaved: (_) {})));
+
+      await _type(t, DisplayNameForm.fieldKey, 'Ann');
+      await t.tap(find.widgetWithText(FilledButton, 'Save'));
+      await t.pumpAndSettle();
+
+      expect(find.text(const DisplayNameLabels().taken), findsOneWidget);
+      expect(h.calls('/account/me'), hasLength(1));
+    });
   });
 
   group('VerifyCodeForm', () {

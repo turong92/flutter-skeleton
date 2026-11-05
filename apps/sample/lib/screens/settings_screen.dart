@@ -14,9 +14,11 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(authSessionProvider);
-    final who = session is SignedIn
+    final fallback = session is SignedIn
         ? (session.principal.email ?? session.principal.accountId)
         : '';
+    // name#tag when the server gave a tag; the address until /account/me is in.
+    final who = ref.watch(accountMeProvider).value?.displayLabel ?? fallback;
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(

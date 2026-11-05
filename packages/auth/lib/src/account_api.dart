@@ -39,11 +39,12 @@ class AccountApi {
   Future<AuthResult> verifyEmail({
     required String signUpId,
     required String code,
+    String? displayName,
   }) {
     return _client.value(
       '/auth/verify-email',
       method: 'POST',
-      json: {'signUpId': signUpId, 'code': code},
+      json: {'signUpId': signUpId, 'code': code, 'displayName': ?displayName},
       skipAuth: true,
       decode: AuthResult.fromJson,
     );
@@ -97,6 +98,15 @@ class AccountApi {
   /// `GET /account/me`, reduced to what picks the deletion proof.
   Future<AccountMe> me() =>
       _client.value('/account/me', decode: AccountMe.fromJson);
+
+  /// `PATCH /account/me` with a nickname. `400` field error on `displayName`,
+  /// `409 ACCOUNT.DISPLAY_NAME_TAKEN`; a refused change changes nothing.
+  Future<AccountMe> updateDisplayName(String displayName) => _client.value(
+    '/account/me',
+    method: 'PATCH',
+    json: {'displayName': displayName},
+    decode: AccountMe.fromJson,
+  );
 
   /// `POST /account/delete/confirmation` (202): mails a 6-digit code to an
   /// account that has an address and no password. Nothing is sent to an

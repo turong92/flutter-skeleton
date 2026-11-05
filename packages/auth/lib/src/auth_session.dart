@@ -71,6 +71,12 @@ final passwordPolicyProvider = FutureProvider<PasswordPolicy>(
   (ref) => ref.watch(accountApiProvider).passwordPolicy(),
 );
 
+/// `GET /account/me` for the signed-in account (nickname, tag). Invalidate it
+/// after a change.
+final accountMeProvider = FutureProvider.autoDispose<AccountMe>(
+  (ref) => ref.watch(accountApiProvider).me(),
+);
+
 final authSessionProvider = NotifierProvider<AuthSession, AuthState>(
   AuthSession.new,
 );

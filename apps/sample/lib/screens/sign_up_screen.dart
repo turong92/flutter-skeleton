@@ -18,6 +18,8 @@ class SignUpScreen extends ConsumerWidget {
       title: 'Create account',
       children: [
         auth.SignUpForm(
+          // The kotlin sample server runs required-on-sign-up: true.
+          displayName: auth.DisplayNameMode.required,
           consentBuilder: (context, controller) => legal.SignUpConsents(
             onChanged: (value) => controller.update(
               ready: value.complete,

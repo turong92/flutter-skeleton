@@ -6,10 +6,12 @@ import 'package:skeleton_board/skeleton_board.dart';
 import 'package:skeleton_legal/skeleton_legal.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
+import 'nickname_gate.dart';
 import 'screens/account_screen.dart';
 import 'screens/board_screens.dart';
 import 'screens/forgot_password_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/nickname_screen.dart';
 import 'screens/notifications_screens.dart';
 import 'screens/reset_password_screen.dart';
 import 'screens/settings_screen.dart';
@@ -54,6 +56,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     publicPaths: publicPaths,
     signedInPath: '/board',
   );
+  final nicknameGate = nicknameRedirect(ref);
   final consentGate = reconsentRedirect(ref, homePath: '/board');
   final router = GoRouter(
     initialLocation: '/board',
@@ -61,9 +64,12 @@ final routerProvider = Provider<GoRouter>((ref) {
     // the inbox. The sign-in and consent redirects still come first.
     onException: (context, state, router) => router.go('/notifications'),
     redirect: (context, state) =>
-        authGate(context, state) ?? consentGate(context, state),
+        authGate(context, state) ??
+        nicknameGate(context, state) ??
+        consentGate(context, state),
     refreshListenable: Listenable.merge([
       authRefreshListenable(ref),
+      nicknameRefreshListenable(ref),
       reconsentRefreshListenable(ref),
     ]),
     routes: [
@@ -96,6 +102,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/social',
         builder: (context, state) => const SocialLinkScreen(),
+      ),
+      GoRoute(
+        path: '/nickname',
+        builder: (context, state) => const NicknameScreen(),
       ),
       GoRoute(
         path: '/consent',

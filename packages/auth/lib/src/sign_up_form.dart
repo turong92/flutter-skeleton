@@ -14,16 +14,23 @@ class SignUpLabels {
     this.submit = 'Create account',
     this.required = 'Required',
     this.consentRequired = 'Please accept the required terms to continue.',
+    this.invalidValue = 'Check this value.',
     this.emailTaken = 'This email is already in use.',
     this.networkError = 'Cannot reach the server. Check your connection.',
     this.genericError = 'Something went wrong. Please try again.',
     this.passwordPolicy = const PasswordPolicyLabels(),
+    this.displayName = const DisplayNameLabels(),
   });
 
   final String email;
   final String password;
   final String submit;
   final String required;
+
+  /// A server field error on the email or password with a code other than
+  /// `Required`.
+  final String invalidValue;
+  final DisplayNameLabels displayName;
   final String consentRequired;
   final String emailTaken;
   final String networkError;
@@ -61,6 +68,7 @@ class SignUpForm extends ConsumerStatefulWidget {
   const SignUpForm({
     super.key,
     required this.onSignedUp,
+    this.displayName = DisplayNameMode.none,
     this.consentBuilder,
     this.onConsentRejected,
     this.labels = const SignUpLabels(),
@@ -68,8 +76,14 @@ class SignUpForm extends ConsumerStatefulWidget {
 
   static const emailKey = Key('skeleton_auth.sign_up.email');
   static const passwordKey = Key('skeleton_auth.sign_up.password');
+  static const displayNameKey = Key('skeleton_auth.sign_up.display_name');
 
   final void Function(SignUpOutcome outcome) onSignedUp;
+
+  /// Whether to ask for a nickname. Match the server's
+  /// `required-on-sign-up`: [DisplayNameMode.required] against a server that
+  /// requires one, otherwise the sign-up is refused with a field error.
+  final DisplayNameMode displayName;
   final Widget Function(BuildContext context, ConsentSlotController controller)?
   consentBuilder;
 
@@ -86,9 +100,14 @@ class _SignUpFormState extends ConsumerState<SignUpForm> {
   final _formKey = GlobalKey<FormState>();
   final _email = TextEditingController();
   final _password = TextEditingController();
+  final _displayName = TextEditingController();
   late final _consents = ConsentSlotController();
   var _busy = false;
   String? _error;
+
+  /// What the server said about a field (`email`, `password`, `displayName`),
+  /// already worded. A field's entry goes away when the person edits it.
+  var _fieldErrors = const <String, String>{};
 
   @override
   void initState() {
@@ -100,6 +119,7 @@ class _SignUpFormState extends ConsumerState<SignUpForm> {
   void dispose() {
     _email.dispose();
     _password.dispose();
+    _displayName.dispose();
     _consents.dispose();
     super.dispose();
   }
@@ -123,24 +143,67 @@ class _SignUpFormState extends ConsumerState<SignUpForm> {
     setState(() {
       _busy = true;
       _error = null;
+      _fieldErrors = const {};
     });
     try {
+      final nickname = _displayName.text.trim();
       final outcome = await api.signUp(
         email: _email.text.trim(),
         password: _password.text,
+        displayName:
+            widget.displayName == DisplayNameMode.none || nickname.isEmpty
+            ? null
+            : nickname,
         consents: _consents.claims,
       );
       final attempt = outcome.attempt;
       if (attempt != null) await store.save(attempt);
       widget.onSignedUp(outcome);
     } catch (e) {
-      if (mounted) setState(() => _error = _messageFor(e));
+      if (mounted) _showError(e);
       if (e is ApiRequestError &&
           e.code == AccountErrorCodes.legalConsentRequired) {
         widget.onConsentRejected?.call();
       }
     } finally {
       if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// A `400` field error goes under its field; only what no field of this form
+  /// can show gets the common text.
+  void _showError(Object error) {
+    final labels = widget.labels;
+    final fields = error is ApiRequestError
+        ? fieldErrorCodesOf(error, {
+            'email',
+            'password',
+            if (widget.displayName != DisplayNameMode.none) 'displayName',
+          })
+        : const <String, String>{};
+    if (fields.isEmpty) {
+      setState(() => _error = _messageFor(error));
+      return;
+    }
+    final unmatched = (error as ApiRequestError).fieldErrors.any(
+      (f) => !fields.containsKey(f.field),
+    );
+    setState(() {
+      _fieldErrors = {
+        for (final f in fields.entries)
+          f.key: f.key == 'displayName'
+              ? labels.displayName.forCode(f.value) ?? labels.invalidValue
+              : f.value == 'Required'
+              ? labels.required
+              : labels.invalidValue,
+      };
+      _error = unmatched ? labels.genericError : null;
+    });
+  }
+
+  void _edited(String field) {
+    if (_fieldErrors.containsKey(field)) {
+      setState(() => _fieldErrors = {..._fieldErrors}..remove(field));
     }
   }
 
@@ -173,20 +236,48 @@ class _SignUpFormState extends ConsumerState<SignUpForm> {
           TextFormField(
             key: SignUpForm.emailKey,
             controller: _email,
-            decoration: InputDecoration(labelText: labels.email),
+            decoration: InputDecoration(
+              labelText: labels.email,
+              errorText: _fieldErrors['email'],
+            ),
             keyboardType: TextInputType.emailAddress,
             autofillHints: const [AutofillHints.email],
             textInputAction: TextInputAction.next,
             validator: requiredValue,
+            onChanged: (_) => _edited('email'),
           ),
+          if (widget.displayName != DisplayNameMode.none) ...[
+            const SizedBox(height: 12),
+            TextFormField(
+              key: SignUpForm.displayNameKey,
+              controller: _displayName,
+              decoration: InputDecoration(
+                labelText: widget.displayName == DisplayNameMode.required
+                    ? labels.displayName.label
+                    : labels.displayName.optionalLabel,
+                errorText: _fieldErrors['displayName'],
+              ),
+              textInputAction: TextInputAction.next,
+              validator: widget.displayName == DisplayNameMode.required
+                  ? (v) => v == null || v.trim().isEmpty
+                        ? labels.displayName.required
+                        : null
+                  : null,
+              onChanged: (_) => _edited('displayName'),
+            ),
+          ],
           const SizedBox(height: 12),
           TextFormField(
             key: SignUpForm.passwordKey,
             controller: _password,
-            decoration: InputDecoration(labelText: labels.password),
+            decoration: InputDecoration(
+              labelText: labels.password,
+              errorText: _fieldErrors['password'],
+            ),
             obscureText: true,
             autofillHints: const [AutofillHints.newPassword],
             validator: _passwordProblem,
+            onChanged: (_) => _edited('password'),
           ),
           const SizedBox(height: 4),
           PasswordPolicyHint(labels: labels.passwordPolicy),

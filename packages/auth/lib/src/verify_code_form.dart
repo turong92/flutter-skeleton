@@ -21,8 +21,10 @@ class VerifyCodeLabels {
     this.codeFormat = 'Enter the 6-digit code.',
     this.networkError = 'Cannot reach the server. Check your connection.',
     this.genericError = 'Something went wrong. Please try again.',
+    this.displayName = const DisplayNameLabels(),
   });
 
+  final DisplayNameLabels displayName;
   final String code;
   final String submit;
   final String resend;
@@ -47,6 +49,10 @@ String _defaultCodeInvalid(int left) =>
 /// navigates there (the sign-up pages are in `publicPaths`, so a signed-in
 /// session does not leave them by itself).
 ///
+/// `409 ACCOUNT.DISPLAY_NAME_TAKEN` (the code was right, the nickname is not
+/// free) does not use up the attempt: a nickname field appears and the next
+/// submit repeats the same `signUpId` and code with the new nickname.
+///
 /// The resend countdown runs on the device clock; the server decides (`410
 /// CODE_EXPIRED` removes the attempt and calls [onExpired]). A null
 /// `resendAvailableAt` means no further mail: there is no resend button.
@@ -61,6 +67,7 @@ class VerifyCodeForm extends ConsumerStatefulWidget {
   });
 
   static const codeKey = Key('skeleton_auth.verify.code');
+  static const displayNameKey = Key('skeleton_auth.verify.display_name');
 
   final SignUpAttempt attempt;
   final VoidCallback? onVerified;
@@ -77,10 +84,15 @@ class VerifyCodeForm extends ConsumerStatefulWidget {
 class _VerifyCodeFormState extends ConsumerState<VerifyCodeForm> {
   final _formKey = GlobalKey<FormState>();
   final _code = TextEditingController();
+  final _displayName = TextEditingController();
   late SignUpAttempt _attempt = widget.attempt;
   Timer? _ticker;
   var _busy = false;
   String? _error;
+
+  /// The nickname field shows once the server refused the nickname.
+  var _askName = false;
+  String? _nameError;
 
   @override
   void initState() {
@@ -94,6 +106,7 @@ class _VerifyCodeFormState extends ConsumerState<VerifyCodeForm> {
   void dispose() {
     _ticker?.cancel();
     _code.dispose();
+    _displayName.dispose();
     super.dispose();
   }
 
@@ -112,11 +125,13 @@ class _VerifyCodeFormState extends ConsumerState<VerifyCodeForm> {
     setState(() {
       _busy = true;
       _error = null;
+      _nameError = null;
     });
     try {
       final result = await api.verifyEmail(
         signUpId: _attempt.signUpId,
         code: _code.text.trim(),
+        displayName: _askName ? _displayName.text.trim() : null,
       );
       await store.clear();
       await session.signInWith(result);
@@ -126,7 +141,7 @@ class _VerifyCodeFormState extends ConsumerState<VerifyCodeForm> {
         await store.clear();
         widget.onExpired?.call();
       }
-      if (mounted) setState(() => _error = _messageFor(e));
+      if (mounted) _showError(e);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -150,6 +165,28 @@ class _VerifyCodeFormState extends ConsumerState<VerifyCodeForm> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  void _showError(Object error) {
+    final labels = widget.labels.displayName;
+    if (error is ApiRequestError) {
+      if (error.code == AccountErrorCodes.displayNameTaken) {
+        setState(() {
+          _askName = true;
+          _nameError = labels.taken;
+        });
+        return;
+      }
+      final code = fieldErrorCodesOf(error, {'displayName'})['displayName'];
+      if (code != null) {
+        setState(() {
+          _askName = true;
+          _nameError = labels.forCode(code) ?? widget.labels.genericError;
+        });
+        return;
+      }
+    }
+    setState(() => _error = _messageFor(error));
   }
 
   String _messageFor(Object error) {
@@ -189,6 +226,23 @@ class _VerifyCodeFormState extends ConsumerState<VerifyCodeForm> {
                 ? null
                 : labels.codeFormat,
           ),
+          if (_askName) ...[
+            const SizedBox(height: 12),
+            TextFormField(
+              key: VerifyCodeForm.displayNameKey,
+              controller: _displayName,
+              decoration: InputDecoration(
+                labelText: labels.displayName.label,
+                errorText: _nameError,
+              ),
+              onChanged: (_) {
+                if (_nameError != null) setState(() => _nameError = null);
+              },
+              validator: (v) => v == null || v.trim().isEmpty
+                  ? labels.displayName.required
+                  : null,
+            ),
+          ],
           if (_error != null) ErrorText(_error!),
           const SizedBox(height: 16),
           SubmitButton(label: labels.submit, busy: _busy, onPressed: _verify),

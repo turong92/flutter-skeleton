@@ -18,7 +18,8 @@ lib/social_support.dart the providers this build has, the account's sign-in meth
 lib/firebase_setup.dart FirebaseOptions from the dart-define values (null = no Firebase)
 lib/wiring.dart         where the packages meet: legal, board (+ author resolver), push (+ advertising, fallback link), notifications (+ account, row to path), iap on auth's ApiClient
 lib/inbox_realtime.dart the notification stream: open only signed in and in front, closed on sign-out, account change or background
-lib/router.dart         routes, auth gate then consent gate, four-tab shell (go_router StatefulShellRoute), unknown path -> inbox
+lib/nickname_gate.dart  an account without a nickname is sent to /nickname after sign-in (sign-up asks for one: the kotlin sample server is `required-on-sign-up`)
+lib/router.dart         routes, auth gate, nickname gate, then consent gate, four-tab shell (go_router StatefulShellRoute), unknown path -> inbox
 lib/screens/            login · sign-up · verify · forgot/reset password · account (delete) copied from the starter; shell · board · notifications · settings
 env/dev.json.example    the dart-define file to copy
 ```

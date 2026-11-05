@@ -8,10 +8,12 @@ import 'package:skeleton_board/skeleton_board.dart';
 import 'package:skeleton_legal/skeleton_legal.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
+import 'email_gate.dart';
 import 'login_id_gate.dart';
 import 'nickname_gate.dart';
 import 'screens/account_screen.dart';
 import 'screens/board_screens.dart';
+import 'screens/email_screen.dart';
 import 'screens/forgot_password_screen.dart';
 import 'screens/login_id_screen.dart';
 import 'screens/login_screen.dart';
@@ -59,6 +61,16 @@ final routerProvider = Provider<GoRouter>((ref) {
           onRequired: ref.read(needsLoginIdProvider.notifier).require,
         ),
       );
+  // A 403 ACCOUNT.EMAIL_REQUIRED only marks "add an address first".
+  ref
+      .read(apiClientProvider)
+      .dio
+      .interceptors
+      .add(
+        EmailRequiredInterceptor(
+          onRequired: ref.read(emailGateProvider.notifier).require,
+        ),
+      );
   // Whatever ends the session (sign-out, expiry, deletion) also ends a pending
   // agreement, or the next person to sign in is sent to /consent first.
   ref.listen(authSessionProvider, (_, next) {
@@ -71,14 +83,17 @@ final routerProvider = Provider<GoRouter>((ref) {
     signedInPath: '/board',
   );
   final loginIdGate = loginIdRedirect(ref);
+  final emailGate = emailRedirect(ref);
   final nicknameGate = nicknameRedirect(ref);
   final consentGate = reconsentRedirect(ref, homePath: '/board');
   // The account gates, in the server's order (ID -> email -> consent): the
   // first one that is up decides, so a later gate does not pull the person off
   // the screen of an earlier one. The nickname is the app's own and comes last.
-  // The email gate (a later piece) goes between the ID and the consent.
+  // The email gate stops writes only on a server that asks at write time; it
+  // is up then only after the person opened it (see `email_gate.dart`).
   FutureOr<String?> accountGates(BuildContext context, GoRouterState state) {
     if (ref.read(needsLoginIdProvider)) return loginIdGate(context, state);
+    if (ref.read(emailGateProvider).open) return emailGate(context, state);
     if (ref.read(reconsentProvider).isNotEmpty) {
       return consentGate(context, state);
     }
@@ -92,11 +107,18 @@ final routerProvider = Provider<GoRouter>((ref) {
     // A link the app has no route for (a server link, an old push) lands on
     // the inbox. The sign-in and gate redirects still come first.
     onException: (context, state, router) => router.go('/notifications'),
+    // The gates are for a signed-in account. They clear a moment after the
+    // session ends; until then a signed-out router must not be sent to a gate
+    // screen, or it bounces between that and /login for ever.
     redirect: (context, state) =>
-        authGate(context, state) ?? accountGates(context, state),
+        authGate(context, state) ??
+        (ref.read(authSessionProvider) is SignedIn
+            ? accountGates(context, state)
+            : null),
     refreshListenable: Listenable.merge([
       authRefreshListenable(ref),
       loginIdRefreshListenable(ref),
+      emailRefreshListenable(ref),
       nicknameRefreshListenable(ref),
       reconsentRefreshListenable(ref),
     ]),
@@ -139,6 +161,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/login-id',
         builder: (context, state) => const LoginIdScreen(),
       ),
+      GoRoute(path: '/email', builder: (context, state) => const EmailScreen()),
       GoRoute(
         path: '/consent',
         builder: (context, state) => Consumer(

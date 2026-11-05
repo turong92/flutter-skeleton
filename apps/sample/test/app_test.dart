@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sample/main.dart';
+import 'package:sample/screens/email_screen.dart';
 import 'package:sample/wiring.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:skeleton_api_client/testing.dart';
@@ -86,7 +89,26 @@ class _Backend {
         'status': 403,
       });
     }
+    // The address gate refuses writes only (`emailRequiredToWrite`).
+    if (options.method == 'POST' && options.path.startsWith('/boards/')) {
+      return FakeAdapter.json(403, {
+        'code': 'ACCOUNT.EMAIL_REQUIRED',
+        'title': 'x',
+        'status': 403,
+      });
+    }
     switch ((options.method, options.path)) {
+      case ('POST', '/account/email/change'):
+        return FakeAdapter.json(202, {
+          'value': {
+            'expiresAt': '2026-01-01T00:10:00Z',
+            'resendAvailableAt': '2026-01-01T00:01:00Z',
+          },
+          'meta': _meta,
+        });
+      case ('POST', '/account/email/change/confirm'):
+      case ('POST', '/account/discard'):
+        return FakeAdapter.empty(204);
       case ('POST', '/auth/login'):
         return FakeAdapter.json(200, {
           'value': {
@@ -279,6 +301,135 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(LoginIdForm), findsNothing);
+    expect(find.text('Sign in'), findsOneWidget);
+  });
+
+  Future<void> registerEmail(WidgetTester tester) async {
+    await tester.enterText(
+      find.byKey(EmailRegisterForm.emailKey),
+      'ann@example.com',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Send code'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(EmailRegisterForm.codeKey), '123456');
+    await tester.tap(find.widgetWithText(FilledButton, 'Confirm'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('the email gate sits between the ID and the consent', (
+    tester,
+  ) async {
+    final backend = _Backend(
+      accountMe: {
+        'hasPassword': true,
+        'loginId': null,
+        'email': null,
+        'emailRequired': true,
+        'displayName': 'Ann',
+      },
+    );
+    await tester.pumpWidget(_app(backend));
+    await _signIn(tester);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(LoginIdForm)),
+    );
+    container.read(reconsentProvider.notifier).require(const [
+      MissingConsent(type: 'terms', version: 'v2', reason: 'NEW_VERSION'),
+    ]);
+
+    await tester.enterText(find.byKey(LoginIdForm.fieldKey), 'ann.lee');
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+    expect(find.byType(EmailRegisterForm), findsOneWidget);
+    expect(find.byType(ReconsentScreen), findsNothing);
+    // right after sign-in nothing is optional: only the way out
+    expect(find.text('Later'), findsNothing);
+
+    await registerEmail(tester);
+    expect(find.byType(ReconsentScreen), findsOneWidget);
+  });
+
+  testWidgets('an address asked for at write time blocks no read, warns '
+      'before the write and opens on the refused write', (tester) async {
+    final backend = _Backend(
+      accountMe: {
+        'hasPassword': true,
+        'email': null,
+        'emailRequiredToWrite': true,
+        'displayName': 'Ann',
+      },
+    );
+    await tester.pumpWidget(_app(backend));
+    await _signIn(tester);
+    expect(find.text('First post'), findsOneWidget);
+    expect(find.byType(EmailRegisterForm), findsNothing);
+    expect(find.byType(EmailWriteNotice), findsOneWidget);
+
+    // A write that slipped past the warning is refused: the form opens.
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(EmailWriteNotice)),
+    );
+    unawaited(
+      container
+          .read(apiClientProvider)
+          .noContent('/boards/general/posts', method: 'POST')
+          .then((_) {}, onError: (_) {}),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(EmailRegisterForm), findsOneWidget);
+
+    await tester.tap(find.text('Later'));
+    await tester.pumpAndSettle();
+    expect(find.text('First post'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Add email'));
+    await tester.pumpAndSettle();
+    await registerEmail(tester);
+
+    expect(find.text('First post'), findsOneWidget);
+    expect(find.byType(EmailWriteNotice), findsOneWidget);
+    expect(find.text('Add email'), findsNothing);
+    // the refused write is not sent again behind the person's back
+    expect(
+      backend.adapter.requests.where(
+        (r) => r.method == 'POST' && r.path == '/boards/general/posts',
+      ),
+      hasLength(1),
+    );
+  });
+
+  testWidgets('an account without an address can be discarded and the device '
+      'is signed out', (tester) async {
+    final backend = _Backend(
+      accountMe: {'hasPassword': true, 'email': null, 'emailRequired': true},
+    );
+    await tester.pumpWidget(_app(backend));
+    await _signIn(tester);
+
+    await tester.tap(find.text('I already have an account'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Discard'));
+    await tester.pumpAndSettle();
+
+    expect(
+      backend.adapter.requests.where((r) => r.path == '/account/discard'),
+      hasLength(1),
+    );
+    expect(find.text('Sign in'), findsOneWidget);
+  });
+
+  testWidgets('the email gate has a way out: sign out', (tester) async {
+    final backend = _Backend(
+      accountMe: {'hasPassword': true, 'email': null, 'emailRequired': true},
+    );
+    await tester.pumpWidget(_app(backend));
+    await _signIn(tester);
+    expect(find.byType(EmailRegisterForm), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Sign out'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(EmailRegisterForm), findsNothing);
     expect(find.text('Sign in'), findsOneWidget);
   });
 

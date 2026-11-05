@@ -18,6 +18,8 @@ abstract final class AccountErrorCodes {
   static const loginIdTaken = 'ACCOUNT.LOGIN_ID_TAKEN';
   static const loginIdRequired = 'ACCOUNT.LOGIN_ID_REQUIRED';
   static const loginIdAlreadySet = 'ACCOUNT.LOGIN_ID_ALREADY_SET';
+  static const emailRequired = 'ACCOUNT.EMAIL_REQUIRED';
+  static const discardNotAllowed = 'ACCOUNT.DISCARD_NOT_ALLOWED';
 
   /// From the `legal` module: sign-up without a required consent.
   static const legalConsentRequired = 'LEGAL.CONSENT_REQUIRED';
@@ -137,6 +139,8 @@ class AccountMe {
     this.displayTag,
     this.loginId,
     this.loginIdRequired = false,
+    this.emailRequired = false,
+    this.emailRequiredToWrite = false,
   });
 
   factory AccountMe.fromJson(Map<String, Object?> json) => AccountMe(
@@ -147,6 +151,8 @@ class AccountMe {
     loginId: json['loginId'] as String?,
     // The key exists only on a server with login IDs on; null = not chosen.
     loginIdRequired: json.containsKey('loginId') && json['loginId'] == null,
+    emailRequired: json['emailRequired'] == true,
+    emailRequiredToWrite: json['emailRequiredToWrite'] == true,
   );
 
   final bool hasPassword;
@@ -158,6 +164,16 @@ class AccountMe {
   /// True when the server has login IDs on and this account has not chosen
   /// one: it answers `403 ACCOUNT.LOGIN_ID_REQUIRED` until it does.
   final bool loginIdRequired;
+
+  /// True when the server wants an address right after sign-in (`emailRequired`
+  /// in `me`): it answers `403 ACCOUNT.EMAIL_REQUIRED` to everything outside
+  /// its allow list, reads included. False when the key is absent too.
+  final bool emailRequired;
+
+  /// True when the server wants the address only for changes
+  /// (`emailRequiredToWrite`): reads pass, a write is refused with `403
+  /// ACCOUNT.EMAIL_REQUIRED`. Tell the person before a write screen opens.
+  final bool emailRequiredToWrite;
 
   /// Null = the account has no nickname yet (a social sign-up, or the server
   /// generates none): the app asks for one ([DisplayNameForm]).

@@ -137,6 +137,50 @@ class AccountApi {
     decode: AccountMe.fromJson,
   );
 
+  /// `POST /account/email/change` (202): mails a 6-digit code to [newEmail]
+  /// (the same answer for an address another account owns: the code never
+  /// comes). Calling again is the resend. A session older than an hour gets
+  /// `403 ACCOUNT.REAUTH_REQUIRED` for the first address: send [socialReauth]
+  /// (a fresh provider token, as the social package builds it).
+  Future<CodeIssued> requestEmailChange(
+    String newEmail, {
+    Map<String, Object?>? socialReauth,
+  }) {
+    return _client.value(
+      '/account/email/change',
+      method: 'POST',
+      json: {'newEmail': newEmail, 'socialReauth': ?socialReauth},
+      decode: CodeIssued.fromJson,
+    );
+  }
+
+  /// `POST /account/email/change/confirm` (204): the address is registered
+  /// and `me` stops asking for one. `400 ACCOUNT.CODE_INVALID` (see
+  /// [attemptsLeftOf]), `410 ACCOUNT.CODE_EXPIRED`.
+  Future<void> confirmEmailChange(String code) => _client.noContent(
+    '/account/email/change/confirm',
+    method: 'POST',
+    json: {'code': code},
+  );
+
+  /// `POST /account/discard` (204): drops an account that has no address and
+  /// has written nothing, at once and for good (the social login is free
+  /// again; a login ID it chose can never be taken again). All sessions end:
+  /// sign out locally. `409 ACCOUNT.DISCARD_NOT_ALLOWED`; an old session gets
+  /// `403 ACCOUNT.REAUTH_REQUIRED` (send [socialReauth]); `503
+  /// ACCOUNT.ERASURE_RETRY`: repeat the call with the same [idempotencyKey].
+  Future<void> discard({
+    Map<String, Object?>? socialReauth,
+    required String idempotencyKey,
+  }) {
+    return _client.noContent(
+      '/account/discard',
+      method: 'POST',
+      json: {'socialReauth': ?socialReauth},
+      headers: {'Idempotency-Key': idempotencyKey},
+    );
+  }
+
   /// `POST /account/delete/confirmation` (202): mails a 6-digit code to an
   /// account that has an address and no password. Nothing is sent to an
   /// account without an address (it uses [deleteAccount]'s `socialReauth`).

@@ -152,13 +152,24 @@ class AuthSession extends Notifier<AuthState> {
     String? username,
     required String password,
   }) async {
+    await _signInWithCall(
+      () => ref
+          .read(authApiProvider)
+          .login(email: email, username: username, password: password),
+    );
+  }
+
+  /// Signs in with the token of a mailed magic link. An account in its
+  /// deletion grace is handled like on [login].
+  Future<void> redeemMagicLink(String token) =>
+      _signInWithCall(() => ref.read(authApiProvider).redeemMagicLink(token));
+
+  Future<void> _signInWithCall(Future<AuthResult> Function() call) async {
     final AuthResult result;
     try {
-      result = await ref
-          .read(authApiProvider)
-          .login(email: email, username: username, password: password);
+      result = await call();
     } on ApiRequestError catch (e) {
-      // A right password for an account in its deletion grace: no session, but
+      // A right proof for an account in its deletion grace: no session, but
       // the offer to cancel. The error still goes on to the caller.
       final pending = deletionPendingOf(e);
       if (pending != null) {

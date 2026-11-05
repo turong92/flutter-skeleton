@@ -87,9 +87,20 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         _ => null,
       },
     );
+    // The contact-email section exists only when the server has the feature
+    // on: `me` then carries the `contactEmail` key (null = none yet).
+    final me = ref.watch(accountMeProvider).value;
     return FormPage(
       title: 'Account settings',
       children: [
+        if (me != null && me.contactEmailEnabled) ...[
+          ContactEmailSection(
+            contactEmail: me.contactEmail,
+            socialReauth: _reauth,
+            onChanged: () => ref.invalidate(accountMeProvider),
+          ),
+          const SizedBox(height: SkeletonSpace.lg),
+        ],
         Text('Delete account', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: SkeletonSpace.sm),
         if (notice != null) ...[

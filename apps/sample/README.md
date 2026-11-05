@@ -23,7 +23,7 @@ lib/email_gate.dart     an account without an address: `me.emailRequired` blocks
 lib/login_id_gate.dart  an account without a login ID (`/account/me` `loginId: null`, or any call `403 ACCOUNT.LOGIN_ID_REQUIRED`) is sent to /login-id first; the server answers nothing else until it has one
 lib/nickname_gate.dart  an account without a nickname is sent to /nickname after sign-in (sign-up asks for one: the kotlin sample server is `required-on-sign-up`)
 lib/router.dart         routes, auth gate, then the account gates in the server's order (ID, email, consent, nickname; the first one that is up decides; each has a sign-out button), four-tab shell (go_router StatefulShellRoute), unknown path -> inbox
-lib/screens/            login · sign-up · verify · forgot/reset password · account (delete) copied from the starter; shell · board · notifications · settings
+lib/screens/            login · sign-up · verify · forgot/reset password · forgot ID · magic link · account (contact email, delete) copied from the starter; shell · board · notifications · settings
 env/dev.json.example    the dart-define file to copy
 ```
 
@@ -95,6 +95,6 @@ No Android SDK or Xcode ran here, so `flutter build apk`, an iOS build and every
 - push: a real notification arrives, a tap opens its link (or the inbox when it has none), the permission dialog, the iOS foreground banner
 - the live stream on a device: the inbox count changes when another account comments, the stream closes when the app goes to the background and opens again (with one re-read) when it comes back
 - the promotional push consent against a server with `notification-push-legal`, on a device
-- a mailed password-reset link opens the app (App Links / Universal Links need your own domain, see the starter README)
+- a mailed password-reset link or sign-in link (`/magic-link?token=`) opens the app (App Links / Universal Links need your own domain, see the starter README; the sample has the routes but, like for `/reset-password`, no native entries). The `/magic-link` route signs in on arrival; the "Forgot ID?" link on the sign-in screen and the contact-email section in account settings appear only when the server has login IDs / the contact email on
 - social sign-in with real provider apps: the Google, Apple, Kakao and Naver sheets, the Kakao and Naver return to the app (Android intent filter, iOS `handleURL` in the scene delegate), `import NidThirdPartyLogin` compiling in the Runner target
 - the iOS build with the entitlements and Background Modes under your own signing team

@@ -84,6 +84,46 @@ class AccountApi {
     );
   }
 
+  /// `POST /account/login-id/forgot` (public): always 202, whether or not the
+  /// address has an account. `429` only for the client IP.
+  Future<void> forgotLoginId(String email) async {
+    await _client.value(
+      '/account/login-id/forgot',
+      method: 'POST',
+      json: {'email': email},
+      skipAuth: true,
+      decode: (_) => null,
+    );
+  }
+
+  /// `POST /account/contact-email` (202): mails a 6-digit code to [email].
+  /// Calling again is the resend. 404 when the server has the feature off
+  /// (`me.contactEmail` is absent then). An account without an address
+  /// must send [socialReauth] (`403 ACCOUNT.REAUTH_REQUIRED` otherwise).
+  Future<CodeIssued> requestContactEmail(
+    String email, {
+    Map<String, Object?>? socialReauth,
+  }) {
+    return _client.value(
+      '/account/contact-email',
+      method: 'POST',
+      json: {'email': email, 'socialReauth': ?socialReauth},
+      decode: CodeIssued.fromJson,
+    );
+  }
+
+  /// `POST /account/contact-email/confirm` (204): sets (or changes) the
+  /// contact address. `400 ACCOUNT.CODE_INVALID`, `410 ACCOUNT.CODE_EXPIRED`.
+  Future<void> confirmContactEmail(String code) => _client.noContent(
+    '/account/contact-email/confirm',
+    method: 'POST',
+    json: {'code': code},
+  );
+
+  /// `DELETE /account/contact-email` (204, also when there was none).
+  Future<void> removeContactEmail() =>
+      _client.noContent('/account/contact-email', method: 'DELETE');
+
   /// `POST /account/password/reset`: all sessions of the account end. The
   /// [token] comes from the mailed link; it is never logged.
   Future<void> resetPassword({

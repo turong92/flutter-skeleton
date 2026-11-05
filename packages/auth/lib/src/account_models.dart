@@ -143,6 +143,8 @@ class AccountMe {
     this.displayTag,
     this.loginId,
     this.loginIdRequired = false,
+    this.contactEmail,
+    this.contactEmailEnabled = false,
     this.emailRequired = false,
     this.emailRequiredToWrite = false,
   });
@@ -155,11 +157,22 @@ class AccountMe {
     loginId: json['loginId'] as String?,
     // The key exists only on a server with login IDs on; null = not chosen.
     loginIdRequired: json.containsKey('loginId') && json['loginId'] == null,
+    // The key exists only when the server runs the contact-email feature.
+    contactEmail: json['contactEmail'] as String?,
+    contactEmailEnabled: json.containsKey('contactEmail'),
     emailRequired: json['emailRequired'] == true,
     emailRequiredToWrite: json['emailRequiredToWrite'] == true,
   );
 
   final bool hasPassword;
+
+  /// The confirmed contact address (notices and service messages only, never
+  /// sign-in or recovery); null = none yet.
+  final String? contactEmail;
+
+  /// False when the server has the contact-email feature off: the key is
+  /// absent from `me`, so the section is not drawn.
+  final bool contactEmailEnabled;
   final String? email;
 
   /// The account's login ID; null without one or on a server without IDs.

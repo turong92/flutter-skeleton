@@ -16,9 +16,11 @@ import 'screens/account_screen.dart';
 import 'screens/board_screens.dart';
 import 'screens/deletion_pending_screen.dart';
 import 'screens/email_screen.dart';
+import 'screens/forgot_login_id_screen.dart';
 import 'screens/forgot_password_screen.dart';
 import 'screens/login_id_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/magic_link_screen.dart';
 import 'screens/nickname_screen.dart';
 import 'screens/notifications_screens.dart';
 import 'screens/reset_password_screen.dart';
@@ -37,6 +39,9 @@ const publicPaths = {
   '/verify',
   '/forgot-password',
   '/reset-password',
+  '/forgot-login-id',
+  // A mailed sign-in link: the token is exchanged for a session on arrival.
+  '/magic-link',
   // The offer to cancel a deletion is shown to someone not signed in.
   '/deletion-pending',
 };
@@ -151,6 +156,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/reset-password',
         builder: (context, state) =>
             ResetPasswordScreen(token: state.uri.queryParameters['token']),
+      ),
+      GoRoute(
+        path: '/forgot-login-id',
+        builder: (context, state) => const ForgotLoginIdScreen(),
+      ),
+      GoRoute(
+        path: '/magic-link',
+        builder: (context, state) =>
+            MagicLinkScreen(token: state.uri.queryParameters['token']),
       ),
       GoRoute(
         path: '/account',

@@ -30,6 +30,19 @@ class AuthApi {
     );
   }
 
+  /// `POST /auth/magic-link/redeem`: the [token] of the mailed link
+  /// (`/magic-link?token=`) becomes a sign-in. Single use, 15 minutes;
+  /// `410 ACCOUNT.TOKEN_INVALID` when dead. The token is never logged.
+  Future<AuthResult> redeemMagicLink(String token) {
+    return _client.value(
+      '/auth/magic-link/redeem',
+      method: 'POST',
+      json: {'token': token},
+      skipAuth: true,
+      decode: AuthResult.fromJson,
+    );
+  }
+
   /// `POST /auth/refresh`: the refresh token is rotated, the old one is dead.
   Future<AuthResult> refresh(String refreshToken) {
     return _client.value(

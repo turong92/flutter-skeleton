@@ -24,6 +24,14 @@ ThemeData _theme(Brightness brightness) {
         borderRadius: BorderRadius.circular(SkeletonRadius.md),
       ),
     ),
+    // Buttons Flutter draws itself (time/date picker OK and Cancel) are
+    // TextButtons; give them a border so they read as pressable at rest.
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        shape: shape,
+        side: BorderSide(color: scheme.outline),
+      ),
+    ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         shape: shape,

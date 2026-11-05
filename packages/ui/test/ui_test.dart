@@ -16,6 +16,17 @@ void main() {
     },
   );
 
+  test(
+    'Flutter default text buttons (picker dialogs) get a border at rest',
+    () {
+      for (final theme in [skeletonLightTheme(), skeletonDarkTheme()]) {
+        final side = theme.textButtonTheme.style?.side?.resolve({});
+        expect(side, isNotNull);
+        expect(side!.style, BorderStyle.solid);
+      }
+    },
+  );
+
   testWidgets('ErrorView shows the message and calls onRetry from its button', (
     tester,
   ) async {

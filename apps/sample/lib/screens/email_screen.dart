@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,58 +14,72 @@ import 'form_page.dart';
 /// server asks for the address right after sign-in the only ways out are
 /// registering, discarding the account (for someone who already has another)
 /// and signing out; when it asks only for changes the screen can be closed.
-class EmailScreen extends ConsumerWidget {
+class EmailScreen extends ConsumerStatefulWidget {
   const EmailScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<EmailScreen> createState() => _EmailScreenState();
+}
+
+class _EmailScreenState extends ConsumerState<EmailScreen> {
+  late final EmailGateNotifier _gate;
+
+  @override
+  void initState() {
+    super.initState();
+    _gate = ref.read(emailGateProvider.notifier);
+  }
+
+  @override
+  void dispose() {
+    // Opened for a write, the screen lies over the one the person was on, and
+    // it can go away by a pop (button, swipe) or by a `go()` / redirect that
+    // replaces the stack (a push tap, a link): either way it is "later" unless
+    // the address was registered. Not inside dispose itself: providers cannot
+    // change while the tree is being torn down.
+    final gate = _gate;
+    scheduleMicrotask(gate.screenGone);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final gate = ref.watch(emailGateProvider);
-    // Opened for a write, the screen lies over the one the person was on;
-    // going back (button, swipe) is "later". The blocking one is not left.
-    return PopScope(
-      onPopInvokedWithResult: (didPop, _) {
-        if (didPop && !gate.blocking) {
-          ref.read(emailGateProvider.notifier).later();
-        }
-      },
-      child: FormPage(
-        title: 'Add your email',
-        children: [
-          Text(
-            gate.blocking
-                ? 'This service needs your email address before it goes on.'
-                : 'Changes need your email address. Reading works without it.',
-          ),
-          const SizedBox(height: SkeletonSpace.md),
-          EmailRegisterForm(
-            socialReauth: () => reauthWithLinkedProvider(ref),
-            onRegistered: () {
-              ref.invalidate(accountMeProvider);
-              ref.read(emailGateProvider.notifier).registered();
+    return FormPage(
+      title: 'Add your email',
+      children: [
+        Text(
+          gate.blocking
+              ? 'This service needs your email address before it goes on.'
+              : 'Changes need your email address. Reading works without it.',
+        ),
+        const SizedBox(height: SkeletonSpace.md),
+        EmailRegisterForm(
+          socialReauth: () => reauthWithLinkedProvider(ref),
+          onRegistered: () {
+            ref.invalidate(accountMeProvider);
+            ref.read(emailGateProvider.notifier).registered();
+            _leave(context);
+          },
+        ),
+        const SizedBox(height: SkeletonSpace.lg),
+        DiscardAccountButton(socialReauth: () => reauthWithLinkedProvider(ref)),
+        const SizedBox(height: SkeletonSpace.sm),
+        if (!gate.blocking) ...[
+          OutlinedButton(
+            onPressed: () {
+              ref.read(emailGateProvider.notifier).later();
               _leave(context);
             },
-          ),
-          const SizedBox(height: SkeletonSpace.lg),
-          DiscardAccountButton(
-            socialReauth: () => reauthWithLinkedProvider(ref),
+            child: const Text('Later'),
           ),
           const SizedBox(height: SkeletonSpace.sm),
-          if (!gate.blocking) ...[
-            OutlinedButton(
-              onPressed: () {
-                ref.read(emailGateProvider.notifier).later();
-                _leave(context);
-              },
-              child: const Text('Later'),
-            ),
-            const SizedBox(height: SkeletonSpace.sm),
-          ],
-          OutlinedButton(
-            onPressed: () => ref.read(authSessionProvider.notifier).logout(),
-            child: const Text('Sign out'),
-          ),
         ],
-      ),
+        OutlinedButton(
+          onPressed: () => ref.read(authSessionProvider.notifier).logout(),
+          child: const Text('Sign out'),
+        ),
+      ],
     );
   }
 

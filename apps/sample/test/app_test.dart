@@ -486,6 +486,50 @@ void main() {
     );
   });
 
+  testWidgets('a write held on the email form ends with its 403 when the form '
+      'goes away by go() and not by pop', (tester) async {
+    final backend = _Backend(
+      accountMe: {
+        'hasPassword': true,
+        'email': null,
+        'emailRequiredToWrite': true,
+        'displayName': 'Ann',
+      },
+    );
+    await tester.pumpWidget(_app(backend));
+    await _signIn(tester);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(EmailWriteNotice)),
+    );
+
+    Object? failure;
+    var answered = false;
+    unawaited(
+      container
+          .read(apiClientProvider)
+          .noContent('/boards/general/posts', method: 'POST')
+          .then((_) => answered = true, onError: (Object e) => failure = e),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(EmailRegisterForm), findsOneWidget);
+
+    container.read(routerProvider).go('/board');
+    await tester.pumpAndSettle();
+
+    expect(find.byType(EmailRegisterForm), findsNothing);
+    expect(answered, isFalse);
+    expect(failure, isNotNull);
+    // and the next refused write raises the form again
+    unawaited(
+      container
+          .read(apiClientProvider)
+          .noContent('/boards/general/posts', method: 'POST')
+          .then((_) {}, onError: (_) {}),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(EmailRegisterForm), findsOneWidget);
+  });
+
   testWidgets('an account without an address can be discarded and the device '
       'is signed out', (tester) async {
     final backend = _Backend(

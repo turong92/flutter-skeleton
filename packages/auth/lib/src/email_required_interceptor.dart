@@ -21,15 +21,22 @@ class EmailRequiredInterceptor extends Interceptor {
 
   static const _repeatedKey = 'emailRequiredRepeated';
 
+  /// Set once the call was held. A repeat that fails inside another
+  /// interceptor (a token refresh) comes back through the chain with this
+  /// error; it must not be held a second time.
+  static const _heldKey = 'emailRequiredHeld';
+
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     final options = err.requestOptions;
     if (err.response?.statusCode != 403 ||
         options.extra[_repeatedKey] == true ||
+        options.extra[_heldKey] == true ||
         ApiRequestError.fromDioException(err).code !=
             AccountErrorCodes.emailRequired) {
       return handler.next(err);
     }
+    options.extra[_heldKey] = true;
     if (!await onRequired()) return handler.next(err);
     try {
       handler.resolve(await sendHeldCallAgain(dio, options, _repeatedKey));

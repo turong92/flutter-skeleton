@@ -36,7 +36,14 @@ class EmailGateNotifier extends Notifier<EmailGate> {
         _held.release(resend: false);
         return;
       }
-      if (previous is SignedIn) return;
+      if (previous is SignedIn) {
+        // Another account without a sign-out in between: calls held for the
+        // first one must not go out with the second one's headers.
+        if (previous.principal.accountId != next.principal.accountId) {
+          _held.release(resend: false);
+        }
+        return;
+      }
       try {
         final me = await ref.read(accountApiProvider).me();
         if (ref.mounted && ref.read(authSessionProvider) is SignedIn) {
@@ -84,6 +91,13 @@ class EmailGateNotifier extends Notifier<EmailGate> {
   void later() {
     state = (open: false, blocking: state.blocking, toWrite: state.toWrite);
     _held.release(resend: false);
+  }
+
+  /// The registration screen is gone (popped, or replaced by a `go()`): unless
+  /// it ended by [registered] or [later], or it was the blocking one, that is
+  /// "later".
+  void screenGone() {
+    if (ref.mounted && state.open && !state.blocking) later();
   }
 
   /// The address is confirmed: the refused calls are sent again.

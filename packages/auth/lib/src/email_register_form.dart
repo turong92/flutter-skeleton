@@ -79,7 +79,9 @@ class EmailRegisterLabels {
 /// `emailRequired` or `emailRequiredToWrite`, or a call answered `403
 /// ACCOUNT.EMAIL_REQUIRED`): the address, then the 6-digit code mailed to it.
 /// The form does not navigate: [onRegistered] runs once the address is
-/// confirmed. The blocked call is not sent again; the person repeats it.
+/// confirmed. A call that was refused for want of an address is held by
+/// [EmailRequiredInterceptor] and sent again by the app once [onRegistered]
+/// has told the gate (see [HeldCalls]); the form itself does not send it.
 ///
 /// An old session gets `403 ACCOUNT.REAUTH_REQUIRED` for the first address:
 /// [socialReauth] runs the provider's sign-in again and returns the

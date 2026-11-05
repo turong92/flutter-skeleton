@@ -6,7 +6,7 @@ import 'package:skeleton_auth/skeleton_auth.dart';
 /// True while the signed-in account has to choose its login ID: `GET
 /// /account/me` has `loginId: null` (read once per sign-in; a failed read lets
 /// the person in), or any call was refused with `403 ACCOUNT.LOGIN_ID_REQUIRED`
-/// ([LoginIdRequiredInterceptor] calls [require]). The server answers nothing
+/// ([LoginIdRequiredInterceptor] calls [NeedsLoginId.hold]). The server answers nothing
 /// else until then, so this gate comes first (ID, then consent, then nickname).
 final needsLoginIdProvider = NotifierProvider<NeedsLoginId, bool>(
   NeedsLoginId.new,
@@ -24,7 +24,14 @@ class NeedsLoginId extends Notifier<bool> {
         _held.release(resend: false);
         return;
       }
-      if (previous is SignedIn) return;
+      if (previous is SignedIn) {
+        // Another account without a sign-out in between: calls held for the
+        // first one must not go out with the second one's headers.
+        if (previous.principal.accountId != next.principal.accountId) {
+          _held.release(resend: false);
+        }
+        return;
+      }
       try {
         final me = await ref.read(accountApiProvider).me();
         if (ref.mounted && ref.read(authSessionProvider) is SignedIn) {

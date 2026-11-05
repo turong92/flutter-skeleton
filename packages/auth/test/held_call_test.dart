@@ -3,6 +3,9 @@ import 'package:skeleton_api_client/skeleton_api_client.dart';
 import 'package:skeleton_api_client/testing.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 
+import 'support/backend_fake.dart';
+import 'support/test_client.dart';
+
 /// A write the server refuses until [open] is set, behind the two gate
 /// interceptors, with a [HeldCalls] standing in for the app's screen.
 class _Setup {
@@ -32,6 +35,15 @@ class _Setup {
   bool open = false;
   String refusal = 'ACCOUNT.EMAIL_REQUIRED';
 
+  /// The first answer has arrived (a slow machine may need a while), then a
+  /// moment for the interceptors to hold the call.
+  Future<void> untilHeld() async {
+    while (adapter.requests.isEmpty) {
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+  }
+
   Future<Object?> post() => client.value<Object?>(
     '/boards/general/posts/7/comments',
     method: 'POST',
@@ -52,7 +64,7 @@ void main() {
         final s = _Setup()..refusal = refusal;
 
         final result = s.post();
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await s.untilHeld();
         expect(s.adapter.requests, hasLength(1)); // held, not answered
         s.open = true;
         s.held.release(resend: true);
@@ -67,11 +79,89 @@ void main() {
     );
   }
 
+  test('"Later" after a refresh and repeat holds the call once, not again '
+      'on the outer chain', () async {
+    final store = MemoryTokenStore();
+    await store.save(
+      const TokenPair(accessToken: 'old', refreshToken: 'refresh-1'),
+    );
+    final adapter = FakeAdapter((options) {
+      if (options.path == '/auth/refresh') {
+        return FakeAdapter.json(200, tokenResponse('new', 'refresh-2'));
+      }
+      return options.headers['Authorization'] == 'Bearer old'
+          ? apiError(401, 'x')
+          : apiError(403, 'ACCOUNT.EMAIL_REQUIRED');
+    });
+    final client = testAuthClient(store: store, adapter: adapter);
+    var holds = 0;
+    client.dio.interceptors.add(
+      EmailRequiredInterceptor(
+        dio: client.dio,
+        onRequired: () async {
+          holds++;
+          return false; // "Later"
+        },
+      ),
+    );
+
+    await expectLater(
+      client.value<Object?>(
+        '/boards/general/posts/7/comments',
+        method: 'POST',
+        decode: (json) => json['ok'],
+      ),
+      throwsA(isA<ApiRequestError>()),
+    );
+    expect(holds, 1);
+  });
+
+  test('ID gate then email gate: leaving the email screen ends the call '
+      'without a second email hold', () async {
+    var idDone = false;
+    final adapter = FakeAdapter(
+      (options) => apiError(
+        403,
+        idDone ? 'ACCOUNT.EMAIL_REQUIRED' : 'ACCOUNT.LOGIN_ID_REQUIRED',
+      ),
+    );
+    final client = ApiClient(
+      baseUrl: 'http://localhost/api/v1',
+      adapter: adapter,
+    );
+    var emailHolds = 0;
+    client.dio.interceptors
+      ..add(
+        LoginIdRequiredInterceptor(
+          dio: client.dio,
+          onRequired: () async {
+            idDone = true;
+            return true;
+          },
+        ),
+      )
+      ..add(
+        EmailRequiredInterceptor(
+          dio: client.dio,
+          onRequired: () async {
+            emailHolds++;
+            return false;
+          },
+        ),
+      );
+
+    await expectLater(
+      client.value<Object?>('/x', method: 'POST', decode: (json) => json['ok']),
+      throwsA(isA<ApiRequestError>()),
+    );
+    expect(emailHolds, 1);
+  });
+
   test('leaving the gate ends the held call with its original 403', () async {
     final s = _Setup();
 
     final result = s.post();
-    await Future<void>.delayed(const Duration(milliseconds: 20));
+    await s.untilHeld();
     s.held.release(resend: false);
 
     await expectLater(

@@ -267,6 +267,7 @@ F2 와 F4 는 나란히 갈 수 있다. 1단계 = F1~F5 이고, F5 가 끝나면
 - **탈퇴는 앱 안에 있어야 한다.** 가입이 있는 앱은 Apple 5.1.1(v) 가 이것을 요구한다. 비밀번호로 다시 인증하고, `Idempotency-Key` 는 제출 한 번에 하나다(재시도는 같은 키). `202` 를 받으면 로컬도 로그아웃하고, `409 ACCOUNT.DELETION_BLOCKED` 는 문구로 보인다.
 - `GET /account/password/policy` 로 힌트를 보인다. 길이 상한은 UTF-8 **바이트**(`maxBytes`)다.
 - **닉네임**: 서버는 가입에 닉네임이 필요한지 알려 주지 않는다(`required-on-sign-up`). 가입 폼은 `DisplayNameMode`(none 기본 · optional · required)를 앱 설정으로 받고, 앞뒤 공백을 떼어 보낸다. `400` 의 `errors[].field` 는 그 칸 아래에 보이고(`message` 는 로그용이라 안 보인다) 칸에 안 맞는 것만 공통 문구다. `verify-email` 의 `409 DISPLAY_NAME_TAKEN` 은 시도를 소모하지 않으므로 닉네임 칸을 띄워 같은 `signUpId`·코드로 다시 보낸다. 닉네임 없는 계정(`/account/me` 의 `displayName` 이 null)은 `DisplayNameForm`(`PATCH /account/me`)으로 받고, `displayTag` 가 있으면 `이름#태그` 로 보인다.
+- **로그인 아이디**: 앱 설정이 없다. `GET /auth/methods` 에 `loginId{minLength,maxLength}` 키가 있을 때만 가입 폼에 아이디 칸이 생기고(길이는 그 키), 로그인 입력은 「ID or email」이 되며 `@` 없는 입력은 `username` 으로 보낸다. `verify-email` 의 `409 LOGIN_ID_TAKEN` 은 시도를 소모하지 않으므로 닉네임과 같이 칸을 띄워 같은 `signUpId`·코드로 다시 보낸다. 키가 없으면 지금과 똑같다.
 
 **legal**
 - 가입 폼은 `requiredAtSignUp` 문서마다 체크를 둔다. 선택 문서는 체크하지 않은 채로 둔다. 실은 판(`version`)을 그대로 보내고, `400 LEGAL.CONSENT_REQUIRED` 면 문서를 다시 읽는다.

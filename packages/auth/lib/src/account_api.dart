@@ -16,6 +16,7 @@ class AccountApi {
     required String email,
     required String password,
     String? displayName,
+    String? loginId,
     List<ConsentClaim> consents = const [],
   }) {
     return _client.value(
@@ -25,6 +26,7 @@ class AccountApi {
         'email': email,
         'password': password,
         'displayName': ?displayName,
+        'loginId': ?loginId,
         if (consents.isNotEmpty)
           'consents': [for (final c in consents) c.toJson()],
       },
@@ -35,16 +37,24 @@ class AccountApi {
 
   /// `POST /auth/verify-email`: the right code creates the account and signs
   /// in. `400 ACCOUNT.CODE_INVALID` (see [attemptsLeftOf]), `410
-  /// ACCOUNT.CODE_EXPIRED`.
+  /// ACCOUNT.CODE_EXPIRED`. A `409` on the nickname or the login ID does not
+  /// use the attempt up: repeat with the same [signUpId] and [code] and a new
+  /// [displayName] / [loginId].
   Future<AuthResult> verifyEmail({
     required String signUpId,
     required String code,
     String? displayName,
+    String? loginId,
   }) {
     return _client.value(
       '/auth/verify-email',
       method: 'POST',
-      json: {'signUpId': signUpId, 'code': code, 'displayName': ?displayName},
+      json: {
+        'signUpId': signUpId,
+        'code': code,
+        'displayName': ?displayName,
+        'loginId': ?loginId,
+      },
       skipAuth: true,
       decode: AuthResult.fromJson,
     );
@@ -105,6 +115,25 @@ class AccountApi {
     '/account/me',
     method: 'PATCH',
     json: {'displayName': displayName},
+    decode: AccountMe.fromJson,
+  );
+
+  /// `POST /account/login-id/availability` (public, always 200; 429 when asked
+  /// too often). Sends the candidate, so never log it.
+  Future<LoginIdAvailability> checkLoginId(String loginId) => _client.value(
+    '/account/login-id/availability',
+    method: 'POST',
+    json: {'loginId': loginId},
+    decode: LoginIdAvailability.fromJson,
+  );
+
+  /// `POST /account/login-id`: chooses the login ID, once (there is no
+  /// change). Works without an email address. `400` field error on `loginId`,
+  /// `409 ACCOUNT.LOGIN_ID_TAKEN`, `409 ACCOUNT.LOGIN_ID_ALREADY_SET`.
+  Future<AccountMe> setLoginId(String loginId) => _client.value(
+    '/account/login-id',
+    method: 'POST',
+    json: {'loginId': loginId},
     decode: AccountMe.fromJson,
   );
 

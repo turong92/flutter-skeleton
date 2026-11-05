@@ -13,8 +13,14 @@ export 'src/auth_session.dart';
 export 'src/delete_account_form.dart';
 export 'src/display_name_form.dart';
 export 'src/form_parts.dart'
-    show DisplayNameLabels, PasswordPolicyHint, PasswordPolicyLabels;
+    show
+        DisplayNameLabels,
+        LoginIdLabels,
+        PasswordPolicyHint,
+        PasswordPolicyLabels;
 export 'src/login_form.dart';
+export 'src/login_id_form.dart';
+export 'src/login_id_required_interceptor.dart';
 export 'src/models.dart';
 export 'src/password_reset_forms.dart';
 export 'src/secure_token_store.dart';

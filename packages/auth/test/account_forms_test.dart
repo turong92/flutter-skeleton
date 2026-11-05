@@ -348,6 +348,266 @@ void main() {
     );
   });
 
+  group('login id', () {
+    const rules = {
+      'methods': ['password'],
+      'loginId': {'minLength': 4, 'maxLength': 20},
+    };
+    final attempt = SignUpAttempt(
+      signUpId: 'su_1',
+      expiresAt: DateTime.utc(2099),
+      resendAvailableAt: null,
+    );
+
+    FutureOr<ResponseBody> server(
+      RequestOptions o, {
+      Map<String, Object?> methods = rules,
+      ResponseBody Function(RequestOptions)? rest,
+    }) {
+      if (o.path == '/auth/methods') return ok(methods);
+      if (o.path == '/account/password/policy') return ok(_policyJson);
+      return rest!(o);
+    }
+
+    testWidgets('the sign-up field shows only when /auth/methods has loginId, '
+        'is checked against its length and sent without the spaces', (t) async {
+      final h = _Harness(
+        (o) => server(
+          o,
+          rest: (_) => _accepted({
+            'status': 'VERIFICATION_SENT',
+            'signUpId': 'su_1',
+            'expiresAt': '2099-01-01T00:10:00Z',
+          }),
+        ),
+      );
+      await t.pumpWidget(h.app(SignUpForm(onSignedUp: (_) {})));
+      await t.pumpAndSettle();
+      expect(find.byKey(SignUpForm.loginIdKey), findsOneWidget);
+
+      await _type(t, SignUpForm.emailKey, 'new@example.com');
+      await _type(t, SignUpForm.passwordKey, 'secret-pass');
+      await _type(t, SignUpForm.loginIdKey, 'abc');
+      await t.tap(find.widgetWithText(FilledButton, 'Create account'));
+      await t.pumpAndSettle();
+      expect(h.calls('/account/sign-up'), isEmpty);
+
+      await _type(t, SignUpForm.loginIdKey, '  sumin.kim ');
+      await t.tap(find.widgetWithText(FilledButton, 'Create account'));
+      await t.pumpAndSettle();
+      expect(
+        (h.calls('/account/sign-up').single.data as Map)['loginId'],
+        'sumin.kim',
+      );
+    });
+
+    testWidgets('without the loginId key there is no field and none is sent', (
+      t,
+    ) async {
+      final h = _Harness(
+        (o) => server(
+          o,
+          methods: const {
+            'methods': ['password'],
+          },
+          rest: (_) => _accepted({
+            'status': 'VERIFICATION_SENT',
+            'signUpId': 'su_1',
+            'expiresAt': '2099-01-01T00:10:00Z',
+          }),
+        ),
+      );
+      await t.pumpWidget(h.app(SignUpForm(onSignedUp: (_) {})));
+      await t.pumpAndSettle();
+      expect(find.byKey(SignUpForm.loginIdKey), findsNothing);
+
+      await _type(t, SignUpForm.emailKey, 'new@example.com');
+      await _type(t, SignUpForm.passwordKey, 'secret-pass');
+      await t.tap(find.widgetWithText(FilledButton, 'Create account'));
+      await t.pumpAndSettle();
+      expect(
+        (h.calls('/account/sign-up').single.data as Map).containsKey('loginId'),
+        isFalse,
+      );
+    });
+
+    testWidgets('409 LOGIN_ID_TAKEN on sign-up sits under the field', (
+      t,
+    ) async {
+      final h = _Harness(
+        (o) => server(o, rest: (_) => _error(409, 'ACCOUNT.LOGIN_ID_TAKEN')),
+      );
+      await t.pumpWidget(h.app(SignUpForm(onSignedUp: (_) {})));
+      await t.pumpAndSettle();
+      await _type(t, SignUpForm.emailKey, 'new@example.com');
+      await _type(t, SignUpForm.passwordKey, 'secret-pass');
+      await _type(t, SignUpForm.loginIdKey, 'sumin.kim');
+      await t.tap(find.widgetWithText(FilledButton, 'Create account'));
+      await t.pumpAndSettle();
+
+      expect(find.text(const LoginIdLabels().taken), findsOneWidget);
+      expect(find.text(const SignUpLabels().genericError), findsNothing);
+    });
+
+    testWidgets(
+      '409 LOGIN_ID_TAKEN on the code asks for another id and repeats the same signUpId and code',
+      (t) async {
+        var calls = 0;
+        final h = _Harness(
+          (o) => server(
+            o,
+            rest: (_) {
+              calls++;
+              return calls == 1
+                  ? _error(409, 'ACCOUNT.LOGIN_ID_TAKEN')
+                  : FakeAdapter.json(
+                      200,
+                      tokenResponse('access-9', 'refresh-9'),
+                    );
+            },
+          ),
+        );
+        await h.attempts.save(attempt);
+        var verified = 0;
+        await t.pumpWidget(
+          h.app(VerifyCodeForm(attempt: attempt, onVerified: () => verified++)),
+        );
+        await t.pumpAndSettle();
+        expect(find.byKey(VerifyCodeForm.loginIdKey), findsNothing);
+
+        await _type(t, VerifyCodeForm.codeKey, '123456');
+        await t.tap(find.widgetWithText(FilledButton, 'Verify'));
+        await t.pumpAndSettle();
+
+        expect(find.byKey(VerifyCodeForm.loginIdKey), findsOneWidget);
+        expect(find.text(const LoginIdLabels().taken), findsOneWidget);
+        expect(verified, 0);
+        expect(await h.attempts.read(), isNotNull);
+
+        await _type(t, VerifyCodeForm.loginIdKey, ' Other.Id ');
+        await t.tap(find.widgetWithText(FilledButton, 'Verify'));
+        await t.pumpAndSettle();
+
+        expect(h.calls('/auth/verify-email').map((r) => r.data).toList(), [
+          {'signUpId': 'su_1', 'code': '123456'},
+          {'signUpId': 'su_1', 'code': '123456', 'loginId': 'Other.Id'},
+        ]);
+        expect(verified, 1);
+      },
+    );
+
+    testWidgets('the sign-in field reads "ID or email" only with the key', (
+      t,
+    ) async {
+      for (final withKey in [false, true]) {
+        final h = _Harness(
+          (o) => server(
+            o,
+            methods: withKey
+                ? rules
+                : const {
+                    'methods': ['password'],
+                  },
+            rest: (_) => _error(401, 'AUTH.INVALID_CREDENTIALS'),
+          ),
+        );
+        await t.pumpWidget(h.app(const LoginForm()));
+        await t.pumpAndSettle();
+        expect(
+          find.text(const LoginLabels().email),
+          withKey ? findsNothing : findsOneWidget,
+        );
+        expect(
+          find.text(const LoginLabels().loginIdOrEmail),
+          withKey ? findsOneWidget : findsNothing,
+        );
+        await t.enterText(find.byKey(LoginForm.emailKey), 'sumin.kim');
+        await t.enterText(find.byKey(LoginForm.passwordKey), 'nope');
+        await t.tap(find.widgetWithText(FilledButton, 'Sign in'));
+        await t.pumpAndSettle();
+        final body = h.calls('/auth/login').single.data as Map;
+        expect(body['username'], withKey ? 'sumin.kim' : isNull);
+        expect(body['email'], withKey ? isNull : 'sumin.kim');
+        expect(
+          find.text(
+            withKey
+                ? const LoginLabels().invalidCredentialsWithLoginId
+                : const LoginLabels().invalidCredentials,
+          ),
+          findsOneWidget,
+        );
+      }
+    });
+
+    testWidgets('the id form claims the id; ALREADY_SET calls onAlreadySet', (
+      t,
+    ) async {
+      var already = false;
+      final h = _Harness(
+        (o) => server(
+          o,
+          rest: (o) => o.path == '/account/login-id/availability'
+              ? ok({'normalized': 'sumin.kim', 'available': true})
+              : already
+              ? _error(409, 'ACCOUNT.LOGIN_ID_ALREADY_SET')
+              : ok({'hasPassword': true, 'loginId': 'sumin.kim'}),
+        ),
+      );
+      AccountMe? saved;
+      var alreadySet = 0;
+      await t.pumpWidget(
+        h.app(
+          LoginIdForm(
+            onSaved: (me) => saved = me,
+            onAlreadySet: () => alreadySet++,
+          ),
+        ),
+      );
+      await t.pumpAndSettle();
+
+      await _type(t, LoginIdForm.fieldKey, ' Sumin.Kim ');
+      await t.pump(const Duration(milliseconds: 500));
+      await t.pumpAndSettle();
+      expect(find.text(const LoginIdLabels().available), findsOneWidget);
+      await t.tap(find.widgetWithText(FilledButton, 'Save'));
+      await t.pumpAndSettle();
+
+      final claim = h.calls('/account/login-id').single;
+      expect(claim.method, 'POST');
+      expect(claim.data, {'loginId': 'Sumin.Kim'});
+      expect(saved!.loginId, 'sumin.kim');
+
+      already = true;
+      await t.tap(find.widgetWithText(FilledButton, 'Save'));
+      await t.pumpAndSettle();
+      expect(alreadySet, 1);
+    });
+
+    testWidgets('a taken answer of the live check shows under the field', (
+      t,
+    ) async {
+      final h = _Harness(
+        (o) => server(
+          o,
+          rest: (_) => ok({
+            'normalized': 'sumin.kim',
+            'available': false,
+            'reason': 'TAKEN',
+          }),
+        ),
+      );
+      await t.pumpWidget(h.app(LoginIdForm(onSaved: (_) {})));
+      await t.pumpAndSettle();
+
+      await _type(t, LoginIdForm.fieldKey, 'sumin.kim');
+      await t.pump(const Duration(milliseconds: 500));
+      await t.pumpAndSettle();
+
+      expect(find.text(const LoginIdLabels().taken), findsOneWidget);
+      expect(h.calls('/account/login-id'), isEmpty);
+    });
+  });
+
   group('DisplayNameForm', () {
     testWidgets('saves the trimmed nickname with PATCH /account/me', (t) async {
       final h = _Harness(

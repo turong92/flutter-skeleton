@@ -76,6 +76,129 @@ class DisplayNameLabels {
   };
 }
 
+/// The login ID texts shared by the sign-up, code and ID forms (defaults are
+/// English). `errors[].message` of the server is for logs and never shown.
+class LoginIdLabels {
+  const LoginIdLabels({
+    this.label = 'ID',
+    this.hint = _defaultIdHint,
+    this.required = 'Enter an ID.',
+    this.size = _defaultIdSize,
+    this.invalid =
+        'Use letters, digits and . - _ (no symbol first, last or twice in a '
+        'row, at least one letter).',
+    this.taken = 'That ID is taken. Try another.',
+    this.checking = 'Checking...',
+    this.available = 'This ID is free.',
+    this.checkUnknown = 'Could not check this ID now. You can still continue.',
+  });
+
+  final String label;
+
+  /// The line under the field.
+  final String Function(LoginIdRules rules) hint;
+  final String required;
+  final String Function(LoginIdRules rules) size;
+  final String invalid;
+  final String taken;
+  final String checking;
+  final String available;
+  final String checkUnknown;
+
+  /// The text for a field error [code] of `loginId`; null for a code this form
+  /// does not know.
+  String? forCode(String code, LoginIdRules? rules) => switch (code) {
+    'Required' => required,
+    'Size' => rules == null ? invalid : size(rules),
+    'Pattern' => invalid,
+    _ => null,
+  };
+}
+
+String _defaultIdHint(LoginIdRules r) =>
+    '${r.minLength}-${r.maxLength} characters: letters, digits, . - _';
+String _defaultIdSize(LoginIdRules r) =>
+    'The ID must be ${r.minLength}-${r.maxLength} characters.';
+
+/// What to say under the ID field about [error]: `409 LOGIN_ID_TAKEN` or a
+/// field error on `loginId`. Null for any other error.
+String? loginIdErrorText(
+  ApiRequestError error,
+  LoginIdLabels labels,
+  LoginIdRules? rules,
+) {
+  if (error.code == AccountErrorCodes.loginIdTaken) return labels.taken;
+  final code = fieldErrorCodesOf(error, {'loginId'})['loginId'];
+  return code == null ? null : labels.forCode(code, rules) ?? labels.invalid;
+}
+
+/// What this device can say about an ID before the server does (not blank,
+/// the length of [rules]); null when there is nothing to say.
+String? loginIdLocalProblem(
+  String? value,
+  LoginIdLabels labels,
+  LoginIdRules? rules,
+) {
+  final id = value?.trim() ?? '';
+  if (id.isEmpty) return labels.required;
+  return rules != null &&
+          (id.length < rules.minLength || id.length > rules.maxLength)
+      ? labels.size(rules)
+      : null;
+}
+
+/// The login ID text field. Checks what this device can (not blank, the
+/// length of [rules]); the shape rules are the server's. [helperText] replaces
+/// the hint line (the live check's answer).
+class LoginIdField extends StatelessWidget {
+  const LoginIdField({
+    super.key,
+    required this.fieldKey,
+    required this.controller,
+    required this.labels,
+    this.rules,
+    this.errorText,
+    this.helperText,
+    this.onChanged,
+    this.textInputAction,
+    this.onFieldSubmitted,
+  });
+
+  final Key fieldKey;
+  final TextEditingController controller;
+  final LoginIdLabels labels;
+  final LoginIdRules? rules;
+  final String? errorText;
+  final String? helperText;
+  final ValueChanged<String>? onChanged;
+  final TextInputAction? textInputAction;
+  final ValueChanged<String>? onFieldSubmitted;
+
+  @override
+  Widget build(BuildContext context) {
+    final r = rules;
+    return TextFormField(
+      key: fieldKey,
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: labels.label,
+        errorText: errorText,
+        helperText: helperText ?? (r == null ? null : labels.hint(r)),
+        helperMaxLines: 2,
+        errorMaxLines: 3,
+      ),
+      autofillHints: const [AutofillHints.username],
+      autocorrect: false,
+      enableSuggestions: false,
+      textCapitalization: TextCapitalization.none,
+      textInputAction: textInputAction,
+      validator: (v) => loginIdLocalProblem(v, labels, rules),
+      onChanged: onChanged,
+      onFieldSubmitted: onFieldSubmitted,
+    );
+  }
+}
+
 /// The `errors[]` of a `400 COMMON.VALIDATION_FAILED`: the first code per
 /// field, only for the [fields] the form has. Empty for any other error.
 Map<String, String> fieldErrorCodesOf(

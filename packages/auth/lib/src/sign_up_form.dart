@@ -20,6 +20,7 @@ class SignUpLabels {
     this.genericError = 'Something went wrong. Please try again.',
     this.passwordPolicy = const PasswordPolicyLabels(),
     this.displayName = const DisplayNameLabels(),
+    this.loginId = const LoginIdLabels(),
   });
 
   final String email;
@@ -31,6 +32,7 @@ class SignUpLabels {
   /// `Required`.
   final String invalidValue;
   final DisplayNameLabels displayName;
+  final LoginIdLabels loginId;
   final String consentRequired;
   final String emailTaken;
   final String networkError;
@@ -61,6 +63,9 @@ class ConsentSlotController extends ChangeNotifier {
 /// [signUpAttemptStoreProvider] and calls [onSignedUp]; the app then shows the
 /// code screen ([VerifyCodeForm]). The form does not navigate.
 ///
+/// A login ID field shows when `GET /auth/methods` has a `loginId` key (the
+/// server tells; there is no app setting) and not otherwise.
+///
 /// [consentBuilder] is the place for the consent checkboxes. The slot calls
 /// `controller.update(ready:, claims:)`; until it says `ready: true` the submit
 /// button stays disabled. Without a builder there is no consent step.
@@ -77,6 +82,7 @@ class SignUpForm extends ConsumerStatefulWidget {
   static const emailKey = Key('skeleton_auth.sign_up.email');
   static const passwordKey = Key('skeleton_auth.sign_up.password');
   static const displayNameKey = Key('skeleton_auth.sign_up.display_name');
+  static const loginIdKey = Key('skeleton_auth.sign_up.login_id');
 
   final void Function(SignUpOutcome outcome) onSignedUp;
 
@@ -101,6 +107,7 @@ class _SignUpFormState extends ConsumerState<SignUpForm> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _displayName = TextEditingController();
+  final _loginId = TextEditingController();
   late final _consents = ConsentSlotController();
   var _busy = false;
   String? _error;
@@ -120,9 +127,13 @@ class _SignUpFormState extends ConsumerState<SignUpForm> {
     _email.dispose();
     _password.dispose();
     _displayName.dispose();
+    _loginId.dispose();
     _consents.dispose();
     super.dispose();
   }
+
+  /// Null = the server has no login IDs (or has not answered yet).
+  LoginIdRules? get _idRules => ref.read(authMethodsProvider).value?.loginId;
 
   String? _passwordProblem(String? value) {
     final labels = widget.labels;
@@ -154,6 +165,7 @@ class _SignUpFormState extends ConsumerState<SignUpForm> {
             widget.displayName == DisplayNameMode.none || nickname.isEmpty
             ? null
             : nickname,
+        loginId: _idRules == null ? null : _loginId.text.trim(),
         consents: _consents.claims,
       );
       final attempt = outcome.attempt;
@@ -174,11 +186,19 @@ class _SignUpFormState extends ConsumerState<SignUpForm> {
   /// can show gets the common text.
   void _showError(Object error) {
     final labels = widget.labels;
+    final idRules = _idRules;
+    if (idRules != null &&
+        error is ApiRequestError &&
+        error.code == AccountErrorCodes.loginIdTaken) {
+      setState(() => _fieldErrors = {'loginId': labels.loginId.taken});
+      return;
+    }
     final fields = error is ApiRequestError
         ? fieldErrorCodesOf(error, {
             'email',
             'password',
             if (widget.displayName != DisplayNameMode.none) 'displayName',
+            if (idRules != null) 'loginId',
           })
         : const <String, String>{};
     if (fields.isEmpty) {
@@ -193,6 +213,8 @@ class _SignUpFormState extends ConsumerState<SignUpForm> {
         for (final f in fields.entries)
           f.key: f.key == 'displayName'
               ? labels.displayName.forCode(f.value) ?? labels.invalidValue
+              : f.key == 'loginId'
+              ? labels.loginId.forCode(f.value, idRules) ?? labels.invalidValue
               : f.value == 'Required'
               ? labels.required
               : labels.invalidValue,
@@ -227,6 +249,7 @@ class _SignUpFormState extends ConsumerState<SignUpForm> {
     final labels = widget.labels;
     String? requiredValue(String? value) =>
         value == null || value.trim().isEmpty ? labels.required : null;
+    final idRules = ref.watch(authMethodsProvider).value?.loginId;
     return Form(
       key: _formKey,
       child: Column(
@@ -246,6 +269,18 @@ class _SignUpFormState extends ConsumerState<SignUpForm> {
             validator: requiredValue,
             onChanged: (_) => _edited('email'),
           ),
+          if (idRules != null) ...[
+            const SizedBox(height: 12),
+            LoginIdField(
+              fieldKey: SignUpForm.loginIdKey,
+              controller: _loginId,
+              labels: labels.loginId,
+              rules: idRules,
+              errorText: _fieldErrors['loginId'],
+              textInputAction: TextInputAction.next,
+              onChanged: (_) => _edited('loginId'),
+            ),
+          ],
           if (widget.displayName != DisplayNameMode.none) ...[
             const SizedBox(height: 12),
             TextFormField(

@@ -15,6 +15,9 @@ abstract final class AccountErrorCodes {
   static const deletionBlocked = 'ACCOUNT.DELETION_BLOCKED';
   static const emailTaken = 'ACCOUNT.EMAIL_TAKEN';
   static const displayNameTaken = 'ACCOUNT.DISPLAY_NAME_TAKEN';
+  static const loginIdTaken = 'ACCOUNT.LOGIN_ID_TAKEN';
+  static const loginIdRequired = 'ACCOUNT.LOGIN_ID_REQUIRED';
+  static const loginIdAlreadySet = 'ACCOUNT.LOGIN_ID_ALREADY_SET';
 
   /// From the `legal` module: sign-up without a required consent.
   static const legalConsentRequired = 'LEGAL.CONSENT_REQUIRED';
@@ -132,6 +135,8 @@ class AccountMe {
     this.email,
     this.displayName,
     this.displayTag,
+    this.loginId,
+    this.loginIdRequired = false,
   });
 
   factory AccountMe.fromJson(Map<String, Object?> json) => AccountMe(
@@ -139,10 +144,20 @@ class AccountMe {
     email: json['email'] as String?,
     displayName: json['displayName'] as String?,
     displayTag: json['displayTag'] as String?,
+    loginId: json['loginId'] as String?,
+    // The key exists only on a server with login IDs on; null = not chosen.
+    loginIdRequired: json.containsKey('loginId') && json['loginId'] == null,
   );
 
   final bool hasPassword;
   final String? email;
+
+  /// The account's login ID; null without one or on a server without IDs.
+  final String? loginId;
+
+  /// True when the server has login IDs on and this account has not chosen
+  /// one: it answers `403 ACCOUNT.LOGIN_ID_REQUIRED` until it does.
+  final bool loginIdRequired;
 
   /// Null = the account has no nickname yet (a social sign-up, or the server
   /// generates none): the app asks for one ([DisplayNameForm]).
@@ -159,6 +174,55 @@ class AccountMe {
       : displayTag == null
       ? displayName
       : '$displayName#$displayTag';
+}
+
+/// The length rules of a login ID, from `GET /auth/methods`. The shape rules
+/// (letters, digits, `.` `-` `_`) are the server's to judge.
+class LoginIdRules {
+  const LoginIdRules({required this.minLength, required this.maxLength});
+
+  final int minLength;
+  final int maxLength;
+}
+
+/// What `GET /auth/methods` says that the account forms use. [loginId] is null
+/// unless the server has login IDs on (a missing or unusable key = off).
+class AuthMethods {
+  const AuthMethods({this.loginId});
+
+  factory AuthMethods.fromJson(Map<String, Object?> json) {
+    final rules = json['loginId'];
+    final min = rules is Map ? rules['minLength'] : null;
+    final max = rules is Map ? rules['maxLength'] : null;
+    return AuthMethods(
+      loginId: min is int && max is int && min >= 1 && min <= max
+          ? LoginIdRules(minLength: min, maxLength: max)
+          : null,
+    );
+  }
+
+  final LoginIdRules? loginId;
+}
+
+/// `POST /account/login-id/availability`. "Free" is not a reservation: the
+/// claim decides again.
+class LoginIdAvailability {
+  const LoginIdAvailability({required this.available, this.reason, this.code});
+
+  factory LoginIdAvailability.fromJson(Map<String, Object?> json) =>
+      LoginIdAvailability(
+        available: json['available'] == true,
+        reason: json['reason'] as String?,
+        code: json['code'] as String?,
+      );
+
+  final bool available;
+
+  /// `INVALID` or `TAKEN` when not [available].
+  final String? reason;
+
+  /// `Required` · `Size` · `Pattern`, with `INVALID`.
+  final String? code;
 }
 
 /// Whether the sign-up form asks for a nickname. The server does not say, so

@@ -13,6 +13,8 @@ class LoginLabels {
     this.submit = 'Sign in',
     this.required = 'Required',
     this.invalidCredentials = 'Wrong email or password.',
+    this.loginIdOrEmail = 'ID or email',
+    this.invalidCredentialsWithLoginId = 'Wrong ID, email or password.',
     this.networkError = 'Cannot reach the server. Check your connection.',
     this.genericError = 'Something went wrong. Please try again.',
   });
@@ -22,11 +24,17 @@ class LoginLabels {
   final String submit;
   final String required;
   final String invalidCredentials;
+
+  /// The first field's label and the wrong-password text while the server has
+  /// login IDs on (`GET /auth/methods` has a `loginId` key); [email] and
+  /// [invalidCredentials] otherwise.
+  final String loginIdOrEmail;
+  final String invalidCredentialsWithLoginId;
   final String networkError;
   final String genericError;
 }
 
-/// Email + password sign-in. On success the session changes and the router's
+/// Email (or login ID, when the server has them on) + password sign-in. On success the session changes and the router's
 /// redirect leaves the login screen; the form does not navigate.
 class LoginForm extends ConsumerStatefulWidget {
   const LoginForm({super.key, this.labels = const LoginLabels()});
@@ -61,9 +69,19 @@ class _LoginFormState extends ConsumerState<LoginForm> {
       _error = null;
     });
     try {
+      final input = _email.text.trim();
+      // With login IDs on, an input without `@` is an ID (the server reads a
+      // `username` that way); otherwise it is always an email.
+      final asId =
+          ref.read(authMethodsProvider).value?.loginId != null &&
+          !input.contains('@');
       await ref
           .read(authSessionProvider.notifier)
-          .login(email: _email.text.trim(), password: _password.text);
+          .login(
+            email: asId ? null : input,
+            username: asId ? input : null,
+            password: _password.text,
+          );
     } catch (e) {
       if (mounted) setState(() => _error = _messageFor(e));
     } finally {
@@ -74,8 +92,12 @@ class _LoginFormState extends ConsumerState<LoginForm> {
   String _messageFor(Object error) {
     final labels = widget.labels;
     if (error is! ApiRequestError) return labels.genericError;
+    final withId = ref.read(authMethodsProvider).value?.loginId != null;
     return switch (error.code) {
-      ErrorCodes.authInvalidCredentials => labels.invalidCredentials,
+      ErrorCodes.authInvalidCredentials =>
+        withId
+            ? labels.invalidCredentialsWithLoginId
+            : labels.invalidCredentials,
       ClientErrorCodes.networkError => labels.networkError,
       _ => labels.genericError,
     };
@@ -84,6 +106,7 @@ class _LoginFormState extends ConsumerState<LoginForm> {
   @override
   Widget build(BuildContext context) {
     final labels = widget.labels;
+    final withId = ref.watch(authMethodsProvider).value?.loginId != null;
     String? requiredValue(String? value) =>
         value == null || value.trim().isEmpty ? labels.required : null;
     return Form(
@@ -95,8 +118,12 @@ class _LoginFormState extends ConsumerState<LoginForm> {
           TextFormField(
             key: LoginForm.emailKey,
             controller: _email,
-            decoration: InputDecoration(labelText: labels.email),
-            keyboardType: TextInputType.emailAddress,
+            decoration: InputDecoration(
+              labelText: withId ? labels.loginIdOrEmail : labels.email,
+            ),
+            keyboardType: withId
+                ? TextInputType.text
+                : TextInputType.emailAddress,
             autofillHints: const [AutofillHints.username, AutofillHints.email],
             textInputAction: TextInputAction.next,
             validator: requiredValue,

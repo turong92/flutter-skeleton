@@ -71,6 +71,17 @@ final passwordPolicyProvider = FutureProvider<PasswordPolicy>(
   (ref) => ref.watch(accountApiProvider).passwordPolicy(),
 );
 
+/// `GET /auth/methods`: what the server turned on (the login ID fields follow
+/// it). A failed read is not remembered, the next screen asks again; the forms
+/// read an error as "off".
+final authMethodsProvider = FutureProvider.autoDispose<AuthMethods>((
+  ref,
+) async {
+  final methods = await ref.watch(authApiProvider).methods();
+  ref.keepAlive();
+  return methods;
+});
+
 /// `GET /account/me` for the signed-in account (nickname, tag). Invalidate it
 /// after a change.
 final accountMeProvider = FutureProvider.autoDispose<AccountMe>(
@@ -117,10 +128,14 @@ class AuthSession extends Notifier<AuthState> {
     }
   }
 
-  Future<void> login({required String email, required String password}) async {
+  Future<void> login({
+    String? email,
+    String? username,
+    required String password,
+  }) async {
     final result = await ref
         .read(authApiProvider)
-        .login(email: email, password: password);
+        .login(email: email, username: username, password: password);
     await signInWith(result);
   }
 

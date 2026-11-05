@@ -22,9 +22,11 @@ class VerifyCodeLabels {
     this.networkError = 'Cannot reach the server. Check your connection.',
     this.genericError = 'Something went wrong. Please try again.',
     this.displayName = const DisplayNameLabels(),
+    this.loginId = const LoginIdLabels(),
   });
 
   final DisplayNameLabels displayName;
+  final LoginIdLabels loginId;
   final String code;
   final String submit;
   final String resend;
@@ -53,6 +55,10 @@ String _defaultCodeInvalid(int left) =>
 /// free) does not use up the attempt: a nickname field appears and the next
 /// submit repeats the same `signUpId` and code with the new nickname.
 ///
+/// `409 ACCOUNT.LOGIN_ID_TAKEN` (a person whose ID was taken meanwhile) works
+/// the same way: an ID field appears and the next submit repeats the same
+/// `signUpId` and code with the new ID.
+///
 /// The resend countdown runs on the device clock; the server decides (`410
 /// CODE_EXPIRED` removes the attempt and calls [onExpired]). A null
 /// `resendAvailableAt` means no further mail: there is no resend button.
@@ -68,6 +74,7 @@ class VerifyCodeForm extends ConsumerStatefulWidget {
 
   static const codeKey = Key('skeleton_auth.verify.code');
   static const displayNameKey = Key('skeleton_auth.verify.display_name');
+  static const loginIdKey = Key('skeleton_auth.verify.login_id');
 
   final SignUpAttempt attempt;
   final VoidCallback? onVerified;
@@ -85,6 +92,7 @@ class _VerifyCodeFormState extends ConsumerState<VerifyCodeForm> {
   final _formKey = GlobalKey<FormState>();
   final _code = TextEditingController();
   final _displayName = TextEditingController();
+  final _loginId = TextEditingController();
   late SignUpAttempt _attempt = widget.attempt;
   Timer? _ticker;
   var _busy = false;
@@ -93,6 +101,10 @@ class _VerifyCodeFormState extends ConsumerState<VerifyCodeForm> {
   /// The nickname field shows once the server refused the nickname.
   var _askName = false;
   String? _nameError;
+
+  /// Same for the login ID.
+  var _askId = false;
+  String? _idError;
 
   @override
   void initState() {
@@ -107,8 +119,15 @@ class _VerifyCodeFormState extends ConsumerState<VerifyCodeForm> {
     _ticker?.cancel();
     _code.dispose();
     _displayName.dispose();
+    _loginId.dispose();
     super.dispose();
   }
+
+  /// What the sign-up screen before this one already loaded; never asks again
+  /// (the server's field error does the checking).
+  LoginIdRules? get _idRules => ref.exists(authMethodsProvider)
+      ? ref.read(authMethodsProvider).value?.loginId
+      : null;
 
   int _secondsToResend() {
     final at = _attempt.resendAvailableAt;
@@ -126,12 +145,14 @@ class _VerifyCodeFormState extends ConsumerState<VerifyCodeForm> {
       _busy = true;
       _error = null;
       _nameError = null;
+      _idError = null;
     });
     try {
       final result = await api.verifyEmail(
         signUpId: _attempt.signUpId,
         code: _code.text.trim(),
         displayName: _askName ? _displayName.text.trim() : null,
+        loginId: _askId ? _loginId.text.trim() : null,
       );
       await store.clear();
       await session.signInWith(result);
@@ -177,6 +198,14 @@ class _VerifyCodeFormState extends ConsumerState<VerifyCodeForm> {
         });
         return;
       }
+      final idText = loginIdErrorText(error, widget.labels.loginId, _idRules);
+      if (idText != null) {
+        setState(() {
+          _askId = true;
+          _idError = idText;
+        });
+        return;
+      }
       final code = fieldErrorCodesOf(error, {'displayName'})['displayName'];
       if (code != null) {
         setState(() {
@@ -205,6 +234,7 @@ class _VerifyCodeFormState extends ConsumerState<VerifyCodeForm> {
   Widget build(BuildContext context) {
     final labels = widget.labels;
     final wait = _secondsToResend();
+    final idRules = _idRules;
     return Form(
       key: _formKey,
       child: Column(
@@ -226,6 +256,19 @@ class _VerifyCodeFormState extends ConsumerState<VerifyCodeForm> {
                 ? null
                 : labels.codeFormat,
           ),
+          if (_askId) ...[
+            const SizedBox(height: 12),
+            LoginIdField(
+              fieldKey: VerifyCodeForm.loginIdKey,
+              controller: _loginId,
+              labels: labels.loginId,
+              rules: idRules,
+              errorText: _idError,
+              onChanged: (_) {
+                if (_idError != null) setState(() => _idError = null);
+              },
+            ),
+          ],
           if (_askName) ...[
             const SizedBox(height: 12),
             TextFormField(

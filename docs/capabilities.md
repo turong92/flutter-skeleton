@@ -25,6 +25,7 @@ The source is `capabilities.json` (schema `docs/capabilities.schema.json`); this
 | `notifications` | The notification inbox: the list with paging and pull to refresh, unread marks, folded rows, mark one and mark all as read, an unread badge for a tab, and one "read it again" call for a realtime event, a push in front or the app coming back. Everything is keyed by the signed-in account. The app builds the tab and the route. | `--packages notifications` | notification, notification-jdbc | `notifications` |
 | `realtime` | Server-sent events for the notification stream: one connection over the app's own Dio (Bearer and token refresh apply), every event but the greeting handed to the app, reopened after a drop or a silent line with a capped back-off, and not tried again after a 404. Pure Dart, no screens; the app opens it only in front and signed in. | `--packages realtime` | notification, notification-sse | `realtime` |
 | `iap` | In-app purchase through the App Store and Google Play: the server's product list as the store prices it, buy and restore with the server's account token, every purchase checked by the server before anything opens or finishes, left-over purchases at start, a web checkout address opened in the outside browser (only when the server's channel has the web), and the lookup that tells a person to cancel a store subscription before deleting the account. No screens. | `--packages iap` | payment, payment-iap | — |
+| `storage` | Photo upload straight to the storage with a presigned address: presign, PUT with progress and cancel (no app token sent to the storage host), complete so the server checks the bytes; the app's own file rules (none by default), a photo field over image_picker and a widget that draws a stored picture from its address. | `--packages storage` | storage, storage-s3 | `storage` |
 | `social-login` | Sign in with a social provider's app SDK token, core only: the provider interface, the nonce, the server call (POST /auth/social/{provider}/token), link and re-authentication tokens for settings, the controller that signs the session in only after the server accepted the token, and which providers to show (GET /auth/methods). The provider SDKs are the social-login-* packages. No screens. | `--packages social-login` | auth-social | `social-login` |
 | `social-login-google` | Google sign-in for the social login core (google_sign_in 7): returns the ID token for the web client id the server checks. | `--packages social-login-google` | auth-social-google | — |
 | `social-login-apple` | Sign in with Apple for the social login core (sign_in_with_apple 8, iOS app only): the ID token with a hashed nonce, the name from the first sign-in, and the token revoke the App Store asks for before an account is deleted. | `--packages social-login-apple` | auth-social-apple | — |
@@ -32,7 +33,7 @@ The source is `capabilities.json` (schema `docs/capabilities.schema.json`); this
 | `social-login-naver` | Naver sign-in for the social login core (flutter_naver_login 2.1): returns the access token the server checks with Naver's profile API. The Naver SDK puts its client secret in the app. | `--packages social-login-naver` | auth-social-naver | — |
 | `ui` | Design tokens as Dart constants, light and dark Material 3 themes that follow the system, and the LoadingView and ErrorView the starter uses. | in every project | — | `ui`, `theme`, `tokens` |
 | `app-starter` | The starter app: sign up with consents, verify email, sign in, reset the password, see who you are (GET /auth/me), delete the account, sign out, agree again when a document changes, restore the session on start. It becomes the new project's app. | in every project | auth, auth-session, account, legal, platform | `app-starter` |
-| `app-sample` | The reference app: the starter's flows plus a board tab, a store tab (products, buy, restore, web checkout, my subscription, the cancel-in-the-store notice before account deletion), social sign-in buttons with linking in settings, a notifications tab (inbox with an unread badge, realtime while in front, a push in front or a tapped push reading the inbox again), notification settings (push and promotional push consent) and a settings tab, wired the way a project would. Read it for wiring; a stamp removes it. | never stamped (reference app) | auth, auth-session, account, legal, board, notification, notification-jdbc, notification-sse, notification-push, notification-push-legal, notification-fcm, payment, payment-iap, platform, auth-social, auth-social-google, auth-social-apple, auth-social-kakao, auth-social-naver | `app-sample` |
+| `app-sample` | The reference app: the starter's flows plus a board tab, a store tab (products, buy, restore, web checkout, my subscription, the cancel-in-the-store notice before account deletion), social sign-in buttons with linking in settings, a notifications tab (inbox with an unread badge, realtime while in front, a push in front or a tapped push reading the inbox again), notification settings (push and promotional push consent) and a settings tab, wired the way a project would. Read it for wiring; a stamp removes it. | never stamped (reference app) | auth, auth-session, account, legal, board, notification, notification-jdbc, notification-sse, notification-push, notification-push-legal, notification-fcm, payment, payment-iap, storage, storage-s3, platform, auth-social, auth-social-google, auth-social-apple, auth-social-kakao, auth-social-naver | `app-sample` |
 
 ### `lints` — Shared lint rules (flutter_lints plus avoid_print and unawaited_futures) every package and app includes.
 
@@ -89,7 +90,7 @@ The source is `capabilities.json` (schema `docs/capabilities.schema.json`); this
 - Backend docs (kotlin-skeleton): `docs/modules/board.md` · `docs/modules/board-jdbc.md` · `docs/board-http-contract.md`
 - Docs: `packages/board/README.md`
 - Web twin (react-skeleton): `board`
-- Not for: Guest posts, attachments, moderation, search, drafts / Choosing an author profile: the app gives a resolver
+- Not for: Guest posts, moderation, search, drafts, photos on comments / Uploading photos: the editor and the detail only have places for them (attachmentField, attachmentBuilder); the app fills them with skeleton_storage / Choosing an author profile: the app gives a resolver
 - Keywords: 게시판, 글, 댓글, 대댓글, 반응, 좋아요 / board, posts, comments, replies, reactions, likes
 
 ### `push` — Push notifications through FCM: device registration, permission prompt, per-kind settings, a test notification, tapped-link handling (with a fallback path for a push without a link), removing the device on sign-out, and the consent screen for promotional push (advertising and night delivery, withdrawal, two-year reconfirmation) in package:skeleton_push/advertising.dart. The app initializes Firebase.
@@ -139,6 +140,18 @@ The source is `capabilities.json` (schema `docs/capabilities.schema.json`); this
 - Web twin (react-skeleton): —
 - Not for: Creating products or store accounts: the project registers them in App Store Connect and Play Console / Card payment inside the app (WebView): the web checkout opens the outside browser / Refunds, family sharing, offer codes: not built
 - Keywords: 인앱결제, 앱 결제, 구독, 구매 복원, 앱스토어, 구글 플레이, 스토어 구독 해지 / in-app purchase, iap, subscription, restore purchases, app store, google play, web checkout
+
+### `storage` — Photo upload straight to the storage with a presigned address: presign, PUT with progress and cancel (no app token sent to the storage host), complete so the server checks the bytes; the app's own file rules (none by default), a photo field over image_picker and a widget that draws a stored picture from its address.
+
+- Where: `skeleton_storage` (`packages/storage`) · package
+- How to take it: `--packages storage`
+- Needs: `api-client`
+- Backend: modules `storage` · `storage-s3` · more when present `storage-image` · paths `/api/v1/storage`
+- Backend docs (kotlin-skeleton): `docs/modules/storage.md` · `docs/modules/storage-s3.md` · `docs/modules/storage-image.md`
+- Docs: `packages/storage/README.md`
+- Web twin (react-skeleton): `storage`
+- Not for: Large files and video: multipart upload is not built (a photo does not need it) / Camera capture, cropping, reordering photos / Guest uploads (the guest presign path)
+- Keywords: 사진 올리기, 이미지 업로드, 첨부, 프리사인, 사진 고르기 / photo upload, image upload, attachment, presigned url, image picker
 
 ### `social-login` — Sign in with a social provider's app SDK token, core only: the provider interface, the nonce, the server call (POST /auth/social/{provider}/token), link and re-authentication tokens for settings, the controller that signs the session in only after the server accepted the token, and which providers to show (GET /auth/methods). The provider SDKs are the social-login-* packages. No screens.
 
@@ -227,8 +240,8 @@ The source is `capabilities.json` (schema `docs/capabilities.schema.json`); this
 
 - Where: `sample` (`apps/sample`) · app
 - How to take it: never stamped (reference app)
-- Needs: `api-client` · `auth` · `board` · `iap` · `legal` · `notifications` · `push` · `realtime` · `social-login` · `social-login-apple` · `social-login-google` · `social-login-kakao` · `social-login-naver` · `ui`
-- Backend: modules `auth` · `auth-session` · `account` · `legal` · `board` · `notification` · `notification-jdbc` · `notification-sse` · `notification-push` · `notification-push-legal` · `notification-fcm` · `payment` · `payment-iap` · `platform` · `auth-social` · `auth-social-google` · `auth-social-apple` · `auth-social-kakao` · `auth-social-naver` · one of `payment-appstore` | `payment-googleplay` · more when present `author-profile` · `idempotency` · `auth-web-handoff` · paths `/api/v1/auth` · `/api/v1/account` · `/api/v1/legal` · `/api/v1/boards` · `/api/v1/push` · `/api/v1/notifications` · `/api/v1/payments/iap` · `/api/v1/payments/subscriptions`
+- Needs: `api-client` · `auth` · `board` · `iap` · `legal` · `notifications` · `push` · `realtime` · `social-login` · `social-login-apple` · `social-login-google` · `social-login-kakao` · `social-login-naver` · `storage` · `ui`
+- Backend: modules `auth` · `auth-session` · `account` · `legal` · `board` · `notification` · `notification-jdbc` · `notification-sse` · `notification-push` · `notification-push-legal` · `notification-fcm` · `payment` · `payment-iap` · `storage` · `storage-s3` · `platform` · `auth-social` · `auth-social-google` · `auth-social-apple` · `auth-social-kakao` · `auth-social-naver` · one of `payment-appstore` | `payment-googleplay` · more when present `author-profile` · `idempotency` · `auth-web-handoff` · `storage-image` · paths `/api/v1/auth` · `/api/v1/account` · `/api/v1/legal` · `/api/v1/boards` · `/api/v1/push` · `/api/v1/notifications` · `/api/v1/payments/iap` · `/api/v1/payments/subscriptions` · `/api/v1/storage`
 - Backend docs (kotlin-skeleton): `docs/sample.md`
 - Docs: `apps/sample/README.md`
 - Web twin (react-skeleton): `app-sample`

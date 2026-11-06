@@ -14,6 +14,9 @@ abstract final class ErrorCodes {
 
   /// 429 on refresh: the session is fine, wait (`Retry-After`).
   static const authTooManyRefreshes = 'AUTH.TOO_MANY_REFRESHES';
+
+  // modules/storage StorageErrorCode. `data.errors` lists `{code, message}`.
+  static const storageFileRejected = 'STORAGE.FILE_REJECTED';
 }
 
 /// Codes made by this client, not by the backend. The status is 0 for a

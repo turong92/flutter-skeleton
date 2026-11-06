@@ -154,10 +154,15 @@ class PostDetail extends PostSummary {
     required super.mine,
     required super.createdAt,
     required this.body,
+    this.attachments = const [],
+    this.attachmentUrls = const {},
+    this.attachmentImages = const {},
+    this.attachmentsPending = const [],
   });
 
   factory PostDetail.fromJson(Map<String, Object?> json) {
     final s = PostSummary.fromJson(json);
+    final images = json['attachmentImages'];
     return PostDetail(
       id: s.id,
       boardCode: s.boardCode,
@@ -171,11 +176,58 @@ class PostDetail extends PostSummary {
       mine: s.mine,
       createdAt: s.createdAt,
       body: json['body']! as String,
+      attachments: [
+        for (final k in (json['attachments'] as List? ?? const [])) k as String,
+      ],
+      attachmentUrls: {
+        for (final e in ((json['attachmentUrls'] as Map?) ?? const {}).entries)
+          e.key as String: e.value as String,
+      },
+      attachmentImages: {
+        if (images is Map)
+          for (final e in images.entries)
+            e.key as String: BoardAttachmentImage.fromJson(
+              e.value as Map<String, Object?>,
+            ),
+      },
+      attachmentsPending: [
+        for (final k in (json['attachmentsPending'] as List? ?? const []))
+          k as String,
+      ],
     );
   }
 
   /// Plain text. The screens draw it as text, never as HTML or Markdown.
   final String body;
+
+  /// Storage keys of the attached photos, in order. The app uploads them with
+  /// `skeleton_storage` and gives the keys to the editor.
+  final List<String> attachments;
+
+  /// Key to public address, for a published post when the server has the
+  /// public area on. A key missing here has no address to draw from: see
+  /// [BoardApi.attachmentAccess].
+  final Map<String, String> attachmentUrls;
+
+  /// Key to converted copies, for images whose copies are ready (servers with
+  /// the image module). Prefer these over [attachmentUrls].
+  final Map<String, BoardAttachmentImage> attachmentImages;
+
+  /// Keys of images the server is still converting: show a placeholder and
+  /// read the post again later.
+  final List<String> attachmentsPending;
+
+  /// The photos of this post for drawing, in order.
+  List<PostAttachment> get photos => [
+    for (final (i, key) in attachments.indexed)
+      PostAttachment(
+        key: key,
+        index: i,
+        url: attachmentUrls[key],
+        image: attachmentImages[key],
+        pending: attachmentsPending.contains(key),
+      ),
+  ];
 
   PostDetail withReactions(ReactionState reactions) => PostDetail(
     id: id,
@@ -190,7 +242,75 @@ class PostDetail extends PostSummary {
     mine: mine,
     createdAt: createdAt,
     body: body,
+    attachments: attachments,
+    attachmentUrls: attachmentUrls,
+    attachmentImages: attachmentImages,
+    attachmentsPending: attachmentsPending,
   );
+}
+
+/// Converted copies of an attached image (servers with the image module).
+/// [thumb] and [display] are public addresses; [width] x [height] is the size
+/// of the [display] copy.
+class BoardAttachmentImage {
+  const BoardAttachmentImage({
+    required this.thumb,
+    required this.display,
+    this.width,
+    this.height,
+  });
+
+  factory BoardAttachmentImage.fromJson(Map<String, Object?> json) =>
+      BoardAttachmentImage(
+        thumb: json['thumb']! as String,
+        display: json['display']! as String,
+        width: (json['width'] as num?)?.toInt(),
+        height: (json['height'] as num?)?.toInt(),
+      );
+
+  final String thumb;
+  final String display;
+  final int? width;
+  final int? height;
+}
+
+/// One photo of a post, with what the app needs to draw it. [url] and [image]
+/// are null when the server gave no public address (a post that is waiting or
+/// hidden, or a server without the public area): ask
+/// [BoardApi.attachmentAccess] for a short-lived one by [index].
+class PostAttachment {
+  const PostAttachment({
+    required this.key,
+    required this.index,
+    this.url,
+    this.image,
+    this.pending = false,
+  });
+
+  final String key;
+
+  /// Position in [PostDetail.attachments].
+  final int index;
+  final String? url;
+  final BoardAttachmentImage? image;
+
+  /// The server is still converting it.
+  final bool pending;
+}
+
+/// `GET .../posts/{id}/attachments?index=N`: a signed address that works for a
+/// short while. Do not keep it.
+class AttachmentAccess {
+  const AttachmentAccess({required this.url, required this.expiresInSeconds});
+
+  factory AttachmentAccess.fromJson(Map<String, Object?> json) =>
+      AttachmentAccess(
+        url: json['url']! as String,
+        expiresInSeconds: (json['expiresInSeconds']! as num).toInt(),
+      );
+
+  final String url;
+  final int expiresInSeconds;
 }
 
 enum CommentStatus {

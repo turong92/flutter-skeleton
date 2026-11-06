@@ -7,6 +7,7 @@ import 'package:skeleton_legal/skeleton_legal.dart';
 import 'package:skeleton_notifications/skeleton_notifications.dart';
 import 'package:skeleton_push/advertising.dart';
 import 'package:skeleton_push/skeleton_push.dart';
+import 'package:skeleton_storage/skeleton_storage.dart';
 
 import 'email_gate.dart';
 import 'login_id_gate.dart';
@@ -47,6 +48,9 @@ final sampleWiring = <Override>[
       return ids.isEmpty ? null : ids.first;
     };
   }),
+  storageApiProvider.overrideWith(
+    (ref) => StorageApi(ref.watch(apiClientProvider)),
+  ),
   pushApiProvider.overrideWith((ref) => PushApi(ref.watch(apiClientProvider))),
   // true only once the stored session is checked: a tap that started the app
   // waits until then

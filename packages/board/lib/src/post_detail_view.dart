@@ -25,10 +25,17 @@ class PostDetailView extends ConsumerStatefulWidget {
     required this.onDeleted,
     this.labels = const BoardLabels(),
     this.reactionStyles = defaultBoardReactionStyles,
+    this.attachmentBuilder,
   });
 
   final String board;
   final int postId;
+
+  /// Draws one photo of the post (the app uses `StoredImage` of
+  /// `skeleton_storage`). Called per photo, in order, under the text; without
+  /// it the post shows no photos.
+  final Widget Function(BuildContext context, PostAttachment attachment)?
+  attachmentBuilder;
   final void Function(PostDetail post) onEdit;
   final VoidCallback onDeleted;
   final BoardLabels labels;
@@ -157,6 +164,15 @@ class _PostDetailViewState extends ConsumerState<PostDetailView> {
               const SizedBox(height: 16),
               // plain text on purpose: no HTML, no Markdown
               Text(post.body),
+              if (widget.attachmentBuilder case final draw?)
+                for (final photo in post.photos)
+                  Padding(
+                    // by key: after an edit another photo must not reuse the
+                    // state (a signed address) of the one that was here
+                    key: ValueKey(photo.key),
+                    padding: const EdgeInsets.only(top: 12),
+                    child: draw(context, photo),
+                  ),
               const SizedBox(height: 16),
               if (config != null)
                 ReactionBar(

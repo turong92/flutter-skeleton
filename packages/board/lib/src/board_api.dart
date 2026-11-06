@@ -39,10 +39,16 @@ class BoardApi {
     required String body,
     required String idempotencyKey,
     String? authorId,
+    List<String>? attachments,
   }) => _client.value(
     '/boards/$board/posts',
     method: 'POST',
-    json: {'title': title, 'body': body, 'authorId': ?authorId},
+    json: {
+      'title': title,
+      'body': body,
+      'authorId': ?authorId,
+      'attachments': ?attachments,
+    },
     headers: {_idempotencyKeyHeader: idempotencyKey},
     decode: PostDetail.fromJson,
   );
@@ -53,12 +59,23 @@ class BoardApi {
     int id, {
     required String title,
     required String body,
+    List<String>? attachments,
   }) => _client.value(
     '/boards/$board/posts/$id',
     method: 'PATCH',
-    json: {'title': title, 'body': body},
+    json: {'title': title, 'body': body, 'attachments': ?attachments},
     decode: PostDetail.fromJson,
   );
+
+  /// `GET /boards/{board}/posts/{id}/attachments?index=N`: a short-lived
+  /// address for a photo that has no public one (a post that is waiting or
+  /// hidden). Author and moderators only.
+  Future<AttachmentAccess> attachmentAccess(String board, int id, int index) =>
+      _client.value(
+        '/boards/$board/posts/$id/attachments',
+        query: {'index': index},
+        decode: AttachmentAccess.fromJson,
+      );
 
   /// `DELETE /boards/{board}/posts/{id}` (soft delete, 204).
   Future<void> deletePost(String board, int id) =>

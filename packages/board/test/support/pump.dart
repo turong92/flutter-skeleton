@@ -57,6 +57,10 @@ class FakeBoard {
             nextId++,
             body: (o.data as Map)['body'] as String,
             title: (o.data as Map)['title'] as String,
+            attachments: [
+              for (final k in (o.data as Map)['attachments'] as List? ?? [])
+                k as String,
+            ],
             mine: true,
           ),
           status: 201,

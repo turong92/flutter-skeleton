@@ -29,6 +29,7 @@ dependencies:
   skeleton_social_login_google: any # workspace sibling
   skeleton_social_login_kakao: any # workspace sibling
   skeleton_social_login_naver: any # workspace sibling
+  skeleton_storage: any # workspace sibling
   skeleton_ui: any # workspace sibling
 
 dev_dependencies:

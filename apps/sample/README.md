@@ -39,6 +39,8 @@ flutter run --dart-define-from-file=env/dev.json
 
 `API_BASE_URL` is the API root with `/api/v1`. Android emulator: `http://10.0.2.2:<port>/api/v1`; iOS simulator: `http://localhost:<port>/api/v1`. The code never branches on the platform; plain http works in debug builds only (see the starter README).
 
+Post photos: the local kotlin sample hands out public photo addresses as `/files/...`, which the Spring app does not serve. To see them, point `API_BASE_URL` at the react sample dev server (`http://10.0.2.2:5173/api/v1`), which forwards both `/api/v1` and `/files/public`.
+
 ## Push needs your own Firebase project
 
 This repo has no Firebase project, and the app does not need one to run. With the `FIREBASE_*` values empty (as in the example) Firebase is not started and the settings tab says push is unavailable. To try push:

@@ -26,7 +26,9 @@ What it guards
 - `403 ACCOUNT.EMAIL_REQUIRED` and `ACCOUNT.LOGIN_ID_REQUIRED` (gates of the sample server) show their own sentences (`labels.emailRequired`, `labels.loginIdRequired`). The screens that fix them are the app's.
 - Buttons are outlined or filled even at rest.
 
-Not here (kept out on purpose): guest posts, attachments and photos, moderation (hide, pin, approve), search and sort, drafts, picking an author profile.
+Photos on a post: the board does not upload (no dependency on `skeleton_storage`, as the web board has none on `@skeleton/storage`). `PostEditor.attachmentField` is a place the app fills with `ImageUploadField`; the keys it holds are sent as `attachments` (create and edit). `PostDetailView.attachmentBuilder` draws each `PostAttachment` (`url` / `image` from the post, else `BoardApi.attachmentAccess` for a short-lived address, `pending` while the server converts). Comment photos are not built.
+
+Not here (kept out on purpose): guest posts, comment photos, moderation (hide, pin, approve), search and sort, drafts, picking an author profile.
 
 ## Tests
 

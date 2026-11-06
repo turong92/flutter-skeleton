@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:skeleton_board/skeleton_board.dart';
 import 'package:skeleton_push/skeleton_push.dart';
+import 'package:skeleton_storage/skeleton_storage.dart';
 
 import '../config.dart';
 import '../email_gate.dart';
@@ -60,6 +61,11 @@ class PostDetailScreen extends StatelessWidget {
               onEdit: (post) =>
                   context.push('/board/${post.id}/edit', extra: post),
               onDeleted: () => context.go('/board'),
+              attachmentBuilder: (context, photo) => _PostPhoto(
+                key: ValueKey(photo.key),
+                postId: postId,
+                photo: photo,
+              ),
             ),
           ),
         ],
@@ -68,14 +74,80 @@ class PostDetailScreen extends StatelessWidget {
   }
 }
 
+/// A server whose public base is a path gives addresses without a host.
+String _abs(String url) => resolveStoredUrl(url, AppConfig.apiBaseUrl);
+
+/// One photo of a post. The address comes with the post when the server has
+/// the public area (converted copy first); a post without one (waiting,
+/// hidden) asks the server for a short-lived address. A photo still being
+/// converted shows a note.
+class _PostPhoto extends ConsumerStatefulWidget {
+  const _PostPhoto({super.key, required this.postId, required this.photo});
+
+  final int postId;
+  final PostAttachment photo;
+
+  @override
+  ConsumerState<_PostPhoto> createState() => _PostPhotoState();
+}
+
+class _PostPhotoState extends ConsumerState<_PostPhoto> {
+  Future<AttachmentAccess>? _access;
+
+  @override
+  void initState() {
+    super.initState();
+    final photo = widget.photo;
+    if (photo.url == null && photo.image == null && !photo.pending) {
+      _access = ref
+          .read(boardApiProvider)
+          .attachmentAccess(AppConfig.board, widget.postId, photo.index);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final photo = widget.photo;
+    final image = photo.image;
+    if (image != null) {
+      return StoredImage(
+        url: _abs(image.display),
+        width: image.width,
+        height: image.height,
+        fit: BoxFit.contain,
+      );
+    }
+    final url = photo.url;
+    if (url != null) {
+      return StoredImage(url: _abs(url), fit: BoxFit.contain);
+    }
+    if (photo.pending) return const Text('The photo is being prepared.');
+    return FutureBuilder(
+      future: _access,
+      builder: (context, snapshot) {
+        final access = snapshot.data;
+        if (access != null) {
+          return StoredImage(url: _abs(access.url), fit: BoxFit.contain);
+        }
+        return snapshot.hasError
+            ? const Text('The photo cannot be shown.')
+            : const SizedBox(
+                height: 120,
+                child: Center(child: CircularProgressIndicator()),
+              );
+      },
+    );
+  }
+}
+
 /// Write (`post` null) or edit.
-class PostEditorScreen extends StatelessWidget {
+class PostEditorScreen extends ConsumerWidget {
   const PostEditorScreen({super.key, this.post});
 
   final PostDetail? post;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(title: Text(post == null ? 'New post' : 'Edit post')),
       body: PostEditor(
@@ -83,6 +155,20 @@ class PostEditorScreen extends StatelessWidget {
         post: post,
         onSaved: (saved) =>
             post == null ? context.go('/board/${saved.id}') : context.pop(),
+        attachmentField: (context, keys, onChanged, onBusy) => ImageUploadField(
+          uploader: ref.watch(uploaderProvider),
+          value: keys,
+          onChanged: onChanged,
+          onBusyChanged: onBusy,
+          // a photo of the post being edited: its converted copy or address
+          keyPreview: (context, key) {
+            final url =
+                post?.attachmentImages[key]?.thumb ?? post?.attachmentUrls[key];
+            return url == null
+                ? const Icon(Icons.image_outlined)
+                : StoredImage(url: _abs(url));
+          },
+        ),
       ),
     );
   }

@@ -5,8 +5,14 @@ import 'package:skeleton_auth/skeleton_auth.dart';
 // #if iap
 import 'package:skeleton_iap/skeleton_iap.dart';
 // #endif
+// #if storage
+import 'package:skeleton_storage/skeleton_storage.dart';
+// #endif
 import 'package:skeleton_ui/skeleton_ui.dart';
 
+// #if storage
+import '../config.dart';
+// #endif
 import 'form_page.dart';
 
 /// Account settings: deleting the account (the store rules ask for it inside
@@ -38,9 +44,42 @@ class AccountScreen extends ConsumerWidget {
           },
         );
     // #endif
+    // #if storage
+    // The picture slot exists only when the server has `storage` (`me` then
+    // carries the `avatarKey` key). The upload is the app's part; `auth` does
+    // not know `storage`.
+    final me = ref.watch(accountMeProvider).value;
+    // #endif
     return FormPage(
       title: 'Account settings',
       children: [
+        // #if storage
+        if (me != null && me.avatarEnabled) ...[
+          ProfilePictureSection(
+            key: ValueKey(me.avatarKey),
+            me: me,
+            resolveUrl: (url) => resolveStoredUrl(url, AppConfig.apiBaseUrl),
+            onSaved: (_) => ref.invalidate(accountMeProvider),
+            picker: (context, value, onChanged, onBusy) => ImageUploadField(
+              uploader: ref.watch(uploaderProvider),
+              value: value == null ? const [] : [value],
+              max: 1,
+              onChanged: (keys) => onChanged(keys.isEmpty ? null : keys.last),
+              onBusyChanged: onBusy,
+              // the picture already saved: its small copy, else an icon
+              keyPreview: (context, key) {
+                final thumb = me.avatar?.thumbUrl;
+                return thumb == null
+                    ? const Icon(Icons.image_outlined)
+                    : StoredImage(
+                        url: resolveStoredUrl(thumb, AppConfig.apiBaseUrl),
+                      );
+              },
+            ),
+          ),
+          const SizedBox(height: SkeletonSpace.lg),
+        ],
+        // #endif
         Text('Delete account', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: SkeletonSpace.sm),
         // #if iap

@@ -149,6 +149,22 @@ class AccountApi {
   Future<AccountMe> me() =>
       _client.value('/account/me', decode: AccountMe.fromJson);
 
+  /// `PATCH /account/me { avatarKey }`: a key sets the profile picture, null
+  /// clears it. Only on a server with `storage`; elsewhere `400`. A `400`
+  /// without field errors means the key is not usable (not this account's
+  /// upload, not an image, or a file another place already uses).
+  Future<AccountMe> updateAvatar(String? key) => _client.value(
+    '/account/me',
+    method: 'PATCH',
+    json: {'avatarKey': key},
+    decode: AccountMe.fromJson,
+  );
+
+  /// `GET /account/me/avatar`: a short-lived signed address of the picture.
+  /// `404` without a picture, while it converts, or with signed reads off.
+  Future<AvatarAddress> avatarAddress() =>
+      _client.value('/account/me/avatar', decode: AvatarAddress.fromJson);
+
   /// `PATCH /account/me` with a nickname. `400` field error on `displayName`,
   /// `409 ACCOUNT.DISPLAY_NAME_TAKEN`; a refused change changes nothing.
   Future<AccountMe> updateDisplayName(String displayName) => _client.value(

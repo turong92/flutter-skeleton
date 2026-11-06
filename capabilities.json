@@ -424,7 +424,7 @@
     {
       "id": "app-starter",
       "kind": "app",
-      "summary": "The starter app: sign up with consents, verify email, sign in, reset the password, see who you are (GET /auth/me), delete the account, sign out, agree again when a document changes, restore the session on start. It becomes the new project's app; the default screens of board (with photos when storage is picked too), notifications (and the realtime stream), push, and iap come along only when those packages are picked.",
+      "summary": "The starter app: sign up with consents, verify email, sign in, reset the password, see who you are (GET /auth/me), delete the account, sign out, agree again when a document changes, restore the session on start. It becomes the new project's app; with storage: profile picture on the account screen; the default screens of board (with photos when storage is picked too), notifications (and the realtime stream), push, and iap come along only when those packages are picked.",
       "package": "starter",
       "path": "apps/starter",
       "stampFlag": { "flag": null, "included": "always" },

@@ -147,6 +147,9 @@ class AccountMe {
     this.contactEmailEnabled = false,
     this.emailRequired = false,
     this.emailRequiredToWrite = false,
+    this.avatarEnabled = false,
+    this.avatarKey,
+    this.avatar,
   });
 
   factory AccountMe.fromJson(Map<String, Object?> json) => AccountMe(
@@ -162,9 +165,25 @@ class AccountMe {
     contactEmailEnabled: json.containsKey('contactEmail'),
     emailRequired: json['emailRequired'] == true,
     emailRequiredToWrite: json['emailRequiredToWrite'] == true,
+    // The keys exist only on a server with the `storage` module.
+    avatarEnabled: json.containsKey('avatarKey'),
+    avatarKey: json['avatarKey'] as String?,
+    avatar: json['avatar'] is Map<String, Object?>
+        ? AccountAvatar.fromJson(json['avatar']! as Map<String, Object?>)
+        : null,
   );
 
   final bool hasPassword;
+
+  /// False when the server has no `storage` module: `avatarKey` is absent from
+  /// `me`, a `PATCH` carrying it is refused, and no picture slot is drawn.
+  final bool avatarEnabled;
+
+  /// The upload key of the profile picture (this caller only); null = none yet.
+  final String? avatarKey;
+
+  /// How to draw the picture; null without one.
+  final AccountAvatar? avatar;
 
   /// The confirmed contact address (notices and service messages only, never
   /// sign-in or recovery); null = none yet.
@@ -207,6 +226,67 @@ class AccountMe {
       : displayTag == null
       ? displayName
       : '$displayName#$displayTag';
+}
+
+/// `me.avatar`: with the storage public area on, [url] is the public address
+/// and [image] the converted copies (images whose copies are ready); [pending]
+/// while the server converts. All three empty = nothing public to show.
+class AccountAvatar {
+  const AccountAvatar({this.url, this.image, this.pending = false});
+
+  factory AccountAvatar.fromJson(Map<String, Object?> json) {
+    final image = json['image'];
+    return AccountAvatar(
+      url: json['url'] as String?,
+      image: image is Map<String, Object?>
+          ? AccountAvatarImage.fromJson(image)
+          : null,
+      pending: json['pending'] == true,
+    );
+  }
+
+  final String? url;
+  final AccountAvatarImage? image;
+  final bool pending;
+
+  /// The best small address to draw, or null.
+  String? get thumbUrl => image?.thumb ?? url;
+}
+
+class AccountAvatarImage {
+  const AccountAvatarImage({
+    required this.thumb,
+    required this.display,
+    this.width,
+    this.height,
+  });
+
+  factory AccountAvatarImage.fromJson(Map<String, Object?> json) =>
+      AccountAvatarImage(
+        thumb: json['thumb']! as String,
+        display: json['display']! as String,
+        width: (json['width'] as num?)?.toInt(),
+        height: (json['height'] as num?)?.toInt(),
+      );
+
+  final String thumb;
+  final String display;
+  final int? width;
+  final int? height;
+}
+
+/// `GET /account/me/avatar`: a signed address that works for a short while. Do
+/// not keep it.
+class AvatarAddress {
+  const AvatarAddress({required this.url, required this.expiresInSeconds});
+
+  factory AvatarAddress.fromJson(Map<String, Object?> json) => AvatarAddress(
+    url: json['url']! as String,
+    expiresInSeconds: (json['expiresInSeconds']! as num).toInt(),
+  );
+
+  final String url;
+  final int expiresInSeconds;
 }
 
 /// What `403 AUTH.ACCOUNT_DELETION_PENDING` says: the account is in its

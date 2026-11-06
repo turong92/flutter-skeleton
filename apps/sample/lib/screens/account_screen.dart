@@ -5,8 +5,10 @@ import 'package:skeleton_api_client/skeleton_api_client.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_iap/skeleton_iap.dart';
 import 'package:skeleton_social_login/skeleton_social_login.dart';
+import 'package:skeleton_storage/skeleton_storage.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
+import '../config.dart';
 import '../social_support.dart';
 import 'form_page.dart';
 
@@ -93,6 +95,35 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     return FormPage(
       title: 'Account settings',
       children: [
+        // The picture slot exists only when the server has `storage`: `me`
+        // then carries the `avatarKey` key. The upload is the app's part
+        // (`ImageUploadField`, one photo); `auth` does not know `storage`.
+        if (me != null && me.avatarEnabled) ...[
+          ProfilePictureSection(
+            key: ValueKey(me.avatarKey),
+            me: me,
+            resolveUrl: (url) => resolveStoredUrl(url, AppConfig.apiBaseUrl),
+            onSaved: (_) => ref.invalidate(accountMeProvider),
+            picker: (context, value, onChanged, onBusy) => ImageUploadField(
+              uploader: ref.watch(uploaderProvider),
+              value: value == null ? const [] : [value],
+              max: 1,
+              // one photo: the last finished upload is the picture
+              onChanged: (keys) => onChanged(keys.isEmpty ? null : keys.last),
+              onBusyChanged: onBusy,
+              // the picture already saved: its small copy, else an icon
+              keyPreview: (context, key) {
+                final thumb = me.avatar?.thumbUrl;
+                return thumb == null
+                    ? const Icon(Icons.image_outlined)
+                    : StoredImage(
+                        url: resolveStoredUrl(thumb, AppConfig.apiBaseUrl),
+                      );
+              },
+            ),
+          ),
+          const SizedBox(height: SkeletonSpace.lg),
+        ],
         if (me != null && me.contactEmailEnabled) ...[
           ContactEmailSection(
             contactEmail: me.contactEmail,

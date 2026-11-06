@@ -9,6 +9,7 @@ import 'package:skeleton_api_client/testing.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_social_login/skeleton_social_login.dart';
 import 'package:skeleton_social_login_apple/skeleton_social_login_apple.dart';
+import 'package:skeleton_storage/skeleton_storage.dart';
 
 /// Counts the Apple sheets; the revoke POST itself is the real one.
 class _FakeApple extends AppleSocialProvider {
@@ -114,5 +115,84 @@ void main() {
       lessThan(paths.indexOf('/account/delete')),
     );
     expect(find.text('login page'), findsOneWidget);
+  });
+
+  group('profile picture', () {
+    Future<FakeAdapter> pumpAccount(
+      WidgetTester tester,
+      Map<String, Object?> me,
+    ) async {
+      final adapter = FakeAdapter((options) {
+        switch ((options.method, options.path)) {
+          case ('GET', '/account/me'):
+            return _value(200, me);
+          case ('PATCH', '/account/me'):
+            return _value(200, {
+              ...me,
+              'avatarKey': (options.data as Map)['avatarKey'],
+            });
+        }
+        return FakeAdapter.json(404, {
+          'code': 'COMMON.NOT_FOUND',
+          'title': 'Not found',
+          'status': 404,
+        });
+      });
+      final store = MemoryTokenStore();
+      await store.save(const TokenPair(accessToken: 'a', refreshToken: 'r'));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authConfigProvider.overrideWithValue(
+              const AuthConfig(apiBaseUrl: 'http://localhost:8080/api/v1'),
+            ),
+            tokenStoreProvider.overrideWithValue(store),
+            httpAdapterProvider.overrideWithValue(adapter),
+            socialProvidersProvider.overrideWithValue(const []),
+            uploaderProvider.overrideWithValue(
+              Uploader(
+                api: StorageApi(
+                  ApiClient(
+                    baseUrl: 'http://localhost:8080/api/v1',
+                    adapter: adapter,
+                  ),
+                ),
+              ),
+            ),
+          ],
+          child: const MaterialApp(home: AccountScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return adapter;
+    }
+
+    testWidgets('a server without storage has no picture slot', (tester) async {
+      await pumpAccount(tester, {
+        'hasPassword': true,
+        'email': 'a@example.com',
+      });
+
+      expect(find.text('Profile picture'), findsNothing);
+    });
+
+    testWidgets('with storage the slot is there and removing sends null', (
+      tester,
+    ) async {
+      final adapter = await pumpAccount(tester, {
+        'hasPassword': true,
+        'email': 'a@example.com',
+        'avatarKey': 'u/1/a.png',
+      });
+
+      expect(find.text('Profile picture'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('photo-remove')));
+      await tester.pump();
+      await tester.tap(find.byKey(ProfilePictureSection.saveKey));
+      await tester.pumpAndSettle();
+
+      final patch = adapter.requests.singleWhere((r) => r.method == 'PATCH');
+      expect(patch.data, {'avatarKey': null});
+    });
   });
 }

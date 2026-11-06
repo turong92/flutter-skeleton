@@ -423,6 +423,10 @@ void main() {
           stamped('lib/wiring.dart', kept),
           contains('storageApiProvider'),
         );
+        expect(
+          stamped('lib/screens/account_screen.dart', kept),
+          contains('ProfilePictureSection('),
+        );
         for (final plist in [
           'ios/Runner/Info.plist',
           'ios/Runner/Info-Debug.plist',

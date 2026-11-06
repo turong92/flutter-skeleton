@@ -25,8 +25,8 @@ class _Setup {
     });
     client = ApiClient(baseUrl: 'http://localhost/api/v1', adapter: adapter);
     client.dio.interceptors
-      ..add(LoginIdRequiredInterceptor(dio: client.dio, onRequired: held.hold))
-      ..add(EmailRequiredInterceptor(dio: client.dio, onRequired: held.hold));
+      ..add(LoginIdRequiredInterceptor(dio: client.dio, onRequired: _hold))
+      ..add(EmailRequiredInterceptor(dio: client.dio, onRequired: _hold));
   }
 
   late final FakeAdapter adapter;
@@ -35,13 +35,19 @@ class _Setup {
   bool open = false;
   String refusal = 'ACCOUNT.EMAIL_REQUIRED';
 
-  /// The first answer has arrived (a slow machine may need a while), then a
-  /// moment for the interceptors to hold the call.
+  /// Counts the holds so [untilHeld] can wait for the interceptor to really
+  /// reach [HeldCalls.hold]: a release before that has nobody to release.
+  int holds = 0;
+
+  Future<bool> _hold() {
+    holds++;
+    return held.hold();
+  }
+
   Future<void> untilHeld() async {
-    while (adapter.requests.isEmpty) {
+    while (holds == 0) {
       await Future<void>.delayed(const Duration(milliseconds: 5));
     }
-    await Future<void>.delayed(const Duration(milliseconds: 20));
   }
 
   Future<Object?> post() => client.value<Object?>(

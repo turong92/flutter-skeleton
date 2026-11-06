@@ -4,6 +4,8 @@ import 'package:skeleton_push/advertising.dart';
 import 'package:skeleton_push/skeleton_push.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
+import '../l10n/l10n.dart';
+
 /// `/settings/notifications`: push of this device and per type, then consent
 /// to promotional push.
 class NotificationSettingsScreen extends StatelessWidget {
@@ -12,13 +14,15 @@ class NotificationSettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Notification settings')),
+      appBar: AppBar(title: Text(context.l10n.notificationSettingsTitle)),
       body: ListView(
         padding: const EdgeInsets.all(SkeletonSpace.md),
-        children: const [
-          PushSettingsView(),
-          Divider(),
-          AdvertisingSettingsView(),
+        children: [
+          PushSettingsView(
+            labels: context.byLocale(const PushLabels.ko(), const PushLabels()),
+          ),
+          const Divider(),
+          const AdvertisingSettingsView(),
         ],
       ),
     );

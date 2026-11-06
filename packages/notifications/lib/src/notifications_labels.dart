@@ -11,6 +11,18 @@ class NotificationsLabels {
     this.collapsed = _grouped,
   });
 
+  /// Korean texts, in the polite 해요 style.
+  const NotificationsLabels.ko()
+    : this(
+        empty: '아직 알림이 없어요.',
+        markAllRead: '모두 읽음으로 표시',
+        loadFailed: '불러오지 못했어요.',
+        retry: '다시 시도',
+        loadMore: '더 보기',
+        unread: '읽지 않음',
+        collapsed: _koGrouped,
+      );
+
   final String empty;
   final String markAllRead;
   final String loadFailed;
@@ -25,3 +37,5 @@ class NotificationsLabels {
 
   static String _grouped(int count) => '$count notifications';
 }
+
+String _koGrouped(int count) => '알림 $count개';

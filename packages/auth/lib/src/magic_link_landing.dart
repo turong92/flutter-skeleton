@@ -17,6 +17,17 @@ class MagicLinkLabels {
     this.genericError = 'Something went wrong. Please try again.',
   });
 
+  /// Korean texts, in the polite 해요 style.
+  const MagicLinkLabels.ko()
+    : this(
+        checking: '로그인하는 중...',
+        invalid: '링크가 올바르지 않거나 만료됐어요. 새 링크를 받아 주세요.',
+        requestNew: '새 링크 받기',
+        retry: '다시 시도',
+        networkError: '연결할 수 없어요. 인터넷 연결을 확인해 주세요.',
+        genericError: '문제가 생겼어요. 다시 시도해 주세요.',
+      );
+
   final String checking;
   final String invalid;
   final String requestNew;

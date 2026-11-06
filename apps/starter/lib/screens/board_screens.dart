@@ -7,6 +7,7 @@ import 'package:skeleton_board/skeleton_board.dart';
 import 'package:skeleton_storage/skeleton_storage.dart';
 // #endif
 
+import '../l10n/l10n.dart';
 import '../config.dart';
 
 /// The posts of the board.
@@ -16,7 +17,7 @@ class BoardListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Board')),
+      appBar: AppBar(title: Text(context.l10n.boardTitle)),
       body: PostListView(
         board: AppConfig.board,
         onOpen: (post) => context.push('/board/${post.id}'),
@@ -34,7 +35,7 @@ class PostDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Post')),
+      appBar: AppBar(title: Text(context.l10n.postTitle)),
       body: PostDetailView(
         board: AppConfig.board,
         postId: postId,
@@ -58,7 +59,11 @@ class PostEditorScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(title: Text(post == null ? 'New post' : 'Edit post')),
+      appBar: AppBar(
+        title: Text(
+          post == null ? context.l10n.newPost : context.l10n.editPost,
+        ),
+      ),
       body: PostEditor(
         board: AppConfig.board,
         post: post,
@@ -134,7 +139,7 @@ class _PostPhotoState extends ConsumerState<_PostPhoto> {
     if (url != null) {
       return StoredImage(url: _abs(url), fit: BoxFit.contain);
     }
-    if (photo.pending) return const Text('The photo is being prepared.');
+    if (photo.pending) return Text(context.l10n.photoBeingPrepared);
     return FutureBuilder(
       future: _access,
       builder: (context, snapshot) {
@@ -143,7 +148,7 @@ class _PostPhotoState extends ConsumerState<_PostPhoto> {
           return StoredImage(url: _abs(access.url), fit: BoxFit.contain);
         }
         return snapshot.hasError
-            ? const Text('The photo cannot be shown.')
+            ? Text(context.l10n.photoCannotBeShown)
             : const SizedBox(
                 height: 120,
                 child: Center(child: CircularProgressIndicator()),

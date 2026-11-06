@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
+import '../l10n/l10n.dart';
 import '../email_gate.dart';
 import '../login_id_gate.dart';
 import '../social_support.dart';
@@ -25,13 +26,20 @@ class LoginIdScreen extends ConsumerWidget {
     }
 
     return FormPage(
-      title: 'Choose an ID',
+      title: context.l10n.chooseId,
       children: [
-        LoginIdForm(onSaved: (_) => done(), onAlreadySet: done),
+        LoginIdForm(
+          labels: context.byLocale(
+            const LoginIdLabels.ko(),
+            const LoginIdLabels(),
+          ),
+          onSaved: (_) => done(),
+          onAlreadySet: done,
+        ),
         const SizedBox(height: SkeletonSpace.md),
         OutlinedButton(
           onPressed: () => ref.read(authSessionProvider.notifier).logout(),
-          child: const Text('Sign out'),
+          child: Text(context.l10n.signOut),
         ),
         // Under the address rule the ID gate also has the way out (accounts.md).
         if (ref.watch(emailGateProvider.select((g) => g.blocking || g.toWrite)))

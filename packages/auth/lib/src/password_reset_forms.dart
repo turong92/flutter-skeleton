@@ -18,6 +18,17 @@ class ForgotPasswordLabels {
     this.genericError = 'Something went wrong. Please try again.',
   });
 
+  /// Korean texts, in the polite 해요 style.
+  const ForgotPasswordLabels.ko()
+    : this(
+        email: '이메일',
+        submit: '재설정 링크 보내기',
+        required: '입력해 주세요',
+        sent: '이 주소로 가입한 계정이 있으면 비밀번호 재설정 링크를 메일로 보내 드려요.',
+        networkError: '연결할 수 없어요. 인터넷 연결을 확인해 주세요.',
+        genericError: '문제가 생겼어요. 다시 시도해 주세요.',
+      );
+
   final String email;
   final String submit;
   final String required;
@@ -130,6 +141,18 @@ class ResetPasswordLabels {
     this.genericError = 'Something went wrong. Please try again.',
     this.passwordPolicy = const PasswordPolicyLabels(),
   });
+
+  /// Korean texts, in the polite 해요 style.
+  const ResetPasswordLabels.ko()
+    : this(
+        password: '새 비밀번호',
+        submit: '새 비밀번호 정하기',
+        required: '입력해 주세요',
+        tokenInvalid: '링크가 올바르지 않거나 만료됐어요. 새 링크를 받아 주세요.',
+        networkError: '연결할 수 없어요. 인터넷 연결을 확인해 주세요.',
+        genericError: '문제가 생겼어요. 다시 시도해 주세요.',
+        passwordPolicy: const PasswordPolicyLabels.ko(),
+      );
 
   final String password;
   final String submit;

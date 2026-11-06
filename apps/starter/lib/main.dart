@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 // #endif
 import 'package:skeleton_auth/skeleton_auth.dart';
+// #if i18n
+import 'package:skeleton_i18n/skeleton_i18n.dart';
+// #endif
 // #if iap
 import 'package:skeleton_iap/skeleton_iap.dart';
 // #endif
@@ -15,6 +18,7 @@ import 'package:skeleton_push/skeleton_push.dart';
 // #endif
 import 'package:skeleton_ui/skeleton_ui.dart';
 
+import 'l10n/l10n.dart';
 import 'config.dart';
 // #if push
 import 'firebase_setup.dart';
@@ -41,9 +45,18 @@ Future<void> main() async {
   // No Firebase values: nothing starts and push stays "unavailable".
   await initFirebaseIfConfigured();
   // #endif
+  // #if i18n
+  // The language the person picked last time (before the first frame).
+  const languageStore = SharedPreferencesLocaleStore();
+  final savedLocale = await loadSavedLocale(languageStore);
+  // #endif
   runApp(
     ProviderScope(
       overrides: [
+        // #if i18n
+        savedLocaleProvider.overrideWithValue(savedLocale),
+        localeStoreProvider.overrideWithValue(languageStore),
+        // #endif
         authConfigProvider.overrideWithValue(
           const AuthConfig(apiBaseUrl: AppConfig.apiBaseUrl),
         ),
@@ -93,7 +106,15 @@ class StarterApp extends ConsumerWidget {
       if (outcome == null) return;
       if (outcome is IapGranted) ref.invalidate(mySubscriptionProvider);
       _messengerKey.currentState?.showSnackBar(
-        SnackBar(content: Text(iapOutcomeText(outcome))),
+        SnackBar(
+          content: Text(
+            iapOutcomeText(
+              _messengerKey.currentContext?.l10n ??
+                  lookupAppLocalizations(const Locale('ko')),
+              outcome,
+            ),
+          ),
+        ),
       );
     });
     // #endif
@@ -113,7 +134,7 @@ class StarterApp extends ConsumerWidget {
           action: link == null
               ? null
               : SnackBarAction(
-                  label: 'Open',
+                  label: (_messengerKey.currentContext ?? context).l10n.open,
                   onPressed: () => ref.read(routerProvider).go(link),
                 ),
         ),
@@ -135,6 +156,12 @@ class StarterApp extends ConsumerWidget {
       scaffoldMessengerKey: _messengerKey,
       // #endif
       title: 'Starter',
+      // Korean first: it is the language an unsupported device language falls back to.
+      supportedLocales: const [Locale('ko'), Locale('en')],
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      // #if i18n
+      locale: ref.watch(localeProvider),
+      // #endif
       theme: skeletonLightTheme(),
       darkTheme: skeletonDarkTheme(),
       routerConfig: ref.watch(routerProvider),

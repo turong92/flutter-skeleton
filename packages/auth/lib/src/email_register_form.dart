@@ -40,6 +40,33 @@ class EmailRegisterLabels {
     this.genericError = 'Something went wrong. Please try again.',
   });
 
+  /// Korean texts, in the polite 해요 style.
+  const EmailRegisterLabels.ko()
+    : this(
+        email: '이메일',
+        send: '인증번호 받기',
+        code: '메일로 받은 인증번호',
+        confirm: '확인',
+        resend: '다시 보내기',
+        required: '입력해 주세요',
+        invalidEmail: '이메일 주소 형식이 맞지 않아요.',
+        codeFormat: '인증번호 6자리를 입력해 주세요.',
+        noCodeHint: '인증번호가 안 오나요? 이 주소로 만든 계정이 이미 있을 수 있어요. 그 계정으로 로그인한 뒤 설정에서 이 로그인 방법을 연결해 주세요.',
+        codeExpired: '인증번호가 만료됐어요. 주소를 다시 입력해 주세요.',
+        reauthFailed: '본인 확인이 통과되지 않았어요. 다시 시도해 주세요.',
+        tooManyRequests: '너무 여러 번 시도했어요. 잠시 뒤에 다시 해 주세요.',
+        blocked: '이 주소는 등록할 수 없어요.',
+        discard: '버리기',
+        discardOpen: '이미 계정이 있어요',
+        discardTitle: '이 계정을 버릴까요?',
+        discardBody:
+            '계정이 바로 삭제되고 되돌릴 수 없어요. 다른 로그인 방법으로 만든 계정이 이미 있을 때만 써 주세요.',
+        discardCancel: '취소',
+        discardNotAllowed: '이 계정은 버릴 수 없어요.',
+        networkError: '연결할 수 없어요. 인터넷 연결을 확인해 주세요.',
+        genericError: '문제가 생겼어요. 다시 시도해 주세요.',
+      );
+
   final String email;
   final String send;
   final String code;

@@ -1,0 +1,155 @@
+{
+  "@@locale": "ko",
+  "back": "돌아가기",
+  "signOut": "로그아웃",
+  "accountLoadFailed": "계정 정보를 불러오지 못했어요.",
+  "myAccount": "내 계정",
+  "accountSettings": "계정 설정",
+  "rolesLabel": "권한: {roles}",
+  "@rolesLabel": {
+    "placeholders": {
+      "roles": {
+        "type": "String"
+      }
+    }
+  },
+  "createAccount": "가입하기",
+  "forgotPasswordLink": "비밀번호를 잊으셨나요?",
+  "alreadyHaveAccount": "이미 계정이 있어요",
+  "backToSignIn": "로그인으로 돌아가기",
+  "checkYourEmail": "메일을 확인해 주세요",
+  "forgotPasswordTitle": "비밀번호 찾기",
+  "resetPasswordTitle": "비밀번호 재설정",
+  "resetLinkIncomplete": "링크가 완전하지 않아요. 새 링크를 받아 주세요.",
+  "sendNewLink": "새 링크 보내기",
+  "deleteAccount": "계정 삭제",
+  "language": "언어",
+  "@language": {
+    "x-feature": "i18n"
+  },
+  "open": "열기",
+  "@open": {
+    "x-feature": "push"
+  },
+  "notificationSettingsTitle": "알림 설정",
+  "@notificationSettingsTitle": {
+    "x-feature": "push"
+  },
+  "notificationsTitle": "알림",
+  "@notificationsTitle": {
+    "x-feature": "notifications"
+  },
+  "boardTitle": "게시판",
+  "@boardTitle": {
+    "x-feature": "board"
+  },
+  "postTitle": "글",
+  "@postTitle": {
+    "x-feature": "board"
+  },
+  "newPost": "새 글",
+  "@newPost": {
+    "x-feature": "board"
+  },
+  "editPost": "글 고치기",
+  "@editPost": {
+    "x-feature": "board"
+  },
+  "photoBeingPrepared": "사진을 준비하고 있어요.",
+  "@photoBeingPrepared": {
+    "x-feature": "board storage"
+  },
+  "photoCannotBeShown": "사진을 보여 줄 수 없어요.",
+  "@photoCannotBeShown": {
+    "x-feature": "board storage"
+  },
+  "storeTitle": "스토어",
+  "@storeTitle": {
+    "x-feature": "iap"
+  },
+  "storeCheckFailed": "스토어 구독을 확인하지 못했어요. 구독 중이라면 계정을 삭제하기 전에 App Store나 Google Play에서 먼저 해지해 주세요.",
+  "@storeCheckFailed": {
+    "x-feature": "iap"
+  },
+  "storeAppStoreBilled": "구독료는 App Store로 결제되고, 계정을 삭제해도 계속 청구돼요. 먼저 App Store에서 구독을 해지해 주세요.",
+  "@storeAppStoreBilled": {
+    "x-feature": "iap"
+  },
+  "storeGooglePlayBilled": "구독료는 Google Play로 결제되고, 계정을 삭제해도 계속 청구돼요. 먼저 Google Play에서 구독을 해지해 주세요.",
+  "@storeGooglePlayBilled": {
+    "x-feature": "iap"
+  },
+  "purchaseConfirmed": "구매가 확인됐어요.",
+  "@purchaseConfirmed": {
+    "x-feature": "iap"
+  },
+  "purchaseRefused": "구매가 거절됐어요 ({code}).",
+  "@purchaseRefused": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    },
+    "x-feature": "iap"
+  },
+  "purchaseStorePending": "스토어에서 아직 결제를 마치지 않았어요.",
+  "@purchaseStorePending": {
+    "x-feature": "iap"
+  },
+  "purchaseOtherAccount": "다른 계정의 구매예요. 그 계정으로 로그인해 주세요.",
+  "@purchaseOtherAccount": {
+    "x-feature": "iap"
+  },
+  "purchaseRetryLater": "아직 구매를 확인하지 못했어요. 구매는 그대로 남아 있고, 앱을 다시 켜면 한 번 더 보내요.",
+  "@purchaseRetryLater": {
+    "x-feature": "iap"
+  },
+  "productsLoadFailed": "상품을 불러오지 못했어요.",
+  "@productsLoadFailed": {
+    "x-feature": "iap"
+  },
+  "purchasesNotAvailable": "이 기기에서는 구매할 수 없어요.",
+  "@purchasesNotAvailable": {
+    "x-feature": "iap"
+  },
+  "products": "상품",
+  "@products": {
+    "x-feature": "iap"
+  },
+  "nothingToBuy": "지금은 살 수 있는 게 없어요.",
+  "@nothingToBuy": {
+    "x-feature": "iap"
+  },
+  "startPurchaseFailed": "구매를 시작하지 못했어요.",
+  "@startPurchaseFailed": {
+    "x-feature": "iap"
+  },
+  "restoreFailed": "구매 내역을 복원하지 못했어요.",
+  "@restoreFailed": {
+    "x-feature": "iap"
+  },
+  "restorePurchases": "구매 복원",
+  "@restorePurchases": {
+    "x-feature": "iap"
+  },
+  "payOnWeb": "웹에서 결제하기",
+  "@payOnWeb": {
+    "x-feature": "iap"
+  },
+  "webCheckoutFailed": "웹 결제를 열지 못했어요.",
+  "@webCheckoutFailed": {
+    "x-feature": "iap"
+  },
+  "mySubscription": "내 구독",
+  "@mySubscription": {
+    "x-feature": "iap"
+  },
+  "subscriptionLoadFailed": "구독 정보를 불러오지 못했어요.",
+  "@subscriptionLoadFailed": {
+    "x-feature": "iap"
+  },
+  "noSubscription": "구독이 없어요.",
+  "@noSubscription": {
+    "x-feature": "iap"
+  }
+}

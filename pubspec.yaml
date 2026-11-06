@@ -21,6 +21,7 @@ workspace:
   - packages/realtime
   - packages/iap
   - packages/storage
+  - packages/i18n
   - packages/social_login
   - packages/social_login_google
   - packages/social_login_apple

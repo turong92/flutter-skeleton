@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
+import '../l10n/l10n.dart';
 import 'form_page.dart';
 
 /// "Mail me my ID": reached from the sign-in screen on a server with login
@@ -13,13 +14,18 @@ class ForgotLoginIdScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FormPage(
-      title: 'Forgot ID',
+      title: context.l10n.forgotIdTitle,
       children: [
-        const ForgotLoginIdForm(),
+        ForgotLoginIdForm(
+          labels: context.byLocale(
+            const ForgotLoginIdLabels.ko(),
+            const ForgotLoginIdLabels(),
+          ),
+        ),
         const SizedBox(height: SkeletonSpace.md),
         OutlinedButton(
           onPressed: () => context.go('/login'),
-          child: const Text('Back to sign in'),
+          child: Text(context.l10n.backToSignIn),
         ),
       ],
     );

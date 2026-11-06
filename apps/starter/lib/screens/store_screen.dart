@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:skeleton_iap/skeleton_iap.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
+import '../l10n/l10n.dart';
+
 /// The subscription of the account as the server has it. Read again after the
 /// server granted a purchase; the package opens nothing itself.
 final mySubscriptionProvider = FutureProvider.autoDispose<IapSubscription?>(
@@ -11,16 +13,15 @@ final mySubscriptionProvider = FutureProvider.autoDispose<IapSubscription?>(
 );
 
 /// What a person is told about the server's answer to a purchase.
-String iapOutcomeText(IapOutcome outcome) => switch (outcome) {
-  IapGranted() => 'Purchase confirmed.',
-  IapRejected() => 'The purchase was refused (${outcome.code}).',
-  IapNotConfirmed(reason: IapWait.storePending) =>
-    'The store has not finished the payment yet.',
-  IapNotConfirmed(reason: IapWait.otherAccount) =>
-    'This purchase belongs to another account. Sign in with that one.',
-  IapNotConfirmed(reason: IapWait.retryLater) => 'Could not confirm the purchase yet. It stays open and is sent again the next time the app starts.',
-  IapStoreError() => outcome.message,
-};
+String iapOutcomeText(AppLocalizations l, IapOutcome outcome) =>
+    switch (outcome) {
+      IapGranted() => l.purchaseConfirmed,
+      IapRejected() => l.purchaseRefused(outcome.code),
+      IapNotConfirmed(reason: IapWait.storePending) => l.purchaseStorePending,
+      IapNotConfirmed(reason: IapWait.otherAccount) => l.purchaseOtherAccount,
+      IapNotConfirmed(reason: IapWait.retryLater) => l.purchaseRetryLater,
+      IapStoreError() => outcome.message,
+    };
 
 /// Products to buy, restore, the web checkout (only when the server's channel
 /// has the web) and the subscription the server knows.
@@ -31,17 +32,15 @@ class StoreScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final catalog = ref.watch(iapCatalogProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Store')),
+      appBar: AppBar(title: Text(context.l10n.storeTitle)),
       body: catalog.when(
         loading: () => const LoadingView(),
         error: (_, _) => ErrorView(
-          message: 'Could not load the products.',
+          message: context.l10n.productsLoadFailed,
           onRetry: () => ref.invalidate(iapCatalogProvider),
         ),
         data: (data) => data == null
-            ? const Center(
-                child: Text('Purchases are not available on this device.'),
-              )
+            ? Center(child: Text(context.l10n.purchasesNotAvailable))
             : _StoreList(catalog: data),
       ),
     );
@@ -67,9 +66,12 @@ class _StoreList extends ConsumerWidget {
       padding: const EdgeInsets.all(SkeletonSpace.md),
       children: [
         if (storeSells) ...[
-          Text('Products', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            context.l10n.products,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           if (catalog.offers.isEmpty)
-            const ListTile(title: Text('Nothing to buy right now.')),
+            ListTile(title: Text(context.l10n.nothingToBuy)),
           for (final offer in catalog.offers)
             ListTile(
               title: Text(offer.details.title),
@@ -82,7 +84,7 @@ class _StoreList extends ConsumerWidget {
                           await service.buy(offer);
                         } on Object {
                           if (context.mounted) {
-                            _say(context, 'Could not start the purchase.');
+                            _say(context, context.l10n.startPurchaseFailed);
                           }
                         }
                       },
@@ -98,11 +100,11 @@ class _StoreList extends ConsumerWidget {
                       await service.restore(catalog);
                     } on Object {
                       if (context.mounted) {
-                        _say(context, 'Could not restore purchases.');
+                        _say(context, context.l10n.restoreFailed);
                       }
                     }
                   },
-            child: const Text('Restore purchases'),
+            child: Text(context.l10n.restorePurchases),
           ),
         ],
         if (catalog.config.showsWebCheckout) ...[
@@ -117,23 +119,26 @@ class _StoreList extends ConsumerWidget {
                       // The address holds a sign-in code; nothing of the
                       // error is shown.
                       if (context.mounted) {
-                        _say(context, 'Could not open the web checkout.');
+                        _say(context, context.l10n.webCheckoutFailed);
                       }
                     }
                   },
-            child: const Text('Pay on the web'),
+            child: Text(context.l10n.payOnWeb),
           ),
         ],
         const Divider(height: SkeletonSpace.xl),
-        Text('My subscription', style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          context.l10n.mySubscription,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         subscription.when(
           loading: () => const LinearProgressIndicator(),
           error: (_, _) =>
-              const ListTile(title: Text('Could not load your subscription.')),
+              ListTile(title: Text(context.l10n.subscriptionLoadFailed)),
           data: (value) => ListTile(
             title: Text(
               value == null
-                  ? 'No subscription.'
+                  ? context.l10n.noSubscription
                   : (value.planName ?? value.planCode),
             ),
             subtitle: value == null

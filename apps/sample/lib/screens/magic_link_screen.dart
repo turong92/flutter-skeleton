@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 
+import '../l10n/l10n.dart';
 import 'form_page.dart';
 
 /// The page a mailed sign-in link opens: `/magic-link?token=...`. The token
@@ -15,9 +16,13 @@ class MagicLinkScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FormPage(
-      title: 'Sign in',
+      title: context.l10n.signInTitle,
       children: [
         MagicLinkLanding(
+          labels: context.byLocale(
+            const MagicLinkLabels.ko(),
+            const MagicLinkLabels(),
+          ),
           token: token,
           onDone: () => context.go('/board'),
           onInvalid: () => context.go('/login'),

@@ -20,6 +20,20 @@ class LoginLabels {
     this.genericError = 'Something went wrong. Please try again.',
   });
 
+  /// Korean texts, in the polite 해요 style.
+  const LoginLabels.ko()
+    : this(
+        email: '이메일',
+        password: '비밀번호',
+        submit: '로그인',
+        required: '입력해 주세요',
+        invalidCredentials: '이메일이나 비밀번호가 맞지 않아요.',
+        loginIdOrEmail: '아이디 또는 이메일',
+        invalidCredentialsWithLoginId: '아이디, 이메일 또는 비밀번호가 맞지 않아요.',
+        networkError: '연결할 수 없어요. 인터넷 연결을 확인해 주세요.',
+        genericError: '문제가 생겼어요. 다시 시도해 주세요.',
+      );
+
   final String email;
   final String password;
   final String submit;

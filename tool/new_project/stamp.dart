@@ -150,7 +150,11 @@ void copyTree(Directory src, Directory dst) {
           item.parent.path.endsWith('/env') && name.endsWith('.json');
       final isEditorLocal =
           item.parent.path.endsWith('/.vscode') && name != 'extensions.json';
+      // gen_l10n output: `flutter pub get` writes it from the ARB files that survive the stamp
+      final isGeneratedL10n =
+          name.startsWith('app_localizations') && name.endsWith('.dart');
       if (!_skipFiles.contains(name) &&
+          !isGeneratedL10n &&
           !_skipSuffixes.any(name.endsWith) &&
           !isLocalEnv &&
           !isEditorLocal) {
@@ -394,6 +398,19 @@ Set<String> _applyFeatures(
     // Judge the path below the target only: the target itself may sit in a folder named
     // `build` or `.claude`.
     if (rel.split('/').any(_skipDirs.contains)) continue;
+    if (item.path.endsWith('.arb')) {
+      final text = item.readAsStringSync();
+      final ids = featureIdsInArb(text);
+      final unknown = ids.difference(packageIds);
+      if (unknown.isNotEmpty) {
+        throw StampError(
+          '$rel names ${unknown.join(', ')} in an x-feature attribute, which is not a package id',
+        );
+      }
+      used.addAll(ids);
+      item.writeAsStringSync(pruneFeatureArb(text, kept));
+      continue;
+    }
     if (!_featureTextExtensions.any(item.path.endsWith)) {
       // not a file the stamp edits: a marker in it would stay and nobody would notice
       final loose = utf8
@@ -683,6 +700,7 @@ Flutter app stamped from flutter-skeleton. Pub Workspaces + Melos; the app is `a
 - **The SDK version lives in one place**: root `environment.flutter`. CI reads it there.
 - **Tokens are not logged.** Do not print `Authorization`; a `TokenStore`'s `toString` must not show values.
 - **Cleartext http is for debug builds only** (Android `src/debug`, iOS `Info-Debug.plist`). Keep the two plists in step.
+- **Texts are ARB files** (`lib/l10n/app_ko.arb` is the template, `app_en.arb` the second language; `flutter pub get` writes the Dart files). A package's texts come in through its `*Labels` (`XxxLabels.ko()` where a package has a Korean set). A new text goes into both files.
 - Defaults are neutral; choices are overridden in app settings (`env/*.json`) or app code.
 
 ## Commands

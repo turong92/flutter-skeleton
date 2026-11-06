@@ -35,6 +35,30 @@ class ContactEmailLabels {
     this.genericError = 'Something went wrong. Please try again.',
   });
 
+  /// Korean texts, in the polite 해요 style.
+  const ContactEmailLabels.ko()
+    : this(
+        title: '연락받을 이메일',
+        role: '공지와 서비스 안내를 받을 주소예요. 로그인이나 계정 복구에는 쓰이지 않아요.',
+        none: '아직 연락받을 이메일이 없어요.',
+        add: '추가',
+        change: '바꾸기',
+        remove: '지우기',
+        email: '이메일',
+        send: '인증번호 받기',
+        code: '메일로 받은 인증번호',
+        confirm: '확인',
+        cancel: '취소',
+        required: '입력해 주세요',
+        invalidEmail: '이메일 주소 형식이 맞지 않아요.',
+        codeFormat: '인증번호 6자리를 입력해 주세요.',
+        codeExpired: '인증번호가 만료됐어요. 주소를 다시 입력해 주세요.',
+        reauthFailed: '본인 확인이 통과되지 않았어요. 다시 시도해 주세요.',
+        tooManyRequests: '너무 여러 번 시도했어요. 잠시 뒤에 다시 해 주세요.',
+        networkError: '연결할 수 없어요. 인터넷 연결을 확인해 주세요.',
+        genericError: '문제가 생겼어요. 다시 시도해 주세요.',
+      );
+
   final String title;
   final String role;
   final String none;

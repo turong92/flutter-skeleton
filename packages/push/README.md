@@ -73,3 +73,7 @@ API_BASE_URL=http://localhost:8080/api/v1 API_SEED_EMAIL=user@example.com API_SE
 ```
 
 Not checked on a device (no Android SDK or Xcode here): real receipt, the tap that opens a screen, the system permission dialog, iOS foreground banner. Hand these to QA when a device exists.
+
+## Korean
+
+English is the default. Korean (polite 해요 style, the same words as the web twin) is `PushLabels.ko()` (the names of the notification kinds stay the app's: `typeName`; `AdvertisingLabels` is not translated, its wording is legal text); the app picks it by the chosen language (see `skeleton_i18n`). `test/ko_labels_test.dart` checks that a Korean set names every field.

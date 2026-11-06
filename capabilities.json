@@ -270,6 +270,27 @@
       }
     },
     {
+      "id": "i18n",
+      "kind": "package",
+      "summary": "Language choice for the app: the saved pick (kept on the device), then the device language, then Korean; a language menu that shows each language in its own name; and a check that the ko and en ARB files have the same keys and placeholders. The texts are the app's (ARB files and gen_l10n); packages take theirs as Labels and some ship a Korean set.",
+      "package": "skeleton_i18n",
+      "path": "packages/i18n",
+      "stampFlag": { "flag": "--packages i18n", "included": "flag" },
+      "needs": [],
+      "backend": null,
+      "pairsWith": { "react": ["i18n"] },
+      "docs": ["packages/i18n/README.md"],
+      "notFor": [
+        "Translating for you: the ARB files are the project's",
+        "Dates and numbers: intl (DateFormat, NumberFormat) with the chosen locale",
+        "The account's server locale: the pick is kept on the device only"
+      ],
+      "keywords": {
+        "ko": ["다국어", "번역", "언어 전환", "한국어 영어", "국제화", "로케일", "언어 메뉴"],
+        "en": ["i18n", "localization", "translation", "locale", "language menu", "arb", "gen_l10n"]
+      }
+    },
+    {
       "id": "social-login",
       "kind": "package",
       "summary": "Sign in with a social provider's app SDK token, core only: the provider interface, the nonce, the server call (POST /auth/social/{provider}/token), link and re-authentication tokens for settings, the controller that signs the session in only after the server accepted the token, and which providers to show (GET /auth/methods). The provider SDKs are the social-login-* packages. No screens.",
@@ -424,7 +445,7 @@
     {
       "id": "app-starter",
       "kind": "app",
-      "summary": "The starter app: sign up with consents, verify email, sign in, reset the password, see who you are (GET /auth/me), delete the account, sign out, agree again when a document changes, restore the session on start. It becomes the new project's app; with storage: profile picture on the account screen; the default screens of board (with photos when storage is picked too), notifications (and the realtime stream), push, and iap come along only when those packages are picked.",
+      "summary": "The starter app: sign up with consents, verify email, sign in, reset the password, see who you are (GET /auth/me), delete the account, sign out, agree again when a document changes, restore the session on start. It becomes the new project's app; with storage: profile picture on the account screen; with i18n: the saved language and a language menu; every text is in ARB files (Korean and English); the default screens of board (with photos when storage is picked too), notifications (and the realtime stream), push, and iap come along only when those packages are picked.",
       "package": "starter",
       "path": "apps/starter",
       "stampFlag": { "flag": null, "included": "always" },
@@ -447,11 +468,11 @@
     {
       "id": "app-sample",
       "kind": "app",
-      "summary": "The reference app: the starter's flows plus a board tab, a store tab (products, buy, restore, web checkout, my subscription, the cancel-in-the-store notice before account deletion), social sign-in buttons with linking in settings, a notifications tab (inbox with an unread badge, realtime while in front, a push in front or a tapped push reading the inbox again), notification settings (push and promotional push consent) and a settings tab, wired the way a project would. Read it for wiring; a stamp removes it.",
+      "summary": "The reference app: the starter's flows plus a board tab, a store tab (products, buy, restore, web checkout, my subscription, the cancel-in-the-store notice before account deletion), social sign-in buttons with linking in settings, a language menu (Korean and English, kept on the device), a notifications tab (inbox with an unread badge, realtime while in front, a push in front or a tapped push reading the inbox again), notification settings (push and promotional push consent) and a settings tab, wired the way a project would. Read it for wiring; a stamp removes it.",
       "package": "sample",
       "path": "apps/sample",
       "stampFlag": { "flag": null, "included": "never" },
-      "needs": ["api-client", "auth", "board", "iap", "legal", "notifications", "push", "realtime", "social-login", "social-login-apple", "social-login-google", "social-login-kakao", "social-login-naver", "storage", "ui"],
+      "needs": ["api-client", "auth", "board", "i18n", "iap", "legal", "notifications", "push", "realtime", "social-login", "social-login-apple", "social-login-google", "social-login-kakao", "social-login-naver", "storage", "ui"],
       "backend": {
         "modules": ["auth", "auth-session", "account", "legal", "board", "notification", "notification-jdbc", "notification-sse", "notification-push", "notification-push-legal", "notification-fcm", "payment", "payment-iap", "storage", "storage-s3", "platform", "auth-social", "auth-social-google", "auth-social-apple", "auth-social-kakao", "auth-social-naver"],
         "oneOfModules": [["payment-appstore", "payment-googleplay"]],

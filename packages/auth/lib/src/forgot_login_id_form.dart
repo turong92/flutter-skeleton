@@ -20,6 +20,19 @@ class ForgotLoginIdLabels {
     this.genericError = 'Something went wrong. Please try again.',
   });
 
+  /// Korean texts, in the polite 해요 style.
+  const ForgotLoginIdLabels.ko()
+    : this(
+        email: '이메일',
+        submit: '아이디 보내기',
+        required: '입력해 주세요',
+        invalidEmail: '이메일 주소 형식이 맞지 않아요.',
+        sent: '이 주소로 가입한 계정이 있으면 아이디를 메일로 보내 드려요.',
+        tooManyRequests: '너무 여러 번 시도했어요. 잠시 뒤에 다시 해 주세요.',
+        networkError: '연결할 수 없어요. 인터넷 연결을 확인해 주세요.',
+        genericError: '문제가 생겼어요. 다시 시도해 주세요.',
+      );
+
   final String email;
   final String submit;
   final String required;

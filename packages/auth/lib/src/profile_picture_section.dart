@@ -34,6 +34,17 @@ class ProfilePictureLabels {
     this.genericError = 'Something went wrong. Please try again.',
   });
 
+  /// Korean texts, in the polite 해요 style.
+  const ProfilePictureLabels.ko()
+    : this(
+        title: '프로필 사진',
+        save: '사진 저장',
+        pending: '사진을 준비하고 있어요. 곧 보여요.',
+        rejected: '이 사진은 쓸 수 없어요. 다른 이미지 파일을 올려 주세요.',
+        networkError: '연결할 수 없어요. 인터넷 연결을 확인해 주세요.',
+        genericError: '문제가 생겼어요. 다시 시도해 주세요.',
+      );
+
   final String title;
   final String save;
 

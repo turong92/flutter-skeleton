@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:skeleton_notifications/skeleton_notifications.dart';
 
+import '../l10n/l10n.dart';
+
 /// The four tabs. Each keeps its own place when another tab is open.
 class ShellScreen extends StatelessWidget {
   const ShellScreen({super.key, required this.shell});
@@ -17,26 +19,27 @@ class ShellScreen extends StatelessWidget {
         // Tapping the open tab goes back to its first screen.
         onDestinationSelected: (index) =>
             shell.goBranch(index, initialLocation: index == shell.currentIndex),
-        destinations: const [
+        destinations: [
+          // The labels come from the chosen language.
           NavigationDestination(
-            icon: Icon(Icons.forum_outlined),
+            icon: const Icon(Icons.forum_outlined),
             selectedIcon: Icon(Icons.forum),
-            label: 'Board',
+            label: context.l10n.tabBoard,
           ),
           NavigationDestination(
             icon: UnreadBadge(child: Icon(Icons.notifications_outlined)),
             selectedIcon: UnreadBadge(child: Icon(Icons.notifications)),
-            label: 'Notifications',
+            label: context.l10n.tabNotifications,
           ),
           NavigationDestination(
             icon: Icon(Icons.shopping_bag_outlined),
             selectedIcon: Icon(Icons.shopping_bag),
-            label: 'Store',
+            label: context.l10n.tabStore,
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),
             selectedIcon: Icon(Icons.settings),
-            label: 'Settings',
+            label: context.l10n.tabSettings,
           ),
         ],
       ),

@@ -1,5 +1,6 @@
 // Reads the pubspecs of the workspace. Line based on purpose: the tools run with
 // nothing but the Dart SDK, and the skeleton's pubspecs are plain.
+import 'dart:convert';
 import 'dart:io';
 
 /// The prefix every skeleton package starts with. `new-project.sh --prefix` swaps it.
@@ -212,4 +213,55 @@ String applyFeatureBlocks(String text, Set<String>? kept, String where) {
     throw FeatureMarkerError('$where: #if ${open.join(' ')} is never closed');
   }
   return out.join('\n');
+}
+
+// ---------------------------------------------------------------------------- ARB texts
+//
+// An ARB file is JSON and has no comments, so the texts that belong to a package carry their
+// ids in the key's metadata: `"@boardTitle": {"x-feature": "board"}` (same rules as `#if`:
+// ids separated by spaces, `a|b` either). A stamp drops the keys whose ids are not all kept and
+// removes the `x-feature` attribute from the rest; gen_l10n ignores the attribute.
+
+const arbFeatureKey = 'x-feature';
+
+List<String> _arbIds(Object? meta) {
+  final value = meta is Map ? meta[arbFeatureKey] : null;
+  return value is String
+      ? value.split(' ').where((s) => s.isNotEmpty).toList()
+      : const [];
+}
+
+/// The ids an ARB file names in `x-feature` attributes.
+Set<String> featureIdsInArb(String text) {
+  final json = jsonDecode(text) as Map<String, Object?>;
+  return {
+    for (final entry in json.entries)
+      if (entry.key.startsWith('@') && !entry.key.startsWith('@@'))
+        for (final id in _arbIds(entry.value)) ...id.split('|'),
+  };
+}
+
+/// [text] without the keys whose `x-feature` ids are not all in [kept] (null keeps none),
+/// and without the attribute itself.
+String pruneFeatureArb(String text, Set<String>? kept) {
+  final json = jsonDecode(text) as Map<String, Object?>;
+  final out = <String, Object?>{};
+  for (final entry in json.entries) {
+    final key = entry.key;
+    if (key.startsWith('@@')) {
+      out[key] = entry.value;
+      continue;
+    }
+    final textKey = key.startsWith('@') ? key.substring(1) : key;
+    final ids = _arbIds(json['@$textKey']);
+    if (ids.isNotEmpty && (kept == null || !featureOn(ids, kept))) continue;
+    if (key.startsWith('@') && entry.value is Map) {
+      final meta = {...(entry.value! as Map<String, Object?>)}
+        ..remove(arbFeatureKey);
+      if (meta.isNotEmpty) out[key] = meta;
+    } else {
+      out[key] = entry.value;
+    }
+  }
+  return '${const JsonEncoder.withIndent('  ').convert(out)}\n';
 }

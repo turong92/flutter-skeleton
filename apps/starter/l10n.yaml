@@ -1,0 +1,5 @@
+# gen_l10n: the texts of this app. Korean is the template (the default language).
+arb-dir: lib/l10n
+template-arb-file: app_ko.arb
+output-localization-file: app_localizations.dart
+output-dir: lib/l10n

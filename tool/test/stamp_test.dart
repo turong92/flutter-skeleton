@@ -90,6 +90,7 @@ Map<String, String> fakeSkeletonWithFeature() {
   files['apps/starter/lib/main.dart'] = "title: 'Starter'\n// #if f\nimport 'package:skeleton_f/skeleton_f.dart';\n// #endif\n";
   files['apps/starter/lib/screens/f_screen.dart'] =
       '// #file f\nclass FScreen {}\n';
+  files['apps/starter/lib/l10n/app_en.arb'] = '{\n  "@@locale": "en",\n  "hello": "Hello {name}",\n  "@hello": {\n    "placeholders": {"name": {"type": "String"}}\n  },\n  "fTitle": "F",\n  "@fTitle": {"x-feature": "f"}\n}\n';
   files['apps/starter/lib/tidy.dart'] =
       'class A {\n  int a = 1;\n\n  // #if f\n  int b = 2;\n  // #endif\n}\n';
   final catalog =
@@ -188,6 +189,15 @@ void main() {
       expect(read('lib/main.dart'), isNot(contains('#')));
       // the blank line a removed block leaves is tidied like dart format would
       expect(read('lib/tidy.dart'), 'class A {\n  int a = 1;\n}\n');
+      // the texts of the package go with it, the others stay (and the attribute is gone)
+      expect(
+        read('lib/l10n/app_en.arb'),
+        allOf(
+          contains('Hello'),
+          isNot(contains('fTitle')),
+          isNot(contains('x-feature')),
+        ),
+      );
       final catalog = readJson(File('${target.path}/capabilities.json'));
       final app = (catalog['capabilities']! as List).firstWhere(
         (e) => (e as Map)['id'] == 'app-acme-app',
@@ -202,6 +212,10 @@ void main() {
       );
 
       expect(read('lib/screens/f_screen.dart'), 'class FScreen {}\n');
+      expect(
+        read('lib/l10n/app_en.arb'),
+        allOf(contains('fTitle'), isNot(contains('x-feature'))),
+      );
       expect(read('pubspec.yaml'), contains('  skeleton_f: any\n'));
       expect(
         read('lib/main.dart'),
@@ -354,7 +368,7 @@ void main() {
           isNot(
             contains(
               RegExp(
-                'board|storage|Board|otification|ealtime|push|Push|irebase',
+                'board|storage|Board|otification|ealtime|push|Push|irebase|iap|Iap|i18n|LanguageMenu|localeProvider',
               ),
             ),
           ),
@@ -573,6 +587,66 @@ void main() {
       expect(fileFeatures(starter('lib/screens/store_screen.dart')), ['iap']);
     });
 
+    test('the ARB texts of a package go with it, in both languages', () {
+      Set<String> keys(String lang, Set<String> kept) => (jsonDecode(
+        pruneFeatureArb(starter('lib/l10n/app_$lang.arb'), kept),
+      ) as Map<String, Object?>).keys.where((k) => !k.startsWith('@')).toSet();
+      for (final kept in [
+        <String>{},
+        {'board'},
+        {'board', 'storage'},
+        {'iap', 'i18n'},
+        {'push', 'notifications', 'board', 'storage', 'iap', 'i18n'},
+      ]) {
+        expect(keys('ko', kept), keys('en', kept), reason: '$kept');
+      }
+      final none = keys('en', {});
+      expect(
+        none,
+        containsAll(['createAccount', 'accountSettings', 'rolesLabel']),
+      );
+      expect(none, isNot(contains('boardTitle')));
+      expect(none, isNot(contains('storeTitle')));
+      expect(none, isNot(contains('language')));
+      expect(
+        pruneFeatureArb(starter('lib/l10n/app_en.arb'), {}),
+        isNot(contains('x-feature')),
+      );
+      expect(
+        keys('en', {'board'}),
+        allOf(contains('boardTitle'), isNot(contains('photoBeingPrepared'))),
+      );
+      expect(keys('en', {'board', 'storage'}), contains('photoBeingPrepared'));
+      expect(keys('en', {'iap'}), contains('purchaseConfirmed'));
+      expect(keys('en', {'i18n'}), contains('language'));
+    });
+
+    test('i18n gives the saved language, the menu and its tests', () {
+      final kept = {'i18n'};
+      expect(stamped('pubspec.yaml', kept), contains('skeleton_i18n'));
+      expect(
+        stamped('lib/main.dart', kept),
+        allOf(
+          contains('loadSavedLocale'),
+          contains('locale: ref.watch(localeProvider)'),
+        ),
+      );
+      expect(
+        stamped('lib/screens/me_screen.dart', kept),
+        contains('LanguageMenu'),
+      );
+      expect(
+        stamped('test/app_test.dart', kept),
+        contains('the language menu changes the language'),
+      );
+      expect(fileFeatures(starter('test/i18n_arb_test.dart')), ['i18n']);
+      // without it the app still follows the device language, Korean first
+      expect(
+        stamped('lib/main.dart', {}),
+        contains("supportedLocales: const [Locale('ko'), Locale('en')]"),
+      );
+    });
+
     test('storage alone does not give a photo field: it lives in the board screens', () {
       expect(
         stamped('lib/wiring.dart', {'storage'}),
@@ -720,13 +794,23 @@ void main() {
         '.vscode/settings.json': '{}',
         '.vscode/extensions.json': '{}',
         'coverage/lcov.info': 'x',
+        'apps/x/lib/l10n/app_localizations.dart': 'x',
+        'apps/x/lib/l10n/app_localizations_ko.dart': 'x',
+        'apps/x/lib/l10n/app_ko.arb': '{}',
+        'apps/x/lib/l10n/l10n.dart': 'x',
       });
       copyTree(src, dst);
       final copied = [
         for (final f in dst.listSync(recursive: true).whereType<File>())
           f.path.substring(dst.path.length + 1),
       ]..sort();
-      expect(copied, ['.vscode/extensions.json', 'keep.txt']);
+      // gen_l10n output is written again by `flutter pub get`, from the ARB files that survive
+      expect(copied, [
+        '.vscode/extensions.json',
+        'apps/x/lib/l10n/app_ko.arb',
+        'apps/x/lib/l10n/l10n.dart',
+        'keep.txt',
+      ]);
     });
   });
 

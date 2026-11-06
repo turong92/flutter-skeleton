@@ -25,6 +25,22 @@ class VerifyCodeLabels {
     this.loginId = const LoginIdLabels(),
   });
 
+  /// Korean texts, in the polite 해요 style.
+  const VerifyCodeLabels.ko()
+    : this(
+        code: '메일로 받은 인증번호',
+        submit: '확인',
+        resend: '새 인증번호 받기',
+        resendIn: _koResendIn,
+        codeInvalid: _koCodeInvalid,
+        codeExpired: '인증번호가 만료됐어요. 가입을 처음부터 다시 해 주세요.',
+        codeFormat: '인증번호 6자리를 입력해 주세요.',
+        networkError: '연결할 수 없어요. 인터넷 연결을 확인해 주세요.',
+        genericError: '문제가 생겼어요. 다시 시도해 주세요.',
+        displayName: const DisplayNameLabels.ko(),
+        loginId: const LoginIdLabels.ko(),
+      );
+
   final DisplayNameLabels displayName;
   final LoginIdLabels loginId;
   final String code;
@@ -301,3 +317,8 @@ class _VerifyCodeFormState extends ConsumerState<VerifyCodeForm> {
     );
   }
 }
+
+String _koResendIn(int seconds) => '$seconds초 뒤에 새 인증번호를 받을 수 있어요';
+String _koCodeInvalid(int left) => left == 1
+    ? '인증번호가 맞지 않아요. 1번 더 시도할 수 있어요.'
+    : '인증번호가 맞지 않아요. $left번 더 시도할 수 있어요.';

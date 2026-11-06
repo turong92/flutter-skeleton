@@ -5,6 +5,7 @@ import 'package:skeleton_board/skeleton_board.dart';
 import 'package:skeleton_push/skeleton_push.dart';
 import 'package:skeleton_storage/skeleton_storage.dart';
 
+import '../l10n/l10n.dart';
 import '../config.dart';
 import '../email_gate.dart';
 import 'email_screen.dart';
@@ -17,10 +18,12 @@ class BoardListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Board')),
+      appBar: AppBar(title: Text(context.l10n.boardTitle)),
       body: Column(
         children: [
-          const PushPrompt(),
+          PushPrompt(
+            labels: context.byLocale(const PushLabels.ko(), const PushLabels()),
+          ),
           const EmailWriteNotice(),
           Expanded(
             child: PostListView(
@@ -49,7 +52,7 @@ class PostDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Post')),
+      appBar: AppBar(title: Text(context.l10n.postTitle)),
       body: Column(
         children: [
           // Comments and reactions are writes too: tell before they are typed.
@@ -121,7 +124,7 @@ class _PostPhotoState extends ConsumerState<_PostPhoto> {
     if (url != null) {
       return StoredImage(url: _abs(url), fit: BoxFit.contain);
     }
-    if (photo.pending) return const Text('The photo is being prepared.');
+    if (photo.pending) return Text(context.l10n.photoBeingPrepared);
     return FutureBuilder(
       future: _access,
       builder: (context, snapshot) {
@@ -130,7 +133,7 @@ class _PostPhotoState extends ConsumerState<_PostPhoto> {
           return StoredImage(url: _abs(access.url), fit: BoxFit.contain);
         }
         return snapshot.hasError
-            ? const Text('The photo cannot be shown.')
+            ? Text(context.l10n.photoCannotBeShown)
             : const SizedBox(
                 height: 120,
                 child: Center(child: CircularProgressIndicator()),
@@ -149,7 +152,11 @@ class PostEditorScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(title: Text(post == null ? 'New post' : 'Edit post')),
+      appBar: AppBar(
+        title: Text(
+          post == null ? context.l10n.newPost : context.l10n.editPost,
+        ),
+      ),
       body: PostEditor(
         board: AppConfig.board,
         post: post,

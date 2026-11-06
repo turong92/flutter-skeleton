@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
+import '../l10n/l10n.dart';
 import '../email_gate.dart';
 import '../social_support.dart';
 import 'form_page.dart';
@@ -46,15 +47,19 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
   Widget build(BuildContext context) {
     final gate = ref.watch(emailGateProvider);
     return FormPage(
-      title: 'Add your email',
+      title: context.l10n.addYourEmail,
       children: [
         Text(
           gate.blocking
-              ? 'This service needs your email address before it goes on.'
-              : 'Changes need your email address. Reading works without it.',
+              ? context.l10n.emailNeededToGoOn
+              : context.l10n.emailNeededForChanges,
         ),
         const SizedBox(height: SkeletonSpace.md),
         EmailRegisterForm(
+          labels: context.byLocale(
+            const EmailRegisterLabels.ko(),
+            const EmailRegisterLabels(),
+          ),
           socialReauth: () => reauthWithLinkedProvider(ref),
           onRegistered: () {
             ref.invalidate(accountMeProvider);
@@ -63,7 +68,13 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
           },
         ),
         const SizedBox(height: SkeletonSpace.lg),
-        DiscardAccountButton(socialReauth: () => reauthWithLinkedProvider(ref)),
+        DiscardAccountButton(
+          labels: context.byLocale(
+            const EmailRegisterLabels.ko(),
+            const EmailRegisterLabels(),
+          ),
+          socialReauth: () => reauthWithLinkedProvider(ref),
+        ),
         const SizedBox(height: SkeletonSpace.sm),
         if (!gate.blocking) ...[
           OutlinedButton(
@@ -71,13 +82,13 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
               ref.read(emailGateProvider.notifier).later();
               _leave(context);
             },
-            child: const Text('Later'),
+            child: Text(context.l10n.later),
           ),
           const SizedBox(height: SkeletonSpace.sm),
         ],
         OutlinedButton(
           onPressed: () => ref.read(authSessionProvider.notifier).logout(),
-          child: const Text('Sign out'),
+          child: Text(context.l10n.signOut),
         ),
       ],
     );
@@ -102,11 +113,11 @@ class EmailWriteNotice extends ConsumerWidget {
       padding: const EdgeInsets.all(SkeletonSpace.md),
       child: Row(
         children: [
-          const Expanded(child: Text('Add your email to post or comment.')),
+          Expanded(child: Text(context.l10n.addEmailToPost)),
           const SizedBox(width: SkeletonSpace.sm),
           OutlinedButton(
             onPressed: () => ref.read(emailGateProvider.notifier).require(),
-            child: const Text('Add email'),
+            child: Text(context.l10n.addEmail),
           ),
         ],
       ),

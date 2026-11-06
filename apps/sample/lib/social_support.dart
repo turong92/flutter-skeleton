@@ -6,6 +6,7 @@ import 'package:skeleton_social_login_google/skeleton_social_login_google.dart';
 import 'package:skeleton_social_login_kakao/skeleton_social_login_kakao.dart';
 import 'package:skeleton_social_login_naver/skeleton_social_login_naver.dart';
 
+import 'l10n/l10n.dart';
 import 'config.dart';
 
 /// The providers this build has: Google and Kakao only with their value set,
@@ -111,20 +112,17 @@ Future<Map<String, Object?>?> reauthWithLinkedProvider(
 }
 
 /// The text for a failed social sign-in. A cancel never gets here.
-String socialFailureText(SocialFailure failure) => switch (failure) {
-  SocialFailure.emailConflict =>
-    'An account with that email already exists. Sign in with that account, '
-        'then link this provider in Settings.',
-  SocialFailure.notLinked => 'No account is registered for this sign-in.',
-  SocialFailure.tokenRejected => 'The sign-in was refused. Try again.',
-  SocialFailure.providerNotAvailable => 'This sign-in is not available.',
-  SocialFailure.providerDown =>
-    'The sign-in service is not responding. Try again later.',
-  SocialFailure.blocked => 'This account cannot sign in.',
-  SocialFailure.deletionPending => 'This account is being deleted.',
-  SocialFailure.mfaRequired =>
-    'This account needs a second sign-in step this app does not have.',
-  SocialFailure.network => 'No connection. Check the network and try again.',
-  SocialFailure.sdk => 'The sign-in failed. Try again.',
-  SocialFailure.other => 'Something went wrong. Try again.',
-};
+String socialFailureText(AppLocalizations l, SocialFailure failure) =>
+    switch (failure) {
+      SocialFailure.emailConflict => l.socialEmailConflict,
+      SocialFailure.notLinked => l.socialNotLinked,
+      SocialFailure.tokenRejected => l.socialTokenRejected,
+      SocialFailure.providerNotAvailable => l.socialProviderNotAvailable,
+      SocialFailure.providerDown => l.socialProviderDown,
+      SocialFailure.blocked => l.socialBlocked,
+      SocialFailure.deletionPending => l.socialDeletionPending,
+      SocialFailure.mfaRequired => l.socialMfaRequired,
+      SocialFailure.network => l.socialNetwork,
+      SocialFailure.sdk => l.socialSdk,
+      SocialFailure.other => l.socialOther,
+    };

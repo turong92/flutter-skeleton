@@ -1,0 +1,155 @@
+{
+  "@@locale": "en",
+  "back": "Back",
+  "signOut": "Sign out",
+  "accountLoadFailed": "Could not load your account.",
+  "myAccount": "My account",
+  "accountSettings": "Account settings",
+  "rolesLabel": "Roles: {roles}",
+  "@rolesLabel": {
+    "placeholders": {
+      "roles": {
+        "type": "String"
+      }
+    }
+  },
+  "createAccount": "Create account",
+  "forgotPasswordLink": "Forgot password?",
+  "alreadyHaveAccount": "I already have an account",
+  "backToSignIn": "Back to sign in",
+  "checkYourEmail": "Check your email",
+  "forgotPasswordTitle": "Forgot password",
+  "resetPasswordTitle": "Reset password",
+  "resetLinkIncomplete": "This link is incomplete. Ask for a new one.",
+  "sendNewLink": "Send a new link",
+  "deleteAccount": "Delete account",
+  "language": "Language",
+  "@language": {
+    "x-feature": "i18n"
+  },
+  "open": "Open",
+  "@open": {
+    "x-feature": "push"
+  },
+  "notificationSettingsTitle": "Notification settings",
+  "@notificationSettingsTitle": {
+    "x-feature": "push"
+  },
+  "notificationsTitle": "Notifications",
+  "@notificationsTitle": {
+    "x-feature": "notifications"
+  },
+  "boardTitle": "Board",
+  "@boardTitle": {
+    "x-feature": "board"
+  },
+  "postTitle": "Post",
+  "@postTitle": {
+    "x-feature": "board"
+  },
+  "newPost": "New post",
+  "@newPost": {
+    "x-feature": "board"
+  },
+  "editPost": "Edit post",
+  "@editPost": {
+    "x-feature": "board"
+  },
+  "photoBeingPrepared": "The photo is being prepared.",
+  "@photoBeingPrepared": {
+    "x-feature": "board storage"
+  },
+  "photoCannotBeShown": "The photo cannot be shown.",
+  "@photoCannotBeShown": {
+    "x-feature": "board storage"
+  },
+  "storeTitle": "Store",
+  "@storeTitle": {
+    "x-feature": "iap"
+  },
+  "storeCheckFailed": "We could not check your store subscription. If you have one, cancel it in the App Store or Google Play before deleting.",
+  "@storeCheckFailed": {
+    "x-feature": "iap"
+  },
+  "storeAppStoreBilled": "Your subscription is billed by the App Store and keeps running after the account is deleted. Cancel it in the App Store first.",
+  "@storeAppStoreBilled": {
+    "x-feature": "iap"
+  },
+  "storeGooglePlayBilled": "Your subscription is billed by Google Play and keeps running after the account is deleted. Cancel it in Google Play first.",
+  "@storeGooglePlayBilled": {
+    "x-feature": "iap"
+  },
+  "purchaseConfirmed": "Purchase confirmed.",
+  "@purchaseConfirmed": {
+    "x-feature": "iap"
+  },
+  "purchaseRefused": "The purchase was refused ({code}).",
+  "@purchaseRefused": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    },
+    "x-feature": "iap"
+  },
+  "purchaseStorePending": "The store has not finished the payment yet.",
+  "@purchaseStorePending": {
+    "x-feature": "iap"
+  },
+  "purchaseOtherAccount": "This purchase belongs to another account. Sign in with that one.",
+  "@purchaseOtherAccount": {
+    "x-feature": "iap"
+  },
+  "purchaseRetryLater": "Could not confirm the purchase yet. It stays open and is sent again the next time the app starts.",
+  "@purchaseRetryLater": {
+    "x-feature": "iap"
+  },
+  "productsLoadFailed": "Could not load the products.",
+  "@productsLoadFailed": {
+    "x-feature": "iap"
+  },
+  "purchasesNotAvailable": "Purchases are not available on this device.",
+  "@purchasesNotAvailable": {
+    "x-feature": "iap"
+  },
+  "products": "Products",
+  "@products": {
+    "x-feature": "iap"
+  },
+  "nothingToBuy": "Nothing to buy right now.",
+  "@nothingToBuy": {
+    "x-feature": "iap"
+  },
+  "startPurchaseFailed": "Could not start the purchase.",
+  "@startPurchaseFailed": {
+    "x-feature": "iap"
+  },
+  "restoreFailed": "Could not restore purchases.",
+  "@restoreFailed": {
+    "x-feature": "iap"
+  },
+  "restorePurchases": "Restore purchases",
+  "@restorePurchases": {
+    "x-feature": "iap"
+  },
+  "payOnWeb": "Pay on the web",
+  "@payOnWeb": {
+    "x-feature": "iap"
+  },
+  "webCheckoutFailed": "Could not open the web checkout.",
+  "@webCheckoutFailed": {
+    "x-feature": "iap"
+  },
+  "mySubscription": "My subscription",
+  "@mySubscription": {
+    "x-feature": "iap"
+  },
+  "subscriptionLoadFailed": "Could not load your subscription.",
+  "@subscriptionLoadFailed": {
+    "x-feature": "iap"
+  },
+  "noSubscription": "No subscription.",
+  "@noSubscription": {
+    "x-feature": "iap"
+  }
+}

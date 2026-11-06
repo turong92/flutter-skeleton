@@ -13,6 +13,10 @@ class PasswordPolicyLabels {
     this.violation = _defaultViolation,
   });
 
+  /// Korean texts, in the polite 해요 style.
+  const PasswordPolicyLabels.ko()
+    : this(hint: _koPasswordHint, violation: _koPasswordViolation);
+
   /// One sentence for the rules the server reports. [PasswordPolicy.maxBytes]
   /// is UTF-8 bytes: a non-ASCII character takes two to four of them.
   final String Function(PasswordPolicy policy) hint;
@@ -57,6 +61,18 @@ class DisplayNameLabels {
     this.reserved = 'This nickname is reserved. Try another.',
   });
 
+  /// Korean texts, in the polite 해요 style.
+  const DisplayNameLabels.ko()
+    : this(
+        label: '닉네임',
+        optionalLabel: '닉네임 (선택)',
+        required: '닉네임을 입력해 주세요.',
+        taken: '이미 쓰는 닉네임이에요. 다른 닉네임을 정해 주세요.',
+        tooLong: '닉네임이 너무 길어요 (60자까지예요).',
+        invalid: '쓸 수 없는 문자가 들어 있어요.',
+        reserved: '미리 정해 둔 닉네임이에요. 다른 닉네임을 정해 주세요.',
+      );
+
   final String label;
   final String optionalLabel;
   final String required;
@@ -92,6 +108,20 @@ class LoginIdLabels {
     this.available = 'This ID is free.',
     this.checkUnknown = 'Could not check this ID now. You can still continue.',
   });
+
+  /// Korean texts, in the polite 해요 style.
+  const LoginIdLabels.ko()
+    : this(
+        label: '아이디',
+        hint: _koIdHint,
+        required: '아이디를 입력해 주세요.',
+        size: _koIdSize,
+        invalid: '영문자, 숫자, . - _ 만 쓸 수 있어요 (기호가 맨 앞이나 맨 뒤, 연속으로 오면 안 되고 영문자가 하나는 있어야 해요).',
+        taken: '이미 쓰는 아이디예요. 다른 아이디를 정해 주세요.',
+        checking: '확인하는 중...',
+        available: '쓸 수 있는 아이디예요.',
+        checkUnknown: '지금은 아이디를 확인하지 못했어요. 그대로 계속할 수 있어요.',
+      );
 
   final String label;
 
@@ -278,3 +308,29 @@ class ErrorText extends StatelessWidget {
     ),
   );
 }
+
+String _koPasswordHint(PasswordPolicy p) {
+  final needs = [
+    if (p.requireLetter) '영문자',
+    if (p.requireDigit) '숫자',
+    if (p.requireSymbol) '기호',
+  ];
+  return '${p.minLength}자 이상, ${p.maxBytes}바이트 이하로 정해 주세요'
+      '${needs.isEmpty ? '' : '. ${needs.join(', ')}를 포함해야 해요'}.';
+}
+
+String _koPasswordViolation(PasswordViolation v) => switch (v) {
+  PasswordViolation.tooShort => '비밀번호가 너무 짧아요.',
+  PasswordViolation.tooLong => '비밀번호가 너무 길어요.',
+  PasswordViolation.needsLetter => '비밀번호에 영문자가 필요해요.',
+  PasswordViolation.needsDigit => '비밀번호에 숫자가 필요해요.',
+  PasswordViolation.needsSymbol => '비밀번호에 기호가 필요해요.',
+  PasswordViolation.containsEmail => '비밀번호에 이메일 앞부분을 넣을 수 없어요.',
+  PasswordViolation.tooCommon => '너무 흔한 비밀번호예요.',
+  PasswordViolation.breached => '유출된 적이 있는 비밀번호예요. 다른 비밀번호를 정해 주세요.',
+};
+
+String _koIdHint(LoginIdRules r) =>
+    '${r.minLength}~${r.maxLength}자, 영문자 · 숫자 · . - _ 를 쓸 수 있어요';
+String _koIdSize(LoginIdRules r) =>
+    '아이디는 ${r.minLength}~${r.maxLength}자로 정해 주세요.';

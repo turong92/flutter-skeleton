@@ -1,8 +1,13 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:skeleton_api_client/testing.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
+// #if i18n
+import 'package:skeleton_i18n/skeleton_i18n.dart';
+import 'package:skeleton_i18n/testing.dart';
+// #endif
 // #if iap
 import 'package:skeleton_iap/skeleton_iap.dart';
 // #endif
@@ -54,25 +59,36 @@ final _backend = FakeAdapter((options) {
   });
 });
 
-Widget _app(TokenStore store) => ProviderScope(
-  overrides: [
-    authConfigProvider.overrideWithValue(
-      const AuthConfig(apiBaseUrl: 'http://localhost:8080/api/v1'),
-    ),
-    tokenStoreProvider.overrideWithValue(store),
-    httpAdapterProvider.overrideWithValue(_backend),
-    ...starterWiring,
-    // #if iap
-    // no store on the test host
-    iapPlatformProvider.overrideWithValue(null),
-    // #endif
-    // #if notifications realtime
-    // no event stream in a test
-    inboxRealtimeProvider.overrideWithValue(null),
-    // #endif
-  ],
-  child: const StarterApp(),
-);
+/// A Korean phone. (With the language package the app reads the device's
+/// languages through its own provider.)
+final _koreanDevice = <Override>[
+  // Without the language package the platform's own language is enough.
+  // #if i18n
+  deviceLocalesProvider.overrideWithValue(const [Locale('ko', 'KR')]),
+  // #endif
+];
+
+Widget _app(TokenStore store, {List<Override> extra = const []}) =>
+    ProviderScope(
+      overrides: [
+        authConfigProvider.overrideWithValue(
+          const AuthConfig(apiBaseUrl: 'http://localhost:8080/api/v1'),
+        ),
+        tokenStoreProvider.overrideWithValue(store),
+        httpAdapterProvider.overrideWithValue(_backend),
+        ...starterWiring,
+        ...extra,
+        // #if iap
+        // no store on the test host
+        iapPlatformProvider.overrideWithValue(null),
+        // #endif
+        // #if notifications realtime
+        // no event stream in a test
+        inboxRealtimeProvider.overrideWithValue(null),
+        // #endif
+      ],
+      child: const StarterApp(),
+    );
 
 Future<void> _signIn(WidgetTester tester, String password) async {
   await tester.enterText(find.byKey(LoginForm.emailKey), 'user@example.com');
@@ -82,6 +98,54 @@ Future<void> _signIn(WidgetTester tester, String password) async {
 }
 
 void main() {
+  testWidgets('a Korean device gets Korean, the app texts and the forms', (
+    tester,
+  ) async {
+    tester.platformDispatcher.localesTestValue = const [Locale('ko', 'KR')];
+    addTearDown(tester.platformDispatcher.clearLocalesTestValue);
+    final store = MemoryTokenStore();
+    await tester.pumpWidget(_app(store, extra: _koreanDevice));
+    await tester.pumpAndSettle();
+    expect(find.text('가입하기'), findsOneWidget);
+    expect(find.text('Create account'), findsNothing);
+
+    await tester.enterText(find.byKey(LoginForm.emailKey), 'user@example.com');
+    await tester.enterText(find.byKey(LoginForm.passwordKey), 'password');
+    await tester.tap(find.text('로그인').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('내 계정'), findsOneWidget);
+  });
+
+  // #if i18n
+  testWidgets('the language menu changes the language and remembers it', (
+    tester,
+  ) async {
+    final store = MemoryTokenStore();
+    final language = MemoryLocaleStore();
+    await tester.pumpWidget(
+      _app(
+        store,
+        extra: [
+          deviceLocalesProvider.overrideWithValue(const [Locale('en', 'US')]),
+          localeStoreProvider.overrideWithValue(language),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    await _signIn(tester, 'password');
+    expect(find.text('My account'), findsOneWidget);
+
+    await tester.tap(find.byType(LanguageMenu));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('한국어').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('내 계정'), findsOneWidget);
+    expect(language.code, 'ko');
+  });
+  // #endif
+
   testWidgets('sign in, see my account, sign out', (tester) async {
     final store = MemoryTokenStore();
     await tester.pumpWidget(_app(store));

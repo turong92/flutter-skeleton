@@ -12,13 +12,17 @@ dependencies:
   firebase_core: ^5.1.0
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   flutter_riverpod: ^3.4.3
   go_router: ^18.1.2
+  intl: ^0.20.2 # gen_l10n output (lib/l10n) imports it
   kakao_flutter_sdk_user: ^2.1.0 # KakaoSdk.init in main
   sign_in_with_apple: ^8.2.0 # SignInWithAppleButton (HIG)
   skeleton_api_client: any # workspace sibling
   skeleton_auth: any # workspace sibling
   skeleton_board: any # workspace sibling
+  skeleton_i18n: any # workspace sibling
   skeleton_iap: any # workspace sibling
   skeleton_legal: any # workspace sibling
   skeleton_notifications: any # workspace sibling
@@ -40,4 +44,5 @@ dev_dependencies:
   shared_preferences: ^2.5.6 # the push device store keeps its id there; tests set mock values
 
 flutter:
+  generate: true # gen_l10n runs on pub get / build (l10n.yaml)
   uses-material-design: true

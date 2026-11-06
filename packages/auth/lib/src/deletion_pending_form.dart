@@ -20,6 +20,18 @@ class DeletionPendingLabels {
     this.genericError = 'Something went wrong. Please try again.',
   });
 
+  /// Korean texts, in the polite 해요 style.
+  const DeletionPendingLabels.ko()
+    : this(
+        cancel: '삭제 취소하기',
+        keep: '삭제된 채로 두기',
+        back: '로그인으로 돌아가기',
+        noRestore: '여기서는 삭제를 취소할 수 없어요. 계정을 되찾으려면 고객센터에 문의해 주세요.',
+        expired: '시간이 너무 지났어요. 다시 로그인해서 삭제를 취소해 주세요.',
+        networkError: '연결할 수 없어요. 인터넷 연결을 확인해 주세요.',
+        genericError: '문제가 생겼어요. 다시 시도해 주세요.',
+      );
+
   final String cancel;
   final String keep;
   final String back;

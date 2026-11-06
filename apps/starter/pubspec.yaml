@@ -14,11 +14,17 @@ dependencies:
   # #endif
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   flutter_riverpod: ^3.4.3
   go_router: ^18.1.2
+  intl: ^0.20.2 # gen_l10n output (lib/l10n) imports it
   skeleton_auth: any # workspace sibling
   # #if board
   skeleton_board: any # workspace sibling
+  # #endif
+  # #if i18n
+  skeleton_i18n: any # workspace sibling
   # #endif
   # #if iap
   skeleton_iap: any # workspace sibling
@@ -45,4 +51,5 @@ dev_dependencies:
   skeleton_api_client: any # workspace sibling; its testing.dart has the fake HTTP adapter
 
 flutter:
+  generate: true # gen_l10n runs on pub get / build (l10n.yaml)
   uses-material-design: true

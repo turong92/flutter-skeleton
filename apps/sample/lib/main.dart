@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
+import 'package:skeleton_i18n/skeleton_i18n.dart';
 import 'package:skeleton_iap/skeleton_iap.dart';
 import 'package:skeleton_notifications/skeleton_notifications.dart';
 import 'package:skeleton_push/skeleton_push.dart';
 import 'package:skeleton_social_login/skeleton_social_login.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
+import 'l10n/l10n.dart';
 import 'config.dart';
 import 'firebase_setup.dart';
 import 'inbox_realtime.dart';
@@ -33,9 +35,14 @@ Future<void> main() async {
   if (AppConfig.kakaoNativeAppKey.isNotEmpty) {
     await KakaoSdk.init(nativeAppKey: AppConfig.kakaoNativeAppKey);
   }
+  // The language the person picked last time (before the first frame).
+  const languageStore = SharedPreferencesLocaleStore();
+  final savedLocale = await loadSavedLocale(languageStore);
   runApp(
     ProviderScope(
       overrides: [
+        savedLocaleProvider.overrideWithValue(savedLocale),
+        localeStoreProvider.overrideWithValue(languageStore),
         authConfigProvider.overrideWithValue(
           const AuthConfig(apiBaseUrl: AppConfig.apiBaseUrl),
         ),
@@ -94,7 +101,15 @@ class SampleApp extends ConsumerWidget {
       if (outcome == null) return;
       if (outcome is IapGranted) ref.invalidate(mySubscriptionProvider);
       _messengerKey.currentState?.showSnackBar(
-        SnackBar(content: Text(iapOutcomeText(outcome))),
+        SnackBar(
+          content: Text(
+            iapOutcomeText(
+              _messengerKey.currentContext?.l10n ??
+                  lookupAppLocalizations(const Locale('ko')),
+              outcome,
+            ),
+          ),
+        ),
       );
     });
     // iOS shows a message that arrives in front by itself; Android does not.
@@ -117,7 +132,7 @@ class SampleApp extends ConsumerWidget {
           action: link == null
               ? null
               : SnackBarAction(
-                  label: 'Open',
+                  label: (_messengerKey.currentContext ?? context).l10n.open,
                   backgroundColor: scheme.primary,
                   textColor: scheme.onPrimary,
                   onPressed: () => ref.read(routerProvider).go(link),
@@ -127,6 +142,9 @@ class SampleApp extends ConsumerWidget {
     });
     return MaterialApp.router(
       title: 'Sample',
+      locale: ref.watch(localeProvider),
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
       scaffoldMessengerKey: _messengerKey,
       theme: skeletonLightTheme(),
       darkTheme: skeletonDarkTheme(),

@@ -8,6 +8,7 @@ import 'package:skeleton_social_login/skeleton_social_login.dart';
 import 'package:skeleton_storage/skeleton_storage.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
+import '../l10n/l10n.dart';
 import '../config.dart';
 import '../social_support.dart';
 import 'form_page.dart';
@@ -44,6 +45,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   /// Cancel = false (nothing is deleted); Apple off for the project = nothing
   /// to revoke; any other failure stops the delete and the form stays.
   Future<bool> _revokeApple() async {
+    final unreachable = context.l10n.appleUnreachable;
     final account = await ref.read(sampleAccountProvider.future);
     final apple = account.appleToRevoke;
     if (apple == null) return true;
@@ -63,9 +65,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       if (e is ApiRequestError && e.code == 'AUTH_SOCIAL.PROVIDER_NOT_FOUND') {
         return true;
       }
-      throw const DeleteAccountHookFailed(
-        'Apple could not be reached. Try again.',
-      );
+      throw DeleteAccountHookFailed(unreachable);
     }
   }
 
@@ -76,16 +76,10 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     final notice = store.when(
       loading: () => null,
       // Not knowing is not "none": the person is asked to check.
-      error: (_, _) =>
-          'We could not check your store subscription. If you have one, '
-          'cancel it in the App Store or Google Play before deleting.',
+      error: (_, _) => context.l10n.storeCheckFailed,
       data: (provider) => switch (provider) {
-        'appstore' =>
-          'Your subscription is billed by the App Store and keeps running '
-              'after the account is deleted. Cancel it in the App Store first.',
-        'googleplay' =>
-          'Your subscription is billed by Google Play and keeps running '
-              'after the account is deleted. Cancel it in Google Play first.',
+        'appstore' => context.l10n.storeAppStoreBilled,
+        'googleplay' => context.l10n.storeGooglePlayBilled,
         _ => null,
       },
     );
@@ -93,13 +87,17 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     // on: `me` then carries the `contactEmail` key (null = none yet).
     final me = ref.watch(accountMeProvider).value;
     return FormPage(
-      title: 'Account settings',
+      title: context.l10n.accountSettings,
       children: [
         // The picture slot exists only when the server has `storage`: `me`
         // then carries the `avatarKey` key. The upload is the app's part
         // (`ImageUploadField`, one photo); `auth` does not know `storage`.
         if (me != null && me.avatarEnabled) ...[
           ProfilePictureSection(
+            labels: context.byLocale(
+              const ProfilePictureLabels.ko(),
+              const ProfilePictureLabels(),
+            ),
             key: ValueKey(me.avatarKey),
             me: me,
             resolveUrl: (url) => resolveStoredUrl(url, AppConfig.apiBaseUrl),
@@ -126,13 +124,20 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         ],
         if (me != null && me.contactEmailEnabled) ...[
           ContactEmailSection(
+            labels: context.byLocale(
+              const ContactEmailLabels.ko(),
+              const ContactEmailLabels(),
+            ),
             contactEmail: me.contactEmail,
             socialReauth: _reauth,
             onChanged: () => ref.invalidate(accountMeProvider),
           ),
           const SizedBox(height: SkeletonSpace.lg),
         ],
-        Text('Delete account', style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          context.l10n.deleteAccount,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         const SizedBox(height: SkeletonSpace.sm),
         if (notice != null) ...[
           Card(
@@ -148,10 +153,14 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         account.when(
           loading: () => const LoadingView(),
           error: (_, _) => ErrorView(
-            message: 'Could not load your account.',
+            message: context.l10n.accountLoadFailed,
             onRetry: () => ref.invalidate(sampleAccountProvider),
           ),
           data: (_) => DeleteAccountForm(
+            labels: context.byLocale(
+              const DeleteAccountLabels.ko(),
+              const DeleteAccountLabels(),
+            ),
             onDeleted: (_) => context.go('/login'),
             socialReauth: _reauth,
             beforeDelete: _revokeApple,
@@ -160,7 +169,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         const SizedBox(height: SkeletonSpace.md),
         OutlinedButton(
           onPressed: () => context.go('/settings'),
-          child: const Text('Back'),
+          child: Text(context.l10n.back),
         ),
       ],
     );

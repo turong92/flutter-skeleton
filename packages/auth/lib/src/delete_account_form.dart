@@ -24,6 +24,24 @@ class DeleteAccountLabels {
     this.genericError = 'Something went wrong. Please try again.',
   });
 
+  /// Korean texts, in the polite 해요 style.
+  const DeleteAccountLabels.ko()
+    : this(
+        password: '현재 비밀번호',
+        submit: '계정 삭제하기',
+        required: '입력해 주세요',
+        wrongPassword: '비밀번호가 맞지 않아요.',
+        code: '메일로 받은 인증번호',
+        sendCode: '인증번호 받기',
+        codeSent: '인증번호를 메일로 보냈어요. 10분 안에 입력해 주세요.',
+        wrongCode: '인증번호가 맞지 않아요.',
+        codeExpired: '인증번호가 만료됐어요. 새로 받아 주세요.',
+        reauthFailed: '본인 확인이 통과되지 않았어요. 다시 시도해 주세요.',
+        blocked: '지금은 계정을 삭제할 수 없어요. 진행 중인 일을 마치거나 취소한 뒤 다시 시도해 주세요.',
+        networkError: '연결할 수 없어요. 인터넷 연결을 확인해 주세요.',
+        genericError: '문제가 생겼어요. 다시 시도해 주세요.',
+      );
+
   final String password;
   final String submit;
   final String required;

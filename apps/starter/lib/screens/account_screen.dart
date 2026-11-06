@@ -10,6 +10,7 @@ import 'package:skeleton_storage/skeleton_storage.dart';
 // #endif
 import 'package:skeleton_ui/skeleton_ui.dart';
 
+import '../l10n/l10n.dart';
 // #if storage
 import '../config.dart';
 // #endif
@@ -30,16 +31,10 @@ class AccountScreen extends ConsumerWidget {
         .when(
           loading: () => null,
           // Not knowing is not "none": the person is asked to check.
-          error: (_, _) =>
-              'We could not check your store subscription. If you have one, '
-              'cancel it in the App Store or Google Play before deleting.',
+          error: (_, _) => context.l10n.storeCheckFailed,
           data: (provider) => switch (provider) {
-            'appstore' =>
-              'Your subscription is billed by the App Store and keeps running '
-                  'after the account is deleted. Cancel it in the App Store first.',
-            'googleplay' =>
-              'Your subscription is billed by Google Play and keeps running '
-                  'after the account is deleted. Cancel it in Google Play first.',
+            'appstore' => context.l10n.storeAppStoreBilled,
+            'googleplay' => context.l10n.storeGooglePlayBilled,
             _ => null,
           },
         );
@@ -51,11 +46,15 @@ class AccountScreen extends ConsumerWidget {
     final me = ref.watch(accountMeProvider).value;
     // #endif
     return FormPage(
-      title: 'Account settings',
+      title: context.l10n.accountSettings,
       children: [
         // #if storage
         if (me != null && me.avatarEnabled) ...[
           ProfilePictureSection(
+            labels: context.byLocale(
+              const ProfilePictureLabels.ko(),
+              const ProfilePictureLabels(),
+            ),
             key: ValueKey(me.avatarKey),
             me: me,
             resolveUrl: (url) => resolveStoredUrl(url, AppConfig.apiBaseUrl),
@@ -80,7 +79,10 @@ class AccountScreen extends ConsumerWidget {
           const SizedBox(height: SkeletonSpace.lg),
         ],
         // #endif
-        Text('Delete account', style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          context.l10n.deleteAccount,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         const SizedBox(height: SkeletonSpace.sm),
         // #if iap
         if (notice != null) ...[
@@ -93,11 +95,17 @@ class AccountScreen extends ConsumerWidget {
           const SizedBox(height: SkeletonSpace.sm),
         ],
         // #endif
-        DeleteAccountForm(onDeleted: (_) => context.go('/login')),
+        DeleteAccountForm(
+          labels: context.byLocale(
+            const DeleteAccountLabels.ko(),
+            const DeleteAccountLabels(),
+          ),
+          onDeleted: (_) => context.go('/login'),
+        ),
         const SizedBox(height: SkeletonSpace.md),
         OutlinedButton(
           onPressed: () => context.go('/me'),
-          child: const Text('Back'),
+          child: Text(context.l10n.back),
         ),
       ],
     );

@@ -23,6 +23,23 @@ class SignUpLabels {
     this.loginId = const LoginIdLabels(),
   });
 
+  /// Korean texts, in the polite 해요 style.
+  const SignUpLabels.ko()
+    : this(
+        email: '이메일',
+        password: '비밀번호',
+        submit: '가입하기',
+        required: '입력해 주세요',
+        consentRequired: '필수 약관에 동의해 주세요.',
+        invalidValue: '값을 확인해 주세요.',
+        emailTaken: '이미 쓰는 이메일이에요.',
+        networkError: '연결할 수 없어요. 인터넷 연결을 확인해 주세요.',
+        genericError: '문제가 생겼어요. 다시 시도해 주세요.',
+        passwordPolicy: const PasswordPolicyLabels.ko(),
+        displayName: const DisplayNameLabels.ko(),
+        loginId: const LoginIdLabels.ko(),
+      );
+
   final String email;
   final String password;
   final String submit;

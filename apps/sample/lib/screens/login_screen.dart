@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
+import '../l10n/l10n.dart';
 import 'form_page.dart';
 import 'social_buttons.dart';
 
@@ -17,25 +18,27 @@ class LoginScreen extends ConsumerWidget {
     // failed `/auth/methods` reads as off, like in the forms.
     final hasLoginId = ref.watch(authMethodsProvider).value?.loginId != null;
     return FormPage(
-      title: 'Sample',
+      title: context.l10n.appName,
       children: [
-        const LoginForm(),
+        LoginForm(
+          labels: context.byLocale(const LoginLabels.ko(), const LoginLabels()),
+        ),
         const SocialButtons(),
         const SizedBox(height: SkeletonSpace.md),
         OutlinedButton(
           onPressed: () => context.go('/sign-up'),
-          child: const Text('Create account'),
+          child: Text(context.l10n.createAccount),
         ),
         const SizedBox(height: SkeletonSpace.sm),
         OutlinedButton(
           onPressed: () => context.go('/forgot-password'),
-          child: const Text('Forgot password?'),
+          child: Text(context.l10n.forgotPasswordLink),
         ),
         if (hasLoginId) ...[
           const SizedBox(height: SkeletonSpace.sm),
           OutlinedButton(
             onPressed: () => context.go('/forgot-login-id'),
-            child: const Text('Forgot ID?'),
+            child: Text(context.l10n.forgotIdLink),
           ),
         ],
       ],

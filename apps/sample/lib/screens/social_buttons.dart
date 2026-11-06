@@ -4,6 +4,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:skeleton_social_login/skeleton_social_login.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
+import '../l10n/l10n.dart';
 import '../social_support.dart';
 
 /// The sign-in buttons of the providers this build has and the server lists
@@ -30,6 +31,7 @@ class SocialButtons extends ConsumerWidget {
       for (final provider in providers)
         ?_button(
           provider.id,
+          l: context.l10n,
           dark: dark,
           onPressed: busy
               ? null
@@ -43,14 +45,14 @@ class SocialButtons extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: SkeletonSpace.md),
-        const Row(
+        Row(
           children: [
-            Expanded(child: Divider()),
+            const Expanded(child: Divider()),
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: SkeletonSpace.sm),
-              child: Text('or'),
+              padding: const EdgeInsets.symmetric(horizontal: SkeletonSpace.sm),
+              child: Text(context.l10n.orDivider),
             ),
-            Expanded(child: Divider()),
+            const Expanded(child: Divider()),
           ],
         ),
         for (final button in buttons) ...[
@@ -60,7 +62,7 @@ class SocialButtons extends ConsumerWidget {
         if (state is SocialLoginFailed) ...[
           const SizedBox(height: SkeletonSpace.sm),
           Text(
-            socialFailureText(state.failure),
+            socialFailureText(context.l10n, state.failure),
             key: const ValueKey('social.error'),
             style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
@@ -71,6 +73,7 @@ class SocialButtons extends ConsumerWidget {
 
   static Widget? _button(
     String id, {
+    required AppLocalizations l,
     required bool dark,
     required VoidCallback? onPressed,
   }) {
@@ -87,7 +90,7 @@ class SocialButtons extends ConsumerWidget {
         // Google's guide: white (dark theme: #131314) with a 1px outline.
         return _BrandButton(
           id: id,
-          label: 'Sign in with Google',
+          label: l.signInWithGoogle,
           background: dark ? const Color(0xFF131314) : Colors.white,
           foreground: dark ? const Color(0xFFE3E3E3) : const Color(0xFF1F1F1F),
           outline: dark ? const Color(0xFF8E918F) : const Color(0xFF747775),
@@ -97,7 +100,7 @@ class SocialButtons extends ConsumerWidget {
         // Kakao's guide: #FEE500 with 85% black text.
         return _BrandButton(
           id: id,
-          label: 'Sign in with Kakao',
+          label: l.signInWithKakao,
           background: const Color(0xFFFEE500),
           foreground: const Color(0xD9000000),
           onPressed: onPressed,
@@ -106,7 +109,7 @@ class SocialButtons extends ConsumerWidget {
         // Naver's guide: #03C75A with white text.
         return _BrandButton(
           id: id,
-          label: 'Sign in with Naver',
+          label: l.signInWithNaver,
           background: const Color(0xFF03C75A),
           foreground: Colors.white,
           onPressed: onPressed,

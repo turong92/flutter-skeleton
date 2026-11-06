@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
+import '../l10n/l10n.dart';
 import '../nickname_gate.dart';
 import 'form_page.dart';
 
@@ -15,9 +16,13 @@ class NicknameScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return FormPage(
-      title: 'Choose a nickname',
+      title: context.l10n.chooseNickname,
       children: [
         DisplayNameForm(
+          labels: context.byLocale(
+            const DisplayNameLabels.ko(),
+            const DisplayNameLabels(),
+          ),
           onSaved: (_) {
             ref.invalidate(accountMeProvider);
             ref.read(needsNicknameProvider.notifier).done();
@@ -27,7 +32,7 @@ class NicknameScreen extends ConsumerWidget {
         const SizedBox(height: SkeletonSpace.md),
         OutlinedButton(
           onPressed: () => ref.read(authSessionProvider.notifier).logout(),
-          child: const Text('Sign out'),
+          child: Text(context.l10n.signOut),
         ),
       ],
     );

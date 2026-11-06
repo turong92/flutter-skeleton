@@ -6,6 +6,7 @@ import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_social_login/skeleton_social_login.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
+import '../l10n/l10n.dart';
 import '../social_support.dart';
 import 'form_page.dart';
 
@@ -33,17 +34,17 @@ class _SocialLinkScreenState extends ConsumerState<SocialLinkScreen> {
     final account = ref.watch(sampleAccountProvider);
     final providers = ref.watch(availableSocialProvidersProvider).value;
     return FormPage(
-      title: 'Social sign-in',
+      title: context.l10n.socialLinkTitle,
       children: [
         account.when(
           loading: () => const LoadingView(),
           error: (_, _) => ErrorView(
-            message: 'Could not load your account.',
+            message: context.l10n.accountLoadFailed,
             onRetry: () => ref.invalidate(sampleAccountProvider),
           ),
           data: (account) {
             if (providers == null || providers.isEmpty) {
-              return const Text('No social sign-in is available.');
+              return Text(context.l10n.noSocialAvailable);
             }
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -52,13 +53,13 @@ class _SocialLinkScreenState extends ConsumerState<SocialLinkScreen> {
                   ListTile(
                     title: Text(_name(provider.id)),
                     trailing: account.methods.contains(provider.id)
-                        ? const Text('Linked')
+                        ? Text(context.l10n.linked)
                         : OutlinedButton(
                             key: ValueKey('social.link.${provider.id}'),
                             onPressed: _busyId == null
                                 ? () => _link(provider, account)
                                 : null,
-                            child: const Text('Link'),
+                            child: Text(context.l10n.link),
                           ),
                   ),
               ],
@@ -72,7 +73,7 @@ class _SocialLinkScreenState extends ConsumerState<SocialLinkScreen> {
         const SizedBox(height: SkeletonSpace.md),
         OutlinedButton(
           onPressed: () => context.go('/settings'),
-          child: const Text('Back'),
+          child: Text(context.l10n.back),
         ),
       ],
     );
@@ -82,24 +83,25 @@ class _SocialLinkScreenState extends ConsumerState<SocialLinkScreen> {
 
   Future<void> _link(SocialProvider provider, SampleAccount account) async {
     final api = ref.read(socialAuthApiProvider);
+    final l = context.l10n;
     setState(() {
       _busyId = provider.id;
       _message = null;
     });
     try {
       // The proof first: the server checks it before it looks at the token.
-      final proof = await _proof(account);
+      final proof = await _proof(account, l);
       if (proof == null) return;
       final credential = await provider.obtain(generateSocialNonce());
       await api.link(provider.id, credential, proof: proof);
       ref.invalidate(sampleAccountProvider);
-      _show('${_name(provider.id)} is linked.');
+      _show(l.providerLinked(_name(provider.id)));
     } on SocialCancelled {
       // The person backed out: nothing to say.
     } on ApiRequestError catch (e) {
-      _show(_errorText(e));
+      _show(_errorText(l, e));
     } catch (e, stackTrace) {
-      _show(socialFailureText(SocialFailure.sdk));
+      _show(socialFailureText(l, SocialFailure.sdk));
       FlutterError.reportError(
         FlutterErrorDetails(
           exception: e,
@@ -114,9 +116,12 @@ class _SocialLinkScreenState extends ConsumerState<SocialLinkScreen> {
   }
 
   /// The proof fields of the link call; null = the person backed out.
-  Future<Map<String, Object?>?> _proof(SampleAccount account) async {
+  Future<Map<String, Object?>?> _proof(
+    SampleAccount account,
+    AppLocalizations l,
+  ) async {
     if (account.hasPassword) {
-      final password = await _ask('Your password', obscure: true);
+      final password = await _ask(l.yourPassword, obscure: true);
       return password == null ? null : {'currentPassword': password};
     }
     if (account.email != null) {
@@ -127,7 +132,7 @@ class _SocialLinkScreenState extends ConsumerState<SocialLinkScreen> {
             method: 'POST',
             decode: (json) => json,
           );
-      final code = await _ask('The code we emailed you');
+      final code = await _ask(l.codeWeEmailed);
       return code == null ? null : {'confirmationCode': code};
     }
     final reauth = await reauthWithLinkedProvider(ref);
@@ -148,11 +153,11 @@ class _SocialLinkScreenState extends ConsumerState<SocialLinkScreen> {
         actions: [
           OutlinedButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Continue'),
+            child: Text(context.l10n.continueAction),
           ),
         ],
       ),
@@ -165,16 +170,15 @@ class _SocialLinkScreenState extends ConsumerState<SocialLinkScreen> {
     if (mounted) setState(() => _message = message);
   }
 
-  static String _errorText(ApiRequestError e) => switch (e.code) {
-    _identityTaken =>
-      'That account is already linked to another account here. Sign in with '
-          'it, remove the link in its settings, then try again.',
-    _identityExists => 'This provider is already linked.',
-    AccountErrorCodes.currentPasswordInvalid => 'The password is wrong.',
-    AccountErrorCodes.codeInvalid => 'The code is wrong.',
-    AccountErrorCodes.codeExpired => 'The code has expired. Try again.',
-    AccountErrorCodes.reauthFailed ||
-    AccountErrorCodes.reauthRequired => 'We could not confirm it is you.',
-    _ => socialFailureText(socialFailureOf(e)),
-  };
+  static String _errorText(AppLocalizations l, ApiRequestError e) =>
+      switch (e.code) {
+        _identityTaken => l.identityTaken,
+        _identityExists => l.identityExists,
+        AccountErrorCodes.currentPasswordInvalid => l.passwordWrong,
+        AccountErrorCodes.codeInvalid => l.codeWrong,
+        AccountErrorCodes.codeExpired => l.codeExpiredTryAgain,
+        AccountErrorCodes.reauthFailed ||
+        AccountErrorCodes.reauthRequired => l.cannotConfirmYou,
+        _ => socialFailureText(l, socialFailureOf(e)),
+      };
 }

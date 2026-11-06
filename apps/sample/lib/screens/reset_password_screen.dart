@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
+import '../l10n/l10n.dart';
 import 'form_page.dart';
 
 /// The page a mailed link opens: `/reset-password?token=...`. The token is
@@ -17,21 +18,28 @@ class ResetPasswordScreen extends StatelessWidget {
     final token = this.token;
     if (token == null || token.isEmpty) {
       return FormPage(
-        title: 'Reset password',
+        title: context.l10n.resetPasswordTitle,
         children: [
-          const Text('This link is incomplete. Ask for a new one.'),
+          Text(context.l10n.resetLinkIncomplete),
           const SizedBox(height: SkeletonSpace.md),
           FilledButton(
             onPressed: () => context.go('/forgot-password'),
-            child: const Text('Send a new link'),
+            child: Text(context.l10n.sendNewLink),
           ),
         ],
       );
     }
     return FormPage(
-      title: 'Reset password',
+      title: context.l10n.resetPasswordTitle,
       children: [
-        ResetPasswordForm(token: token, onReset: () => context.go('/login')),
+        ResetPasswordForm(
+          token: token,
+          labels: context.byLocale(
+            const ResetPasswordLabels.ko(),
+            const ResetPasswordLabels(),
+          ),
+          onReset: () => context.go('/login'),
+        ),
       ],
     );
   }

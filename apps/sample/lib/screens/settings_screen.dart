@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
+import 'package:skeleton_i18n/skeleton_i18n.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
+
+import '../l10n/l10n.dart';
 
 /// Who is signed in, the way to the notification settings, social sign-in
 /// links, the account page (deletion) and sign-out. Sign-out is the only path
@@ -20,30 +23,33 @@ class SettingsScreen extends ConsumerWidget {
     // name#tag when the server gave a tag; the address until /account/me is in.
     final who = ref.watch(accountMeProvider).value?.displayLabel ?? fallback;
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(
+        title: Text(context.l10n.settingsTitle),
+        actions: [LanguageMenu(tooltip: context.l10n.language)],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(SkeletonSpace.md),
         children: [
-          ListTile(title: Text(who), subtitle: const Text('Signed in')),
+          ListTile(title: Text(who), subtitle: Text(context.l10n.signedIn)),
           const Divider(),
           OutlinedButton(
             onPressed: () => context.go('/settings/notifications'),
-            child: const Text('Notification settings'),
+            child: Text(context.l10n.notificationSettingsTitle),
           ),
           const SizedBox(height: SkeletonSpace.sm),
           OutlinedButton(
             onPressed: () => context.go('/social'),
-            child: const Text('Social sign-in'),
+            child: Text(context.l10n.socialSignIn),
           ),
           const SizedBox(height: SkeletonSpace.sm),
           OutlinedButton(
             onPressed: () => context.go('/account'),
-            child: const Text('Account settings'),
+            child: Text(context.l10n.accountSettings),
           ),
           const SizedBox(height: SkeletonSpace.sm),
           FilledButton(
             onPressed: () => ref.read(authSessionProvider.notifier).logout(),
-            child: const Text('Sign out'),
+            child: Text(context.l10n.signOut),
           ),
         ],
       ),

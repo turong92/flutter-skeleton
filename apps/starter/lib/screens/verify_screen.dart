@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
+import '../l10n/l10n.dart';
 import 'form_page.dart';
 
 /// The pending sign-up, read from the attempt store: it is still there after
@@ -32,9 +33,13 @@ class VerifyScreen extends ConsumerWidget {
               return const Scaffold(body: LoadingView());
             }
             return FormPage(
-              title: 'Check your email',
+              title: context.l10n.checkYourEmail,
               children: [
                 VerifyCodeForm(
+                  labels: context.byLocale(
+                    const VerifyCodeLabels.ko(),
+                    const VerifyCodeLabels(),
+                  ),
                   attempt: attempt,
                   onVerified: () => context.go('/me'),
                   onExpired: () => context.go('/sign-up'),

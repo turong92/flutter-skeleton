@@ -4,6 +4,8 @@ import 'package:skeleton_push/advertising.dart';
 import 'package:skeleton_push/skeleton_push.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
+import '../l10n/l10n.dart';
+
 /// The inbox tab. A tapped row opens `notificationOpenProvider`'s path.
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
@@ -11,8 +13,13 @@ class NotificationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Notifications')),
-      body: const NotificationListView(),
+      appBar: AppBar(title: Text(context.l10n.notificationsTitle)),
+      body: NotificationListView(
+        labels: context.byLocale(
+          const NotificationsLabels.ko(),
+          const NotificationsLabels(),
+        ),
+      ),
     );
   }
 }
@@ -25,13 +32,15 @@ class NotificationSettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Notification settings')),
+      appBar: AppBar(title: Text(context.l10n.notificationSettingsTitle)),
       body: ListView(
         padding: const EdgeInsets.all(SkeletonSpace.md),
-        children: const [
-          PushSettingsView(),
-          Divider(),
-          AdvertisingSettingsView(),
+        children: [
+          PushSettingsView(
+            labels: context.byLocale(const PushLabels.ko(), const PushLabels()),
+          ),
+          const Divider(),
+          const AdvertisingSettingsView(),
         ],
       ),
     );

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_social_login/skeleton_social_login.dart';
 
+import '../l10n/l10n.dart';
 import 'form_page.dart';
 
 /// Where a sign-in lands when the account is in its deletion grace (`403
@@ -21,9 +22,16 @@ class DeletionPendingScreen extends ConsumerWidget {
       if (next == null) ref.invalidate(socialLoginControllerProvider);
     });
     return FormPage(
-      title: 'Account scheduled for deletion',
+      title: context.l10n.accountScheduledForDeletion,
       // Dropping the offer sends the router back to /login.
-      children: const [DeletionPendingForm()],
+      children: [
+        DeletionPendingForm(
+          labels: context.byLocale(
+            const DeletionPendingLabels.ko(),
+            const DeletionPendingLabels(),
+          ),
+        ),
+      ],
     );
   }
 }

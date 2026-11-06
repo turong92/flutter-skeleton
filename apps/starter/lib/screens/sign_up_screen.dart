@@ -5,6 +5,7 @@ import 'package:skeleton_auth/skeleton_auth.dart' as auth;
 import 'package:skeleton_legal/skeleton_legal.dart' as legal;
 import 'package:skeleton_ui/skeleton_ui.dart';
 
+import '../l10n/l10n.dart';
 import 'form_page.dart';
 
 /// Sign-up with the consent boxes of the `legal` package in the form's slot.
@@ -15,9 +16,13 @@ class SignUpScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return FormPage(
-      title: 'Create account',
+      title: context.l10n.createAccount,
       children: [
         auth.SignUpForm(
+          labels: context.byLocale(
+            const auth.SignUpLabels.ko(),
+            const auth.SignUpLabels(),
+          ),
           consentBuilder: (context, controller) => legal.SignUpConsents(
             onChanged: (value) => controller.update(
               ready: value.complete,
@@ -39,7 +44,7 @@ class SignUpScreen extends ConsumerWidget {
         const SizedBox(height: SkeletonSpace.md),
         OutlinedButton(
           onPressed: () => context.go('/login'),
-          child: const Text('I already have an account'),
+          child: Text(context.l10n.alreadyHaveAccount),
         ),
       ],
     );

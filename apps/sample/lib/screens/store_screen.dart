@@ -60,46 +60,50 @@ class _StoreList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final service = ref.watch(iapServiceProvider);
     final subscription = ref.watch(mySubscriptionProvider);
+    // A server that sells on the web only has no store purchase to offer.
+    final storeSells = catalog.config.channel != IapChannel.webOnly;
     return ListView(
       padding: const EdgeInsets.all(SkeletonSpace.md),
       children: [
-        Text('Products', style: Theme.of(context).textTheme.titleMedium),
-        if (catalog.offers.isEmpty)
-          const ListTile(title: Text('Nothing to buy right now.')),
-        for (final offer in catalog.offers)
-          ListTile(
-            title: Text(offer.details.title),
-            subtitle: Text(offer.details.description),
-            trailing: FilledButton(
-              onPressed: service == null
-                  ? null
-                  : () async {
-                      try {
-                        await service.buy(offer);
-                      } on Object {
-                        if (context.mounted) {
-                          _say(context, 'Could not start the purchase.');
+        if (storeSells) ...[
+          Text('Products', style: Theme.of(context).textTheme.titleMedium),
+          if (catalog.offers.isEmpty)
+            const ListTile(title: Text('Nothing to buy right now.')),
+          for (final offer in catalog.offers)
+            ListTile(
+              title: Text(offer.details.title),
+              subtitle: Text(offer.details.description),
+              trailing: FilledButton(
+                onPressed: service == null
+                    ? null
+                    : () async {
+                        try {
+                          await service.buy(offer);
+                        } on Object {
+                          if (context.mounted) {
+                            _say(context, 'Could not start the purchase.');
+                          }
                         }
-                      }
-                    },
-              child: Text(offer.details.price),
+                      },
+                child: Text(offer.details.price),
+              ),
             ),
-          ),
-        const SizedBox(height: SkeletonSpace.sm),
-        OutlinedButton(
-          onPressed: service == null
-              ? null
-              : () async {
-                  try {
-                    await service.restore(catalog);
-                  } on Object {
-                    if (context.mounted) {
-                      _say(context, 'Could not restore purchases.');
+          const SizedBox(height: SkeletonSpace.sm),
+          OutlinedButton(
+            onPressed: service == null
+                ? null
+                : () async {
+                    try {
+                      await service.restore(catalog);
+                    } on Object {
+                      if (context.mounted) {
+                        _say(context, 'Could not restore purchases.');
+                      }
                     }
-                  }
-                },
-          child: const Text('Restore purchases'),
-        ),
+                  },
+            child: const Text('Restore purchases'),
+          ),
+        ],
         if (catalog.config.showsWebCheckout) ...[
           const SizedBox(height: SkeletonSpace.sm),
           OutlinedButton(

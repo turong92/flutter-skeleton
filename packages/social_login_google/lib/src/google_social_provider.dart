@@ -18,7 +18,8 @@ class GoogleSocialProvider implements SocialProvider {
   final String serverClientId;
   final String? clientId;
 
-  // `GoogleSignIn.instance.initialize` must run exactly once per app run.
+  // `GoogleSignIn.instance.initialize` must run once per app run. A failed
+  // run is forgotten, so the next tap tries again.
   Future<void>? _initialized;
 
   @override
@@ -26,10 +27,16 @@ class GoogleSocialProvider implements SocialProvider {
 
   @override
   Future<SocialCredential> obtain(String nonce) async {
-    await (_initialized ??= GoogleSignIn.instance.initialize(
+    final initialized = _initialized ??= GoogleSignIn.instance.initialize(
       clientId: clientId,
       serverClientId: serverClientId,
-    ));
+    );
+    try {
+      await initialized;
+    } on Object {
+      if (identical(_initialized, initialized)) _initialized = null;
+      rethrow;
+    }
     final GoogleSignInAccount account;
     try {
       account = await GoogleSignIn.instance.authenticate();

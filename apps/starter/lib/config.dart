@@ -3,4 +3,29 @@
 abstract final class AppConfig {
   /// Backend API root including `/api/v1`, e.g. `https://api.example.com/api/v1`.
   static const apiBaseUrl = String.fromEnvironment('API_BASE_URL');
+
+  // #if push
+  // Firebase, for push. All empty = no Firebase: the app runs and push is
+  // reported as unavailable. Take the values from your own Firebase project
+  // and put them in env/dev.json (git-ignored); never commit them.
+  static const firebaseApiKey = String.fromEnvironment('FIREBASE_API_KEY');
+  static const firebaseProjectId = String.fromEnvironment(
+    'FIREBASE_PROJECT_ID',
+  );
+  static const firebaseMessagingSenderId = String.fromEnvironment(
+    'FIREBASE_MESSAGING_SENDER_ID',
+  );
+  static const firebaseAndroidAppId = String.fromEnvironment(
+    'FIREBASE_ANDROID_APP_ID',
+  );
+  static const firebaseIosAppId = String.fromEnvironment('FIREBASE_IOS_APP_ID');
+  // #endif
+
+  // #if board
+  /// The board this app shows: a board code of your server (`--dart-define BOARD_CODE=...`).
+  static const board = String.fromEnvironment(
+    'BOARD_CODE',
+    defaultValue: 'general',
+  );
+  // #endif
 }

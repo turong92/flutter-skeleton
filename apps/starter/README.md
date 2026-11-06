@@ -11,6 +11,10 @@ lib/screens/           login · sign-up · verify · forgot/reset password · ac
 env/dev.json.example   the dart-define file to copy
 ```
 
+## Screens of the optional packages
+
+The starter also carries the default screens of `board`, `storage` (the photo field of the board), `push`, `notifications`, `realtime` and `iap`. In the skeleton they are all there and compiled (so analyze and the tests cover them); `scripts/new-project.sh --packages ...` keeps only the ones picked and removes the rest (screens, routes, wiring, dependencies, native settings). What belongs to a package sits between two marker lines in any text file of the app: `// #if board storage` … `// #endif` (yaml: `# #if`, xml and plist: `<!-- #if ... -->`). The block stays when every id after `#if` is kept (`a|b` = either); `// #file board` on one of the first 3 lines means the whole file goes with the package. Ids are catalog ids: the package folder name with hyphens (`board`, `social-login`), lower case. Rules: no nesting, no "not kept" (in the skeleton the code of all blocks is there together), and a line that looks like a marker but is not well formed, or a marker in a file type the stamp does not read, stops the stamp. Entry points are on the account screen (`/me`): Board, Notifications (unread badge), Notification settings, Store. Firebase values for push come from `env/dev.json` (`FIREBASE_*`, see `lib/config.dart`); on iOS push needs the Push Notifications capability on your App ID (add it in Xcode, like the Associated Domains note below). The board code is `BOARD_CODE` (default `general`); a server whose board needs an author profile also needs `boardAuthorResolverProvider` in `lib/wiring.dart`. Not in the starter: the social sign-in buttons (the sample has them), the board's account gates.
+
 ## Run
 
 ```bash

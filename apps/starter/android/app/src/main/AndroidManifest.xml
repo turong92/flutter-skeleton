@@ -2,6 +2,10 @@
     <!-- flutter create only puts INTERNET in the debug and profile manifests;
          a release build needs it here to reach the backend. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- #if push -->
+    <!-- Android 13+ asks before showing a notification. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- #endif -->
     <application
         android:label="starter"
         android:name="${applicationName}"
@@ -47,6 +51,14 @@
 
          In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
     <queries>
+        <!-- #if iap -->
+        <!-- The web checkout opens an https address in the outside browser
+             (url_launcher); Android 11+ needs this to see a browser. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
+        <!-- #endif -->
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>

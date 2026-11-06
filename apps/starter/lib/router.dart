@@ -2,13 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
+// #if board
+import 'package:skeleton_board/skeleton_board.dart';
+// #endif
 import 'package:skeleton_legal/skeleton_legal.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
 import 'screens/account_screen.dart';
+// #if board
+import 'screens/board_screens.dart';
+// #endif
 import 'screens/forgot_password_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/me_screen.dart';
+// #if iap
+import 'screens/store_screen.dart';
+// #endif
+// #if push
+import 'screens/notification_settings_screen.dart';
+// #endif
+// #if notifications
+import 'screens/notifications_screen.dart';
+// #endif
 import 'screens/reset_password_screen.dart';
 import 'screens/sign_up_screen.dart';
 import 'screens/verify_screen.dart';
@@ -81,6 +96,55 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/account',
         builder: (context, state) => const AccountScreen(),
       ),
+      // #if iap
+      GoRoute(path: '/store', builder: (context, state) => const StoreScreen()),
+      // #endif
+      // #if push
+      GoRoute(
+        path: '/settings/notifications',
+        builder: (context, state) => const NotificationSettingsScreen(),
+      ),
+      // #endif
+      // #if notifications
+      GoRoute(
+        path: '/notifications',
+        builder: (context, state) => const NotificationsScreen(),
+      ),
+      // #endif
+      // #if board
+      GoRoute(
+        path: '/board',
+        builder: (context, state) => const BoardListScreen(),
+        routes: [
+          // `new` before `:id`, or "new" would be read as a post id.
+          GoRoute(
+            path: 'new',
+            builder: (context, state) => const PostEditorScreen(),
+          ),
+          GoRoute(
+            path: ':id',
+            redirect: (context, state) =>
+                int.tryParse(state.pathParameters['id']!) == null
+                ? '/board'
+                : null,
+            builder: (context, state) => PostDetailScreen(
+              postId: int.parse(state.pathParameters['id']!),
+            ),
+            routes: [
+              GoRoute(
+                path: 'edit',
+                // The post comes with the tap; a pasted link opens the post itself.
+                redirect: (context, state) => state.extra is PostDetail
+                    ? null
+                    : '/board/${state.pathParameters['id']}',
+                builder: (context, state) =>
+                    PostEditorScreen(post: state.extra! as PostDetail),
+              ),
+            ],
+          ),
+        ],
+      ),
+      // #endif
       GoRoute(
         path: '/consent',
         builder: (context, state) => ReconsentScreen(

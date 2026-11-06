@@ -240,6 +240,9 @@ void applyStamp(Directory target, StampOptions o) {
 
   // 2. the app: starter -> name
   const app = 'apps/starter';
+  final picked = _applyFeatures(target, app, o.keep.toSet(), {
+    for (final p in all) p.id,
+  });
   _edit(target, '$app/pubspec.yaml', [('name: starter\n', 'name: $name\n')]);
   _write(
     target,
@@ -291,6 +294,19 @@ void applyStamp(Directory target, StampOptions o) {
     ]);
   }
   _edit(target, '$app/README.md', [('# starter\n', '# $name\n')]);
+  _write(
+    target,
+    '$app/README.md',
+    replacePatternOrFail(
+      _read(target, '$app/README.md'),
+      RegExp(
+        r'## Screens of the optional packages\n.*?(?=## Run\n)',
+        dotAll: true,
+      ),
+      _optionalScreensNote(picked),
+      '$app/README.md',
+    ),
+  );
   if (name != 'starter') {
     Directory('${target.path}/$app').renameSync('${target.path}/apps/$name');
   }
@@ -342,6 +358,110 @@ void applyStamp(Directory target, StampOptions o) {
     prefix == null ? packagePrefix : '${prefix}_',
   );
   _writeProjectDocs(target, o);
+}
+
+const _featureTextExtensions = {
+  '.dart',
+  '.yaml',
+  '.json',
+  '.example',
+  '.md',
+  '.plist',
+  '.xml',
+  '.kts',
+  '.gradle',
+  '.properties',
+  '.xcconfig',
+  '.swift',
+  '.kt',
+  '.entitlements',
+};
+
+/// The optional screens of the starter (see workspace.dart, "starter features"): what belongs
+/// to a package that was not kept is removed, the marker lines of the others too. A marker that
+/// names an id that is not a package stops the stamp, so a typo cannot keep or drop a block.
+Set<String> _applyFeatures(
+  Directory target,
+  String app,
+  Set<String> kept,
+  Set<String> packageIds,
+) {
+  final dir = Directory('${target.path}/$app');
+  final used = <String>{};
+  for (final item in dir.listSync(recursive: true, followLinks: false)) {
+    if (item is! File) continue;
+    final rel = item.path.substring(target.path.length + 1);
+    // Judge the path below the target only: the target itself may sit in a folder named
+    // `build` or `.claude`.
+    if (rel.split('/').any(_skipDirs.contains)) continue;
+    if (!_featureTextExtensions.any(item.path.endsWith)) {
+      // not a file the stamp edits: a marker in it would stay and nobody would notice
+      final loose = utf8
+          .decode(item.readAsBytesSync(), allowMalformed: true)
+          .split('\n')
+          .any(looseMarker.hasMatch);
+      if (loose) {
+        throw StampError(
+          '$rel has a #if / #endif / #file marker, but the stamp does not read this kind of file',
+        );
+      }
+      continue;
+    }
+    final text = item.readAsStringSync();
+    final ids = featureIdsIn(text);
+    final unknown = ids.difference(packageIds);
+    if (unknown.isNotEmpty) {
+      throw StampError(
+        '$rel names ${unknown.join(', ')} in a #if / #file marker, which is not a package id',
+      );
+    }
+    used.addAll(ids);
+    final own = fileFeatures(text);
+    if (own != null && !featureOn(own, kept)) {
+      item.deleteSync();
+      continue;
+    }
+    try {
+      var next = applyFeatureBlocks(text, kept, rel);
+      if (next != text && item.path.endsWith('.dart')) next = _tidyDart(next);
+      if (next != text) item.writeAsStringSync(next);
+    } on FeatureMarkerError catch (e) {
+      throw StampError(e.message);
+    }
+  }
+  return used.intersection(kept);
+}
+
+/// What dart format would do to the blank lines a removed block leaves behind: no two in a
+/// row, none before a closing bracket, one newline at the end. (A project's CI checks the
+/// format, and a stamp must not hand it a file that fails.)
+String _tidyDart(String text) {
+  final out = <String>[];
+  for (final line in text.split('\n')) {
+    final blank = line.trim().isEmpty;
+    if (blank && out.isNotEmpty && out.last.trim().isEmpty) continue;
+    final closes = RegExp(r'^\s*[})\]]').hasMatch(line);
+    if (closes && out.isNotEmpty && out.last.trim().isEmpty) out.removeLast();
+    out.add(line);
+  }
+  while (out.isNotEmpty && out.last.trim().isEmpty) {
+    out.removeLast();
+  }
+  return '${out.join('\n')}\n';
+}
+
+/// What the stamped app's README says in place of the skeleton's section on the markers:
+/// only the packages whose screens came along.
+String _optionalScreensNote(Set<String> picked) {
+  final names = picked.toList()..sort();
+  if (names.isEmpty) {
+    return '## Optional screens\n\nNo optional package was picked, so there are no extra screens.\n\n';
+  }
+  return '''## Optional screens
+
+The screens of the packages picked when this project was made (${names.join(', ')}) are in `lib/screens/`, their routes in `lib/router.dart`, their wiring in `lib/wiring.dart`. The entry points are on the account screen (`/me`).${picked.contains('push') ? ' Push reads the `FIREBASE_*` values from `env/dev.json` (see `lib/config.dart`) and needs the Push Notifications capability on your App ID on iOS.' : ''}${picked.contains('board') ? ' The board code is `BOARD_CODE`.' : ''}
+
+''';
 }
 
 void _pruneEmpty(Directory dir, String stopAt) {
@@ -453,6 +573,7 @@ void _writeProjectCatalog(Directory t, StampOptions o, String prefix) {
         'id': appId,
         'package': o.name,
         'path': 'apps/${o.name}',
+        'needs': _appNeeds(t, o.name, prefix),
         'docs': [
           for (final d in stringsOf(e['docs']))
             d.replaceFirst('apps/starter/', 'apps/${o.name}/'),
@@ -499,6 +620,14 @@ void _writeProjectCatalog(Directory t, StampOptions o, String prefix) {
       'the stamped catalog does not match the stamped project:\n  - ${problems.join('\n  - ')}',
     );
   }
+}
+
+/// What the stamped app declares: the starter's own plus the optional packages that were kept.
+List<String> _appNeeds(Directory t, String name, String prefix) {
+  final all = readPackages(t, prefix);
+  final idOfName = {for (final p in all) p.name: p.id};
+  final app = all.firstWhere((p) => p.dir == 'apps/$name');
+  return [for (final d in app.deps) idOfName[d] ?? d]..sort();
 }
 
 void _writeProjectDocs(Directory t, StampOptions o) {

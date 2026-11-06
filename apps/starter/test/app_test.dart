@@ -3,7 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:skeleton_api_client/testing.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
+// #if iap
+import 'package:skeleton_iap/skeleton_iap.dart';
+// #endif
+// #if notifications realtime
+import 'package:starter/inbox_realtime.dart';
+// #endif
 import 'package:starter/main.dart';
+import 'package:starter/wiring.dart';
 
 const _meta = {'timestamp': '2026-01-01T00:00:00Z'};
 const _principal = {
@@ -54,6 +61,15 @@ Widget _app(TokenStore store) => ProviderScope(
     ),
     tokenStoreProvider.overrideWithValue(store),
     httpAdapterProvider.overrideWithValue(_backend),
+    ...starterWiring,
+    // #if iap
+    // no store on the test host
+    iapPlatformProvider.overrideWithValue(null),
+    // #endif
+    // #if notifications realtime
+    // no event stream in a test
+    inboxRealtimeProvider.overrideWithValue(null),
+    // #endif
   ],
   child: const StarterApp(),
 );

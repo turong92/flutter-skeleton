@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:test/test.dart';
@@ -66,7 +67,7 @@ Map<String, String> fakeSkeleton() {
     '$app/lib/screens/login_screen.dart': "title: 'Starter',\n",
     '$app/test/app_test.dart': "import 'package:starter/main.dart';\n",
     '$app/test/account_flow_test.dart': "import 'package:starter/main.dart';\nimport 'package:starter/router.dart';\n",
-    '$app/README.md': '# starter\n',
+    '$app/README.md': '# starter\n\n## Screens of the optional packages\n\nmarkers\n\n## Run\n',
     '.github/workflows/ci.yml': '      - run: flutter build apk --debug\n        working-directory: apps/starter\n      - run: flutter build apk --debug\n        working-directory: apps/sample\n      # The catalog says what the repo is.\n      - run: dart tool/build_capabilities.dart --check\n',
     '.github/workflows/new-project.yml': 'name: new-project\n',
     'apps/sample/pubspec.yaml': pubspec('sample', deps: ['skeleton_b']),
@@ -80,7 +81,506 @@ Map<String, String> fakeSkeleton() {
   };
 }
 
+/// The fake skeleton plus package f, which the starter has screens for: its pubspec line, a
+/// block in main.dart and a file of its own sit between markers.
+Map<String, String> fakeSkeletonWithFeature() {
+  final files = fakeSkeleton();
+  files['packages/f/pubspec.yaml'] = pubspec('skeleton_f');
+  files['apps/starter/pubspec.yaml'] = 'name: starter\ndescription: Starter app.\nresolution: workspace\ndependencies:\n  skeleton_a: any\n  # #if f\n  skeleton_f: any\n  # #endif\n';
+  files['apps/starter/lib/main.dart'] = "title: 'Starter'\n// #if f\nimport 'package:skeleton_f/skeleton_f.dart';\n// #endif\n";
+  files['apps/starter/lib/screens/f_screen.dart'] =
+      '// #file f\nclass FScreen {}\n';
+  files['apps/starter/lib/tidy.dart'] =
+      'class A {\n  int a = 1;\n\n  // #if f\n  int b = 2;\n  // #endif\n}\n';
+  final catalog =
+      jsonDecode(files['capabilities.json']!) as Map<String, Object?>;
+  (catalog['capabilities']! as List).add(entry('f', included: 'flag'));
+  files['capabilities.json'] = json(catalog);
+  files['pubspec.yaml'] = files['pubspec.yaml']!.replaceFirst(
+    '  - packages/b\n',
+    '  - packages/b\n  - packages/f\n',
+  );
+  return files;
+}
+
 void main() {
+  group('feature blocks', () {
+    const text = 'a\n// #if x y\nxy\n// #endif\nb\n# #if x\nonly x\n# #endif\n';
+
+    test(
+      'a block stays when all its ids are kept, without its marker lines',
+      () {
+        expect(applyFeatureBlocks(text, {'x', 'y'}, 'f'), 'a\nxy\nb\nonly x\n');
+      },
+    );
+
+    test('a block goes when one id is not kept', () {
+      expect(applyFeatureBlocks(text, {'x'}, 'f'), 'a\nb\nonly x\n');
+      expect(applyFeatureBlocks(text, {}, 'f'), 'a\nb\n');
+    });
+
+    test('null keeps no block (what the starter needs without options)', () {
+      expect(applyFeatureBlocks(text, null, 'f'), 'a\nb\n');
+    });
+
+    test('an open, a stray or a nested marker stops', () {
+      for (final bad in [
+        '// #if x\nx\n',
+        '// #endif\n',
+        '// #if x\n// #if y\n// #endif\n// #endif\n',
+      ]) {
+        expect(
+          () => applyFeatureBlocks(bad, {'x'}, 'f'),
+          throwsA(isA<FeatureMarkerError>()),
+        );
+      }
+    });
+
+    test('a line that looks like a marker but is not well formed stops', () {
+      for (final bad in [
+        '// #if Board\nx\n// #endif\n',
+        '# #if social_login\nx\n# #endif\n',
+        '// #if board\nx\n// #endif now\n',
+        'a\nb\nc\nd\n// #file board\n',
+      ]) {
+        expect(
+          () => applyFeatureBlocks(bad, {'board'}, 'f'),
+          throwsA(isA<FeatureMarkerError>()),
+          reason: bad,
+        );
+      }
+      // a C preprocessor line is not a marker
+      expect(applyFeatureBlocks('#if X\n#endif\n', {}, 'f'), '#if X\n#endif\n');
+    });
+
+    test('markers of xml and yaml comments are read', () {
+      expect(
+        featureIdsIn(
+          '<!-- #if storage -->\n<k/>\n<!-- #endif -->\n# #if board\n# #endif\n',
+        ),
+        {'storage', 'board'},
+      );
+    });
+  });
+
+  group('the starter\'s optional screens in a stamp', () {
+    late Directory target;
+    setUp(() {
+      target = Directory.systemTemp.createTempSync('stamp-feature');
+      writeTree(target, fakeSkeletonWithFeature());
+    });
+    tearDown(() => target.deleteSync(recursive: true));
+
+    String read(String rel) =>
+        File('${target.path}/apps/acme_app/$rel').readAsStringSync();
+    bool exists(String rel) =>
+        File('${target.path}/apps/acme_app/$rel').existsSync();
+
+    test('without the package nothing of it is left', () {
+      applyStamp(
+        target,
+        const StampOptions(name: 'acme_app', org: 'com.acme', keep: ['a']),
+      );
+
+      expect(exists('lib/screens/f_screen.dart'), isFalse);
+      expect(read('pubspec.yaml'), isNot(contains('skeleton_f')));
+      expect(read('lib/main.dart'), isNot(contains('skeleton_f')));
+      expect(read('lib/main.dart'), isNot(contains('#')));
+      // the blank line a removed block leaves is tidied like dart format would
+      expect(read('lib/tidy.dart'), 'class A {\n  int a = 1;\n}\n');
+      final catalog = readJson(File('${target.path}/capabilities.json'));
+      final app = (catalog['capabilities']! as List).firstWhere(
+        (e) => (e as Map)['id'] == 'app-acme-app',
+      ) as Map;
+      expect(app['needs'], ['a']);
+    });
+
+    test('with the package its screen and block stay and the markers go', () {
+      applyStamp(
+        target,
+        const StampOptions(name: 'acme_app', org: 'com.acme', keep: ['a', 'f']),
+      );
+
+      expect(read('lib/screens/f_screen.dart'), 'class FScreen {}\n');
+      expect(read('pubspec.yaml'), contains('  skeleton_f: any\n'));
+      expect(
+        read('lib/main.dart'),
+        contains("import 'package:skeleton_f/skeleton_f.dart';"),
+      );
+      expect(read('lib/main.dart'), isNot(contains('#')));
+      final catalog = readJson(File('${target.path}/capabilities.json'));
+      final app = (catalog['capabilities']! as List).firstWhere(
+        (e) => (e as Map)['id'] == 'app-acme-app',
+      ) as Map;
+      expect(app['needs'], ['a', 'f']);
+    });
+
+    test(
+      'a target inside a folder named build or .claude is still processed',
+      () {
+        final inner = Directory('${target.path}/build/.claude/proj')
+          ..createSync(recursive: true);
+        writeTree(inner, fakeSkeletonWithFeature());
+        applyStamp(
+          inner,
+          const StampOptions(name: 'acme_app', org: 'com.acme', keep: ['a']),
+        );
+        expect(
+          File('${inner.path}/apps/acme_app/lib/screens/f_screen.dart')
+              .existsSync(),
+          isFalse,
+        );
+        expect(
+          File('${inner.path}/apps/acme_app/lib/main.dart').readAsStringSync(),
+          isNot(contains('#')),
+        );
+      },
+    );
+
+    test('a marker in a file type the stamp does not read stops it', () {
+      File('${target.path}/apps/starter/lib/x.txt')
+          .writeAsStringSync('# #if f\nx\n# #endif\n');
+      expect(
+        () => applyStamp(
+          target,
+          const StampOptions(name: 'acme_app', org: 'com.acme', keep: ['a']),
+        ),
+        throwsA(
+          isA<StampError>().having(
+            (e) => e.message,
+            'message',
+            contains('x.txt'),
+          ),
+        ),
+      );
+    });
+
+    test('the README names only the screens that came along', () {
+      applyStamp(
+        target,
+        const StampOptions(name: 'acme_app', org: 'com.acme', keep: ['a']),
+      );
+      expect(read('README.md'), contains('No optional package was picked'));
+    });
+
+    test('the README lists the picked packages', () {
+      applyStamp(
+        target,
+        const StampOptions(name: 'acme_app', org: 'com.acme', keep: ['a', 'f']),
+      );
+      expect(
+        read('README.md'),
+        contains('picked when this project was made (f)'),
+      );
+      expect(read('README.md'), isNot(contains('FIREBASE')));
+    });
+
+    test('a marker that names no package stops the stamp', () {
+      File('${target.path}/apps/starter/lib/main.dart')
+          .writeAsStringSync('// #if nope\nx\n// #endif\n');
+      expect(
+        () => applyStamp(
+          target,
+          const StampOptions(name: 'acme_app', org: 'com.acme', keep: ['a']),
+        ),
+        throwsA(
+          isA<StampError>().having(
+            (e) => e.message,
+            'message',
+            contains('nope'),
+          ),
+        ),
+      );
+    });
+
+    test('the starter itself does not count a block as something it needs', () {
+      final all = readPackages(target);
+      expect(all.firstWhere((p) => p.dir == 'apps/starter').deps, {
+        'skeleton_a',
+      });
+    });
+  });
+
+  group('the real starter', () {
+    String starter(String rel) =>
+        File('../apps/starter/$rel').readAsStringSync();
+    String stamped(String rel, Set<String> kept) =>
+        applyFeatureBlocks(starter(rel), kept, rel);
+    const traced = [
+      'lib/router.dart',
+      'lib/wiring.dart',
+      'lib/config.dart',
+      'lib/screens/me_screen.dart',
+      'lib/screens/account_screen.dart',
+      'lib/main.dart',
+      'test/app_test.dart',
+      'test/account_flow_test.dart',
+      'pubspec.yaml',
+    ];
+
+    test(
+      'every marker in the starter is well formed and names a package folder',
+      () {
+        final folders = {
+          for (final d in Directory(
+            '../packages',
+          ).listSync().whereType<Directory>())
+            d.path.split('/').last.replaceAll('_', '-'),
+        };
+        for (final f in Directory(
+          '../apps/starter',
+        ).listSync(recursive: true).whereType<File>()) {
+          if (f.path.contains('/build/') ||
+              f.path.contains('/.dart_tool/') ||
+              !RegExp(r'\.(dart|yaml|plist|xml)$').hasMatch(f.path)) {
+            continue;
+          }
+          final text = f.readAsStringSync();
+          expect(
+            featureIdsIn(text).difference(folders),
+            isEmpty,
+            reason: f.path,
+          );
+          applyFeatureBlocks(text, {}, f.path);
+          applyFeatureBlocks(text, folders, f.path);
+        }
+      },
+    );
+
+    test('picking no package leaves no trace of the board or photos', () {
+      for (final rel in traced) {
+        expect(
+          stamped(rel, {}),
+          isNot(
+            contains(
+              RegExp(
+                'board|storage|Board|otification|ealtime|push|Push|irebase',
+              ),
+            ),
+          ),
+          reason: rel,
+        );
+      }
+      for (final plist in [
+        'ios/Runner/Info.plist',
+        'ios/Runner/Info-Debug.plist',
+      ]) {
+        expect(
+          stamped(plist, {}),
+          isNot(contains('NSPhotoLibrary')),
+          reason: plist,
+        );
+      }
+      expect(fileFeatures(starter('lib/screens/board_screens.dart')), [
+        'board',
+      ]);
+    });
+
+    test('picking board gives the screens, the routes and the entry, not the photo field', () {
+      final kept = {'board'};
+      expect(
+        stamped('lib/router.dart', kept),
+        allOf(
+          contains("path: '/board'"),
+          contains("path: 'new'"),
+          contains("path: 'edit'"),
+        ),
+      );
+      expect(
+        stamped('lib/screens/me_screen.dart', kept),
+        contains("context.push('/board')"),
+      );
+      expect(stamped('lib/wiring.dart', kept), contains('boardApiProvider'));
+      expect(
+        stamped('pubspec.yaml', kept),
+        allOf(contains('skeleton_board'), isNot(contains('skeleton_storage'))),
+      );
+      final screens = stamped('lib/screens/board_screens.dart', kept);
+      expect(
+        screens,
+        allOf(
+          contains('PostEditor('),
+          isNot(contains('skeleton_storage')),
+          isNot(contains('attachment')),
+        ),
+      );
+      expect(
+        stamped('ios/Runner/Info.plist', kept),
+        isNot(contains('NSPhotoLibraryUsageDescription')),
+      );
+    });
+
+    test(
+      'picking board and storage adds the photo field and the photo permission',
+      () {
+        final kept = {'board', 'storage'};
+        final screens = stamped('lib/screens/board_screens.dart', kept);
+        expect(
+          screens,
+          allOf(contains('ImageUploadField('), contains('attachmentBuilder')),
+        );
+        expect(
+          stamped('lib/wiring.dart', kept),
+          contains('storageApiProvider'),
+        );
+        for (final plist in [
+          'ios/Runner/Info.plist',
+          'ios/Runner/Info-Debug.plist',
+        ]) {
+          expect(
+            stamped(plist, kept),
+            contains('NSPhotoLibraryUsageDescription'),
+            reason: plist,
+          );
+        }
+      },
+    );
+
+    test('notifications gives the inbox screen, its route and the badge button; realtime adds the stream', () {
+      final inbox = {'notifications'};
+      expect(
+        stamped('lib/router.dart', inbox),
+        contains("path: '/notifications'"),
+      );
+      expect(
+        stamped('lib/screens/me_screen.dart', inbox),
+        contains('UnreadBadge'),
+      );
+      expect(
+        stamped('lib/wiring.dart', inbox),
+        contains('notificationsAccountProvider'),
+      );
+      expect(
+        stamped('lib/main.dart', inbox),
+        isNot(contains('inboxRealtimeProvider')),
+      );
+      // the board's way to a post is only there with the board
+      expect(stamped('lib/wiring.dart', inbox), isNot(contains("'/board/")));
+      expect(
+        stamped('lib/wiring.dart', {'notifications', 'board'}),
+        contains("'/board/"),
+      );
+      expect(fileFeatures(starter('lib/inbox_realtime.dart')), [
+        'notifications',
+        'realtime',
+      ]);
+      final both = {'notifications', 'realtime'};
+      expect(
+        stamped('lib/main.dart', both),
+        contains('ref.watch(inboxRealtimeProvider)'),
+      );
+      expect(
+        stamped('pubspec.yaml', both),
+        allOf(
+          contains('skeleton_notifications'),
+          contains('skeleton_realtime'),
+        ),
+      );
+      // a stream with no inbox has nothing to tell
+      expect(
+        stamped('lib/main.dart', {'realtime'}),
+        isNot(contains('inboxRealtimeProvider')),
+      );
+    });
+
+    test('push gives Firebase start, the hook, the settings screen and the Android permission', () {
+      final kept = {'push'};
+      expect(
+        stamped('lib/main.dart', kept),
+        allOf(
+          contains('await initFirebaseIfConfigured()'),
+          contains('_pushSetupProvider'),
+          contains('scaffoldMessengerKey'),
+        ),
+      );
+      expect(
+        stamped('lib/main.dart', kept),
+        isNot(contains('notificationsChanged')),
+      );
+      expect(
+        stamped('lib/main.dart', {'push', 'notifications'}),
+        contains('notificationsChanged(ref)'),
+      );
+      expect(
+        stamped('lib/router.dart', kept),
+        contains("'/settings/notifications'"),
+      );
+      expect(
+        stamped('lib/screens/me_screen.dart', kept),
+        contains('PushPrompt'),
+      );
+      expect(
+        stamped('lib/wiring.dart', kept),
+        allOf(contains('pushApiProvider'), contains("import 'router.dart'")),
+      );
+      expect(
+        stamped('lib/wiring.dart', kept),
+        isNot(contains('pushFallbackLinkProvider')),
+      );
+      expect(
+        stamped('lib/wiring.dart', {'push', 'notifications'}),
+        contains('pushFallbackLinkProvider'),
+      );
+      expect(
+        stamped('android/app/src/main/AndroidManifest.xml', kept),
+        contains('POST_NOTIFICATIONS'),
+      );
+      expect(
+        stamped('android/app/src/main/AndroidManifest.xml', {}),
+        isNot(contains('POST_NOTIFICATIONS')),
+      );
+      expect(
+        stamped('ios/Runner/Info.plist', kept),
+        contains('remote-notification'),
+      );
+      expect(fileFeatures(starter('lib/firebase_setup.dart')), ['push']);
+    });
+
+    test('iap gives the store screen, its route, the outcome message and the notice before deleting', () {
+      final kept = {'iap'};
+      expect(stamped('lib/router.dart', kept), contains("path: '/store'"));
+      expect(
+        stamped('lib/screens/me_screen.dart', kept),
+        contains("context.push('/store')"),
+      );
+      expect(
+        stamped('lib/wiring.dart', kept),
+        allOf(contains('iapApiProvider'), contains('iapSignedInProvider')),
+      );
+      expect(
+        stamped('lib/main.dart', kept),
+        allOf(
+          contains('ref.watch(iapServiceProvider)'),
+          contains('scaffoldMessengerKey'),
+        ),
+      );
+      expect(
+        stamped('lib/screens/account_screen.dart', kept),
+        contains('iapStoreSubscriptionToCancelProvider'),
+      );
+      expect(
+        stamped('android/app/src/main/AndroidManifest.xml', kept),
+        contains('url_launcher'),
+      );
+      expect(
+        stamped('android/app/src/main/AndroidManifest.xml', {}),
+        isNot(contains('url_launcher')),
+      );
+      expect(fileFeatures(starter('lib/screens/store_screen.dart')), ['iap']);
+    });
+
+    test('storage alone does not give a photo field: it lives in the board screens', () {
+      expect(
+        stamped('lib/wiring.dart', {'storage'}),
+        contains('storageApiProvider'),
+      );
+      expect(
+        stamped('lib/router.dart', {'storage'}),
+        isNot(contains('/board')),
+      );
+    });
+  });
+
   group('replaceOrFail', () {
     test('replaces every occurrence', () {
       expect(

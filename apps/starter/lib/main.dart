@@ -1,13 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+// #if push
+import 'package:flutter/foundation.dart';
+// #endif
 import 'package:skeleton_auth/skeleton_auth.dart';
+// #if iap
+import 'package:skeleton_iap/skeleton_iap.dart';
+// #endif
+// #if notifications push
+import 'package:skeleton_notifications/skeleton_notifications.dart';
+// #endif
+// #if push
+import 'package:skeleton_push/skeleton_push.dart';
+// #endif
 import 'package:skeleton_ui/skeleton_ui.dart';
 
 import 'config.dart';
+// #if push
+import 'firebase_setup.dart';
+// #endif
+// #if notifications realtime
+import 'inbox_realtime.dart';
+// #endif
 import 'router.dart';
+// #if iap
+import 'screens/store_screen.dart';
+// #endif
 import 'wiring.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   // Not an assert: a release build without the define would otherwise start
   // and fail on every request.
   if (AppConfig.apiBaseUrl.isEmpty) {
@@ -15,6 +37,10 @@ void main() {
       'API_BASE_URL is empty: build with --dart-define-from-file=env/<env>.json',
     );
   }
+  // #if push
+  // No Firebase values: nothing starts and push stays "unavailable".
+  await initFirebaseIfConfigured();
+  // #endif
   runApp(
     ProviderScope(
       overrides: [
@@ -32,12 +58,82 @@ void main() {
   );
 }
 
+// #if push
+/// Push needs two things the packages leave to the app: the sign-out hook that
+/// deletes this device on the server, and the controller being alive (it
+/// registers the device and hands over tapped notifications).
+final _pushSetupProvider = Provider<void>((ref) {
+  ref.watch(pushControllerProvider);
+  // Without Firebase there is no registration to delete.
+  if (ref.watch(pushTokenSourceProvider).available) {
+    final remove = ref
+        .read(signOutHooksProvider)
+        .add(ref.read(pushSignOutHookProvider));
+    ref.onDispose(remove);
+  }
+});
+
+// #endif
+// #if push|iap
+final _messengerKey = GlobalKey<ScaffoldMessengerState>();
+
+// #endif
 class StarterApp extends ConsumerWidget {
   const StarterApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // #if iap
+    // Watched from the root so the store's left-over purchases are picked up
+    // at start; what the server said to each purchase is shown wherever the
+    // person is.
+    ref.watch(iapServiceProvider);
+    ref.listen(iapOutcomesProvider, (_, next) {
+      final outcome = next.value;
+      if (outcome == null) return;
+      if (outcome is IapGranted) ref.invalidate(mySubscriptionProvider);
+      _messengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text(iapOutcomeText(outcome))),
+      );
+    });
+    // #endif
+    // #if push
+    ref.watch(_pushSetupProvider);
+    // iOS shows a message that arrives in front by itself; Android does not.
+    ref.listen(pushMessagesProvider, (_, next) {
+      final message = next.value;
+      if (message == null) return;
+      if (defaultTargetPlatform != TargetPlatform.android) return;
+      final text = message.title ?? message.body;
+      if (text == null) return;
+      final link = message.link;
+      _messengerKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Text(text),
+          action: link == null
+              ? null
+              : SnackBarAction(
+                  label: 'Open',
+                  onPressed: () => ref.read(routerProvider).go(link),
+                ),
+        ),
+      );
+    });
+    // #endif
+    // #if notifications push
+    // The push is the same notification the inbox holds: read it again.
+    ref.listen(pushMessagesProvider, (_, next) {
+      if (next.value != null) notificationsChanged(ref);
+    });
+    // #endif
+    // #if notifications realtime
+    // The notification stream while signed in and in front.
+    ref.watch(inboxRealtimeProvider);
+    // #endif
     return MaterialApp.router(
+      // #if push|iap
+      scaffoldMessengerKey: _messengerKey,
+      // #endif
       title: 'Starter',
       theme: skeletonLightTheme(),
       darkTheme: skeletonDarkTheme(),

@@ -40,5 +40,6 @@ kotlin-skeleton `docs/account-http-contract.md`, `docs/modules/auth.md`, `docs/m
 ## new-project
 
 - `scripts/new-project.sh` 가 순서를 정하고 문자열 작업은 `tool/new_project/stamp.dart`. **바꿀 문자열이나 파일을 못 찾으면 조용히 넘기지 않고 멈춘다** — 스타터의 android/ios 파일을 고치면 stamp.dart 의 바꾸는 목록도 같이 본다.
+- **starter 의 선택 화면**: `apps/starter` 는 board · storage(사진 칸) · push · notifications · realtime · iap 의 기본 화면을 전부 갖고 있고(분석 · 시험이 다 덮는다), stamp 가 `--packages` 로 고르지 않은 것을 지운다. 그 패키지 것은 마커 줄(`// #if board storage` … `// #endif`, yaml `# #if`, xml `<!-- #if -->`, 파일 통째는 첫 줄 `// #file board`)로 감싼다. 규칙: 중첩 금지, 「고르지 않음」 조건 없음(스켈레톤에서는 모든 블록이 함께 컴파일돼야 한다), id 는 카탈로그 id(소문자, 폴더 이름의 `_` 를 `-` 로, 예 `social-login`)이고 `a|b` 는 둘 중 하나. 마커의 id 가 패키지가 아니거나 열림/닫힘이 안 맞으면 stamp 가 멈춘다. 블록을 지운 뒤 빈 줄은 `dart format` 과 같게 정리된다. starter 에 화면을 더하면 마커로 감싸고 `tool/test/stamp_test.dart` 의 「the real starter」 시험에 기대를 더한다.
 - 패키지를 더하면 `stampFlag.included`(스타터가 쓰면 `always`, 아니면 `flag` + `--packages <id>`)를 맞춘다. 검사가 어긋남을 막는다.
 - 확인: `scripts/test-new-project.sh`(몇 분, 네트워크). 바뀐 파일이 stamp 와 관계없으면 돌리지 않는다.

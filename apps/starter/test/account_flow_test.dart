@@ -6,7 +6,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:skeleton_api_client/testing.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
+// #if iap
+import 'package:skeleton_iap/skeleton_iap.dart';
+// #endif
 import 'package:skeleton_legal/skeleton_legal.dart';
+// #if notifications realtime
+import 'package:starter/inbox_realtime.dart';
+// #endif
 import 'package:starter/main.dart';
 import 'package:starter/router.dart';
 import 'package:starter/wiring.dart';
@@ -174,6 +180,14 @@ Future<(_Harness, ProviderContainer)> _start(
         signUpAttemptStoreProvider.overrideWithValue(harness.attempts),
         httpAdapterProvider.overrideWithValue(harness.backend.adapter),
         ...starterWiring,
+        // #if iap
+        // no store on the test host
+        iapPlatformProvider.overrideWithValue(null),
+        // #endif
+        // #if notifications realtime
+        // no event stream in a test
+        inboxRealtimeProvider.overrideWithValue(null),
+        // #endif
       ],
       child: const StarterApp(),
     ),

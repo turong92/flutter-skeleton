@@ -49,4 +49,25 @@ void main() {
 
     expect(retries, 1);
   });
+
+  testWidgets('a filled button fits beside other widgets in a row', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: skeletonLightTheme(),
+        home: Scaffold(
+          body: Row(
+            children: [
+              const Expanded(child: Text('Renew consent')),
+              FilledButton(onPressed: () {}, child: const Text('Agree')),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(tester.takeException(), isNull);
+    expect(tester.getSize(find.byType(FilledButton)).height, 48);
+  });
 }

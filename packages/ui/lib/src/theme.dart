@@ -35,7 +35,9 @@ ThemeData _theme(Brightness brightness) {
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         shape: shape,
-        minimumSize: const Size.fromHeight(48),
+        // Height only: an infinite minimum width breaks a button inside a
+        // Row. A full-width button says so where it is placed.
+        minimumSize: const Size(0, 48),
       ),
     ),
   );

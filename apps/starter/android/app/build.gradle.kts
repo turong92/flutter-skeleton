@@ -1,9 +1,23 @@
+// #if social-login-kakao|social-login-naver
+import java.util.Properties
+
+// #endif
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// #if social-login-kakao|social-login-naver
+// Social sign-in values of the manifest (Kakao scheme, Naver client). They live
+// in android/social.properties, which is git-ignored; see social.properties.example.
+// Without the file they are empty and the app still builds.
+val social = Properties().apply {
+    val file = rootProject.file("social.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+
+// #endif
 android {
     namespace = "com.example.starter"
     compileSdk = flutter.compileSdkVersion
@@ -27,6 +41,14 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // #if social-login-kakao
+        manifestPlaceholders["kakaoNativeAppKey"] = social.getProperty("kakaoNativeAppKey", "")
+        // #endif
+        // #if social-login-naver
+        manifestPlaceholders["naverClientId"] = social.getProperty("naverClientId", "")
+        manifestPlaceholders["naverClientSecret"] = social.getProperty("naverClientSecret", "")
+        manifestPlaceholders["naverClientName"] = social.getProperty("naverClientName", "")
+        // #endif
     }
 
     buildTypes {

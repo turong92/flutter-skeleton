@@ -10,6 +10,9 @@ import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_iap/skeleton_iap.dart';
 // #endif
 import 'package:skeleton_legal/skeleton_legal.dart';
+// #if social-login
+import 'package:skeleton_social_login/skeleton_social_login.dart';
+// #endif
 // #if notifications realtime
 import 'package:starter/inbox_realtime.dart';
 // #endif
@@ -56,6 +59,18 @@ class _Backend {
     final path = options.path;
     bodies[path] = options.data;
     switch ((options.method, path)) {
+      case ('GET', '/account/me'):
+        // what the delete form (and the Apple revoke) read about the account
+        return FakeAdapter.json(200, {
+          'value': {
+            'hasPassword': true,
+            'email': 'user@example.com',
+            'methods': [
+              {'method': 'password'},
+            ],
+          },
+          'meta': {'timestamp': '2026-01-01T00:00:00Z'},
+        });
       case ('GET', '/account/password/policy'):
         return FakeAdapter.json(200, {
           'value': {
@@ -180,6 +195,10 @@ Future<(_Harness, ProviderContainer)> _start(
         signUpAttemptStoreProvider.overrideWithValue(harness.attempts),
         httpAdapterProvider.overrideWithValue(harness.backend.adapter),
         ...starterWiring,
+        // #if social-login
+        // a provider's SDK cannot run in a widget test
+        socialProvidersProvider.overrideWithValue(const []),
+        // #endif
         // #if iap
         // no store on the test host
         iapPlatformProvider.overrideWithValue(null),

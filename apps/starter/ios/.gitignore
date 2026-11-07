@@ -32,3 +32,8 @@ Runner/GeneratedPluginRegistrant.*
 !default.mode2v3
 !default.pbxuser
 !default.perspectivev3
+
+# #if social-login-google|social-login-kakao|social-login-naver
+# Your own social sign-in values; Social.xcconfig.example is the template.
+Flutter/Social.xcconfig
+# #endif

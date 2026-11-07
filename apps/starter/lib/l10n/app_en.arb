@@ -63,6 +63,70 @@
   "@photoCannotBeShown": {
     "x-feature": "board storage"
   },
+  "orDivider": "or",
+  "@orDivider": {
+    "x-feature": "social-login"
+  },
+  "signInWithGoogle": "Sign in with Google",
+  "@signInWithGoogle": {
+    "x-feature": "social-login-google"
+  },
+  "signInWithKakao": "Sign in with Kakao",
+  "@signInWithKakao": {
+    "x-feature": "social-login-kakao"
+  },
+  "signInWithNaver": "Sign in with Naver",
+  "@signInWithNaver": {
+    "x-feature": "social-login-naver"
+  },
+  "appleUnreachable": "Apple could not be reached. Try again.",
+  "@appleUnreachable": {
+    "x-feature": "social-login-apple"
+  },
+  "socialEmailConflict": "An account with that email already exists. Sign in with that account, then link this provider in Settings.",
+  "@socialEmailConflict": {
+    "x-feature": "social-login"
+  },
+  "socialNotLinked": "No account is registered for this sign-in.",
+  "@socialNotLinked": {
+    "x-feature": "social-login"
+  },
+  "socialTokenRejected": "The sign-in was refused. Try again.",
+  "@socialTokenRejected": {
+    "x-feature": "social-login"
+  },
+  "socialProviderNotAvailable": "This sign-in is not available.",
+  "@socialProviderNotAvailable": {
+    "x-feature": "social-login"
+  },
+  "socialProviderDown": "The sign-in service is not responding. Try again later.",
+  "@socialProviderDown": {
+    "x-feature": "social-login"
+  },
+  "socialBlocked": "This account cannot sign in.",
+  "@socialBlocked": {
+    "x-feature": "social-login"
+  },
+  "socialDeletionPending": "This account is being deleted.",
+  "@socialDeletionPending": {
+    "x-feature": "social-login"
+  },
+  "socialMfaRequired": "This account needs a second sign-in step this app does not have.",
+  "@socialMfaRequired": {
+    "x-feature": "social-login"
+  },
+  "socialNetwork": "No connection. Check the network and try again.",
+  "@socialNetwork": {
+    "x-feature": "social-login"
+  },
+  "socialSdk": "The sign-in failed. Try again.",
+  "@socialSdk": {
+    "x-feature": "social-login"
+  },
+  "socialOther": "Something went wrong. Try again.",
+  "@socialOther": {
+    "x-feature": "social-login"
+  },
   "storeTitle": "Store",
   "@storeTitle": {
     "x-feature": "iap"

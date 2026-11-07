@@ -1,1 +1,4 @@
 #include "Generated.xcconfig"
+// #if social-login-google|social-login-kakao|social-login-naver
+#include? "Social.xcconfig"
+// #endif

@@ -5,6 +5,10 @@ import 'package:skeleton_ui/skeleton_ui.dart';
 
 import '../l10n/l10n.dart';
 import 'form_page.dart';
+// #if social-login
+import 'social_buttons.dart';
+
+// #endif
 
 /// The auth package's form in a page. Pass `LoginLabels` here to translate it.
 class LoginScreen extends StatelessWidget {
@@ -18,6 +22,9 @@ class LoginScreen extends StatelessWidget {
         LoginForm(
           labels: context.byLocale(const LoginLabels.ko(), const LoginLabels()),
         ),
+        // #if social-login
+        const SocialButtons(),
+        // #endif
         const SizedBox(height: SkeletonSpace.md),
         OutlinedButton(
           onPressed: () => context.go('/sign-up'),

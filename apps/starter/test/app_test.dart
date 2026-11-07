@@ -11,6 +11,9 @@ import 'package:skeleton_i18n/testing.dart';
 // #if iap
 import 'package:skeleton_iap/skeleton_iap.dart';
 // #endif
+// #if social-login
+import 'package:skeleton_social_login/skeleton_social_login.dart';
+// #endif
 // #if notifications realtime
 import 'package:starter/inbox_realtime.dart';
 // #endif
@@ -77,6 +80,10 @@ Widget _app(TokenStore store, {List<Override> extra = const []}) =>
         tokenStoreProvider.overrideWithValue(store),
         httpAdapterProvider.overrideWithValue(_backend),
         ...starterWiring,
+        // #if social-login
+        // a provider's SDK cannot run in a widget test
+        socialProvidersProvider.overrideWithValue(const []),
+        // #endif
         ...extra,
         // #if iap
         // no store on the test host

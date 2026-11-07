@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+// #if social-login-kakao
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
+// #endif
 // #if push
 import 'package:flutter/foundation.dart';
 // #endif
@@ -16,6 +19,9 @@ import 'package:skeleton_notifications/skeleton_notifications.dart';
 // #if push
 import 'package:skeleton_push/skeleton_push.dart';
 // #endif
+// #if social-login
+import 'package:skeleton_social_login/skeleton_social_login.dart';
+// #endif
 import 'package:skeleton_ui/skeleton_ui.dart';
 
 import 'l10n/l10n.dart';
@@ -27,6 +33,9 @@ import 'firebase_setup.dart';
 import 'inbox_realtime.dart';
 // #endif
 import 'router.dart';
+// #if social-login
+import 'social_support.dart';
+// #endif
 // #if iap
 import 'screens/store_screen.dart';
 // #endif
@@ -44,6 +53,13 @@ Future<void> main() async {
   // #if push
   // No Firebase values: nothing starts and push stays "unavailable".
   await initFirebaseIfConfigured();
+  // #endif
+  // #if social-login-kakao
+  // The Kakao SDK is started by the app, and only with a key (no key = no
+  // Kakao button).
+  if (AppConfig.kakaoNativeAppKey.isNotEmpty) {
+    await KakaoSdk.init(nativeAppKey: AppConfig.kakaoNativeAppKey);
+  }
   // #endif
   // #if i18n
   // The language the person picked last time (before the first frame).
@@ -65,6 +81,12 @@ Future<void> main() async {
           SecureSignUpAttemptStore(),
         ),
         ...starterWiring,
+        // #if social-login
+        // Which providers this build has; the server's /auth/methods then
+        // narrows them to the ones shown. Not in starterWiring: tests bring
+        // their own, since a provider SDK cannot run in a widget test.
+        socialProvidersProvider.overrideWith((ref) => buildSocialProviders()),
+        // #endif
       ],
       child: const StarterApp(),
     ),
@@ -87,6 +109,16 @@ final _pushSetupProvider = Provider<void>((ref) {
 });
 
 // #endif
+// #if social-login
+/// Sign-out also ends the providers' own SDK sessions.
+final _socialSetupProvider = Provider<void>((ref) {
+  final remove = ref
+      .read(signOutHooksProvider)
+      .add(ref.read(socialSignOutHookProvider));
+  ref.onDispose(remove);
+});
+
+// #endif
 // #if push|iap
 final _messengerKey = GlobalKey<ScaffoldMessengerState>();
 
@@ -96,6 +128,9 @@ class StarterApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // #if social-login
+    ref.watch(_socialSetupProvider);
+    // #endif
     // #if iap
     // Watched from the root so the store's left-over purchases are picked up
     // at start; what the server said to each purchase is shown wherever the

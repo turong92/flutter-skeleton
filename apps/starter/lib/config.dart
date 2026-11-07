@@ -21,6 +21,28 @@ abstract final class AppConfig {
   static const firebaseIosAppId = String.fromEnvironment('FIREBASE_IOS_APP_ID');
   // #endif
 
+  // #if social-login-google|social-login-kakao
+  // Social sign-in. An empty value hides that provider's button. The native
+  // files read their own copy (`ios/Flutter/Social.xcconfig`,
+  // `android/social.properties`); the Kakao key is in both places.
+  // #endif
+  // #if social-login-google
+  /// The **web** OAuth client id of the Google Cloud project.
+  static const googleServerClientId = String.fromEnvironment(
+    'GOOGLE_SERVER_CLIENT_ID',
+  );
+
+  /// The iOS OAuth client id; empty = `GIDClientID` of `Info.plist` is used.
+  static const googleIosClientId = String.fromEnvironment(
+    'GOOGLE_IOS_CLIENT_ID',
+  );
+  // #endif
+  // #if social-login-kakao
+  static const kakaoNativeAppKey = String.fromEnvironment(
+    'KAKAO_NATIVE_APP_KEY',
+  );
+  // #endif
+
   // #if board
   /// The board this app shows: a board code of your server (`--dart-define BOARD_CODE=...`).
   static const board = String.fromEnvironment(

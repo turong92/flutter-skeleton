@@ -15,6 +15,10 @@ import '../l10n/l10n.dart';
 import '../config.dart';
 // #endif
 import 'form_page.dart';
+// #if social-login
+import '../social_support.dart';
+
+// #endif
 
 /// Account settings: deleting the account (the store rules ask for it inside
 /// the app). The password is typed again; on success the device is signed out.
@@ -101,6 +105,14 @@ class AccountScreen extends ConsumerWidget {
             const DeleteAccountLabels(),
           ),
           onDeleted: (_) => context.go('/login'),
+          // #if social-login
+          // An account without a password or an address proves itself with a linked provider.
+          socialReauth: () => reauthWithLinkedProvider(ref),
+          // #endif
+          // #if social-login-apple
+          beforeDelete: () =>
+              revokeAppleBeforeDelete(ref, context.l10n.appleUnreachable),
+          // #endif
         ),
         const SizedBox(height: SkeletonSpace.md),
         OutlinedButton(

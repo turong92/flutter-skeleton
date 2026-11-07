@@ -12,3 +12,8 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+
+# #if social-login-kakao|social-login-naver
+# Your own social sign-in values; social.properties.example is the template.
+social.properties
+# #endif

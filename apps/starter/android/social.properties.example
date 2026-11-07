@@ -1,0 +1,20 @@
+# #file social-login-kakao|social-login-naver
+# Copy to social.properties (git-ignored) and put your own values in.
+# app/build.gradle.kts reads it into the manifest. Without the file every value
+# is empty and the app builds, with the Kakao and Naver sign-in not working.
+#
+# The values here are examples only. The Kakao key is also in env/<env>.json
+# (KAKAO_NATIVE_APP_KEY): keep both the same. Google needs nothing here: register
+# the package name and the SHA-1 of your signing key in the Google Cloud console.
+
+# #if social-login-kakao
+# Kakao Developers, "Native app key".
+kakaoNativeAppKey=0123456789abcdef0123456789abcdef
+
+# #endif
+# #if social-login-naver
+# Naver Developers, Application, "Naver Login".
+naverClientId=exampleClientId
+naverClientSecret=exampleClientSecret
+naverClientName=Example App
+# #endif

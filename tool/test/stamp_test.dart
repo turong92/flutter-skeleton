@@ -329,6 +329,13 @@ void main() {
       'lib/main.dart',
       'test/app_test.dart',
       'test/account_flow_test.dart',
+      'android/app/build.gradle.kts',
+      'android/.gitignore',
+      'ios/.gitignore',
+      'ios/Runner/AppDelegate.swift',
+      'ios/Runner/SceneDelegate.swift',
+      'ios/Flutter/Debug.xcconfig',
+      'ios/Flutter/Release.xcconfig',
       'pubspec.yaml',
     ];
 
@@ -368,7 +375,7 @@ void main() {
           isNot(
             contains(
               RegExp(
-                'board|storage|Board|otification|ealtime|push|Push|irebase|iap|Iap|i18n|LanguageMenu|localeProvider',
+                'board|storage|Board|otification|ealtime|push|Push|irebase|iap|Iap|i18n|LanguageMenu|localeProvider|ocial|akao|aver|NidThirdParty',
               ),
             ),
           ),
@@ -647,6 +654,229 @@ void main() {
       );
     });
 
+    test(
+      'social sign-in: no trace without it, each provider brings only its own',
+      () {
+        for (final plist in [
+          'ios/Runner/Info.plist',
+          'ios/Runner/Info-Debug.plist',
+        ]) {
+          expect(
+            stamped(plist, {}),
+            isNot(
+              contains(
+                RegExp(
+                  'CFBundleURLTypes|GIDClientID|NidClientID|LSApplicationQueriesSchemes',
+                ),
+              ),
+            ),
+            reason: plist,
+          );
+        }
+        expect(
+          stamped('android/app/src/main/AndroidManifest.xml', {}),
+          isNot(contains('kakao')),
+        );
+        expect(
+          stamped('ios/Runner/Runner.entitlements', {}),
+          isNot(contains('applesignin')),
+        );
+        for (final own in [
+          'lib/social_support.dart',
+          'lib/screens/social_buttons.dart',
+          'test/social_test.dart',
+        ]) {
+          expect(fileFeatures(starter(own)), ['social-login'], reason: own);
+        }
+        for (final own in [
+          'android/social.properties.example',
+          'ios/Flutter/Social.xcconfig.example',
+        ]) {
+          expect(fileFeatures(starter(own)), isNotNull, reason: own);
+        }
+
+        const core = 'social-login';
+        final kakao = {core, 'social-login-kakao'};
+        expect(
+          stamped('pubspec.yaml', kakao),
+          allOf(
+            contains('skeleton_social_login_kakao'),
+            contains('kakao_flutter_sdk_user'),
+            isNot(contains('skeleton_social_login_naver')),
+            isNot(contains('sign_in_with_apple')),
+          ),
+        );
+        expect(
+          stamped('lib/main.dart', kakao),
+          allOf(
+            contains('KakaoSdk.init'),
+            contains('buildSocialProviders'),
+            contains('socialSignOutHookProvider'),
+          ),
+        );
+        expect(
+          stamped('lib/screens/login_screen.dart', kakao),
+          contains('SocialButtons'),
+        );
+        expect(
+          stamped('lib/config.dart', kakao),
+          allOf(
+            contains('kakaoNativeAppKey'),
+            isNot(contains('googleServerClientId')),
+          ),
+        );
+        expect(
+          stamped('android/app/build.gradle.kts', kakao),
+          allOf(
+            contains('kakaoNativeAppKey'),
+            contains('import java.util.Properties'),
+            isNot(contains('naverClientId')),
+          ),
+        );
+        expect(
+          stamped('android/app/src/main/AndroidManifest.xml', kakao),
+          allOf(
+            contains('AuthCodeHandlerActivity'),
+            isNot(contains('naver.sdk')),
+          ),
+        );
+        expect(
+          stamped('android/.gitignore', kakao),
+          contains('social.properties'),
+        );
+        expect(
+          stamped('ios/Runner/Info.plist', kakao),
+          allOf(
+            contains('kakao\$(KAKAO_NATIVE_APP_KEY)'),
+            contains('kakaolink'),
+            isNot(contains('GIDClientID')),
+            isNot(contains('Nid')),
+          ),
+        );
+        expect(
+          stamped('ios/Runner/AppDelegate.swift', kakao),
+          isNot(contains('NidThirdPartyLogin')),
+        );
+        expect(
+          stamped('ios/Flutter/Debug.xcconfig', kakao),
+          contains('Social.xcconfig'),
+        );
+        expect(
+          stamped('android/social.properties.example', kakao),
+          allOf(
+            contains('kakaoNativeAppKey'),
+            isNot(contains('naverClientId')),
+          ),
+        );
+        expect(
+          stamped('lib/social_support.dart', kakao),
+          allOf(
+            contains('KakaoSocialProvider'),
+            isNot(contains('NaverSocialProvider')),
+            isNot(contains('revokeAppleBeforeDelete')),
+          ),
+        );
+        expect(
+          stamped('lib/screens/account_screen.dart', kakao),
+          allOf(
+            contains('reauthWithLinkedProvider'),
+            isNot(contains('revokeAppleBeforeDelete')),
+          ),
+        );
+
+        final naver = {core, 'social-login-naver'};
+        expect(
+          stamped('ios/Runner/AppDelegate.swift', naver),
+          contains('NidOAuth.shared.handleURL'),
+        );
+        expect(
+          stamped('ios/Runner/SceneDelegate.swift', naver),
+          contains('openURLContexts'),
+        );
+        expect(
+          stamped('ios/Runner/Info.plist', naver),
+          allOf(
+            contains('NidClientID'),
+            contains('naversearchapp'),
+            isNot(contains('kakaolink')),
+          ),
+        );
+        expect(
+          stamped('android/app/src/main/AndroidManifest.xml', naver),
+          allOf(
+            contains('naver.sdk.clientId'),
+            isNot(contains('AuthCodeHandlerActivity')),
+          ),
+        );
+
+        final google = {core, 'social-login-google'};
+        expect(
+          stamped('ios/Runner/Info.plist', google),
+          allOf(
+            contains('GIDClientID'),
+            contains(r'GOOGLE_REVERSED_CLIENT_ID'),
+            isNot(contains('LSApplicationQueriesSchemes')),
+          ),
+        );
+        expect(
+          stamped('lib/config.dart', google),
+          allOf(
+            contains('googleServerClientId'),
+            isNot(contains('kakaoNativeAppKey')),
+          ),
+        );
+        expect(
+          stamped('android/app/build.gradle.kts', google),
+          isNot(contains('Properties')),
+        );
+
+        final apple = {core, 'social-login-apple'};
+        expect(stamped('pubspec.yaml', apple), contains('sign_in_with_apple'));
+        expect(
+          stamped('lib/screens/account_screen.dart', apple),
+          contains('revokeAppleBeforeDelete'),
+        );
+        expect(
+          stamped('lib/screens/social_buttons.dart', apple),
+          allOf(
+            contains('SignInWithAppleButton'),
+            isNot(contains('_BrandButton')),
+          ),
+        );
+        expect(
+          stamped('ios/Runner/Runner.entitlements', apple),
+          contains('applesignin'),
+        );
+        expect(
+          stamped('ios/Runner/Info.plist', apple),
+          isNot(contains('CFBundleURLTypes')),
+        );
+      },
+    );
+
+    test('the ARB texts of social sign-in follow the providers', () {
+      Set<String> keys(Set<String> kept) => (jsonDecode(
+        pruneFeatureArb(starter('lib/l10n/app_en.arb'), kept),
+      ) as Map<String, Object?>).keys.where((k) => !k.startsWith('@')).toSet();
+      expect(keys({}), isNot(contains('orDivider')));
+      expect(
+        keys({'social-login'}),
+        allOf(
+          contains('orDivider'),
+          contains('socialSdk'),
+          isNot(contains('signInWithKakao')),
+        ),
+      );
+      expect(
+        keys({'social-login', 'social-login-kakao'}),
+        allOf(contains('signInWithKakao'), isNot(contains('signInWithNaver'))),
+      );
+      expect(
+        keys({'social-login', 'social-login-apple'}),
+        contains('appleUnreachable'),
+      );
+    });
+
     test('storage alone does not give a photo field: it lives in the board screens', () {
       expect(
         stamped('lib/wiring.dart', {'storage'}),
@@ -794,6 +1024,10 @@ void main() {
         '.vscode/settings.json': '{}',
         '.vscode/extensions.json': '{}',
         'coverage/lcov.info': 'x',
+        'apps/s/android/social.properties': 'naverClientSecret=real',
+        'apps/s/android/social.properties.example': 'x',
+        'apps/s/ios/Flutter/Social.xcconfig': 'NAVER_CLIENT_SECRET = real',
+        'apps/s/ios/Flutter/Social.xcconfig.example': 'x',
         'apps/x/lib/l10n/app_localizations.dart': 'x',
         'apps/x/lib/l10n/app_localizations_ko.dart': 'x',
         'apps/x/lib/l10n/app_ko.arb': '{}',
@@ -807,6 +1041,8 @@ void main() {
       // gen_l10n output is written again by `flutter pub get`, from the ARB files that survive
       expect(copied, [
         '.vscode/extensions.json',
+        'apps/s/android/social.properties.example',
+        'apps/s/ios/Flutter/Social.xcconfig.example',
         'apps/x/lib/l10n/app_ko.arb',
         'apps/x/lib/l10n/l10n.dart',
         'keep.txt',

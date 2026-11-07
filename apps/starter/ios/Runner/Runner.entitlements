@@ -8,6 +8,13 @@
 	     break its builds. A project with a paid team: change the domain, add the
 	     capability in Xcode, and set CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements
 	     for the Runner target (all three configurations). -->
+	<!-- #if social-login-apple -->
+	<!-- Sign in with Apple capability (not linked either; see the note above). -->
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
+	<!-- #endif -->
 	<key>com.apple.developer.associated-domains</key>
 	<array>
 		<string>applinks:app.example.com</string>

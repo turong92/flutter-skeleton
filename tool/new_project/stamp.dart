@@ -129,6 +129,9 @@ const _skipFiles = {
   'pubspec_overrides.yaml',
   'local.properties',
   'key.properties',
+  // the developer's own social sign-in values (the `.example` files do come along)
+  'social.properties',
+  'Social.xcconfig',
   'Generated.xcconfig',
   'flutter_export_environment.sh',
   '.flutter-plugins',
@@ -297,6 +300,17 @@ void applyStamp(Directory target, StampOptions o) {
       ('package:starter/', 'package:$name/'),
     ]);
   }
+  // the tests of the optional screens (they exist only when their package was kept)
+  for (final file in Directory('${target.path}/$app/test').listSync()) {
+    if (file is File && file.path.endsWith('.dart')) {
+      final text = file.readAsStringSync();
+      if (text.contains('package:starter/')) {
+        file.writeAsStringSync(
+          text.replaceAll('package:starter/', 'package:$name/'),
+        );
+      }
+    }
+  }
   _edit(target, '$app/README.md', [('# starter\n', '# $name\n')]);
   _write(
     target,
@@ -379,6 +393,7 @@ const _featureTextExtensions = {
   '.swift',
   '.kt',
   '.entitlements',
+  '.gitignore',
 };
 
 /// The optional screens of the starter (see workspace.dart, "starter features"): what belongs
@@ -476,7 +491,7 @@ String _optionalScreensNote(Set<String> picked) {
   }
   return '''## Optional screens
 
-The screens of the packages picked when this project was made (${names.join(', ')}) are in `lib/screens/`, their routes in `lib/router.dart`, their wiring in `lib/wiring.dart`. The entry points are on the account screen (`/me`).${picked.contains('push') ? ' Push reads the `FIREBASE_*` values from `env/dev.json` (see `lib/config.dart`) and needs the Push Notifications capability on your App ID on iOS.' : ''}${picked.contains('board') ? ' The board code is `BOARD_CODE`.' : ''}
+The screens of the packages picked when this project was made (${names.join(', ')}) are in `lib/screens/`, their routes in `lib/router.dart`, their wiring in `lib/wiring.dart`. The entry points are on the account screen (`/me`).${picked.contains('push') ? ' Push reads the `FIREBASE_*` values from `env/dev.json` (see `lib/config.dart`) and needs the Push Notifications capability on your App ID on iOS.' : ''}${picked.contains('board') ? ' The board code is `BOARD_CODE`.' : ''}${picked.any((id) => id.startsWith('social-login-')) ? ' Social sign-in buttons are on the sign-in page, shown for a provider that has its values: the Google and Kakao ids from `env/dev.json` (`lib/config.dart`), and the native files `ios/Flutter/Social.xcconfig` and `android/social.properties` (copy the `.example` files). Sign in with Apple needs the capability on your App ID (`Runner.entitlements` is not linked to the target).' : ''}
 
 ''';
 }

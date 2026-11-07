@@ -30,6 +30,60 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<!-- #if social-login-google|social-login-kakao|social-login-naver -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+	<!-- #endif -->
+	<!-- #if social-login-google -->
+				<string>$(GOOGLE_REVERSED_CLIENT_ID)</string>
+	<!-- #endif -->
+	<!-- #if social-login-kakao -->
+				<string>kakao$(KAKAO_NATIVE_APP_KEY)</string>
+	<!-- #endif -->
+	<!-- #if social-login-naver -->
+				<string>$(NAVER_URL_SCHEME)</string>
+	<!-- #endif -->
+	<!-- #if social-login-google|social-login-kakao|social-login-naver -->
+			</array>
+		</dict>
+	</array>
+	<!-- #endif -->
+	<!-- #if social-login-google -->
+	<key>GIDClientID</key>
+	<string>$(GOOGLE_CLIENT_ID)</string>
+	<key>GIDServerClientID</key>
+	<string>$(GOOGLE_SERVER_CLIENT_ID)</string>
+	<!-- #endif -->
+	<!-- #if social-login-kakao|social-login-naver -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+	<!-- #endif -->
+	<!-- #if social-login-kakao -->
+		<string>kakaokompassauth</string>
+		<string>kakaolink</string>
+	<!-- #endif -->
+	<!-- #if social-login-naver -->
+		<string>naversearchapp</string>
+		<string>naversearchthirdlogin</string>
+	<!-- #endif -->
+	<!-- #if social-login-kakao|social-login-naver -->
+	</array>
+	<!-- #endif -->
+	<!-- #if social-login-naver -->
+	<key>NidAppName</key>
+	<string>$(NAVER_APP_NAME)</string>
+	<key>NidClientID</key>
+	<string>$(NAVER_CLIENT_ID)</string>
+	<key>NidClientSecret</key>
+	<string>$(NAVER_CLIENT_SECRET)</string>
+	<key>NidUrlScheme</key>
+	<string>$(NAVER_URL_SCHEME)</string>
+	<!-- #endif -->
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>

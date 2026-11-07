@@ -6,7 +6,7 @@
 #   1. bad arguments are refused with exit 2 and create nothing
 #   2. default stamp (acme_app, com.example): renames, no leftovers, pub get + analyze + test of the whole workspace
 #   3. --packages auth --org com.shop --prefix shop (shop_app): the same, with the prefix and org applied
-#   4. --packages board,storage,push,notifications,realtime,iap,i18n: all stay with their starter screens, apps/sample is gone, the same checks
+#   4. --packages board,storage,push,notifications,realtime,iap,i18n and the four social providers: all stay with their starter screens, apps/sample is gone, the same checks
 #
 # Needs the Flutter SDK and network for `flutter pub get` (a few minutes). The temp folder goes away at the end (KEEP=1 keeps it).
 # Texts that cannot be found stopping the stamp is tested in tool/test/stamp_test.dart.
@@ -74,6 +74,7 @@ check "AGENTS.md is written for the project and CLAUDE.md only imports it" bash 
 check "the catalog is a project catalog" grep -q '"mode": "project"' "$P1/capabilities.json"
 check "apps/sample, board and push are not in a default stamp" test ! -e "$P1/apps/sample" -a ! -e "$P1/packages/board" -a ! -e "$P1/packages/push"
 check "a default stamp has none of the optional screens and no marker line" bash -c "[ ! -e '$P1/apps/acme_app/lib/screens/board_screens.dart' ] && [ ! -e '$P1/apps/acme_app/lib/firebase_setup.dart' ] && [ ! -e '$P1/apps/acme_app/lib/screens/store_screen.dart' ] && ! grep -rIq -e '#if ' -e '#endif' -e '#file ' --include='*.dart' --include='*.yaml' --include='*.plist' --include='*.xml' '$P1/apps'"
+check "a default stamp has no social sign-in: no files, no native settings, no texts" bash -c "D='$P1/apps/acme_app' && [ ! -e \$D/lib/social_support.dart ] && [ ! -e \$D/android/social.properties.example ] && [ ! -e \$D/ios/Flutter/Social.xcconfig.example ] && ! grep -q CFBundleURLTypes \$D/ios/Runner/Info.plist && ! grep -q kakao \$D/android/app/src/main/AndroidManifest.xml && ! grep -q orDivider \$D/lib/l10n/app_en.arb && ! grep -q Social.xcconfig \$D/ios/Flutter/Debug.xcconfig"
 check "a default stamp has both languages, only the texts of what it has, and no language menu" bash -c "D='$P1/apps/acme_app' && [ -f \$D/lib/l10n/app_ko.arb ] && [ -f \$D/lib/l10n/app_en.arb ] && grep -q createAccount \$D/lib/l10n/app_en.arb && ! grep -q boardTitle \$D/lib/l10n/app_en.arb && ! grep -q x-feature \$D/lib/l10n/app_ko.arb && ! grep -rq LanguageMenu \$D/lib"
 check "a default stamp has the format dart format wants" bash -c "cd '$P1' && ! dart format --output=none --set-exit-if-changed apps 2>/dev/null | grep -q Changed"
 verify "$P1"
@@ -87,11 +88,12 @@ check "imports use the prefix" grep -q "package:shop_auth/shop_auth.dart" "$P2/a
 [ -z "$(leftovers "$P2" 'skeleton_')" ] && pass "no skeleton_ left" || fail "skeleton_ left in: $(leftovers "$P2" 'skeleton_')"
 verify "$P2"
 
-echo "== 4. --packages board,storage,push,notifications,realtime,iap,i18n"
+echo "== 4. --packages board,storage,push,notifications,realtime,iap,i18n,social-login-google,social-login-apple,social-login-kakao,social-login-naver"
 P3="$TMP/shop2"
-expect_exit 0 "stamp shop_app with board, storage, push, notifications, realtime, iap and i18n" bash "$SCRIPT" "$P3" shop_app --packages board,storage,push,notifications,realtime,iap,i18n
+expect_exit 0 "stamp shop_app with board, storage, push, notifications, realtime, iap, i18n and the four social providers" bash "$SCRIPT" "$P3" shop_app --packages board,storage,push,notifications,realtime,iap,i18n,social-login-google,social-login-apple,social-login-kakao,social-login-naver
 check "the starter has the screens, routes and wiring of what was picked" bash -c "D='$P3/apps/shop_app/lib' && [ -f \$D/screens/board_screens.dart ] && [ -f \$D/screens/notifications_screen.dart ] && [ -f \$D/screens/notification_settings_screen.dart ] && [ -f \$D/screens/store_screen.dart ] && [ -f \$D/firebase_setup.dart ] && [ -f \$D/inbox_realtime.dart ] && grep -q \"path: '/board'\" \$D/router.dart && grep -q 'ImageUploadField' \$D/screens/board_screens.dart && grep -q 'iapApiProvider' \$D/wiring.dart"
 check "the picked starter has the Korean and English texts, the language menu and the saved language" bash -c "D='$P3/apps/shop_app' && [ -f \$D/lib/l10n/app_ko.arb ] && [ -f \$D/lib/l10n/app_en.arb ] && grep -q LanguageMenu \$D/lib/screens/me_screen.dart && grep -q loadSavedLocale \$D/lib/main.dart && grep -q boardTitle \$D/lib/l10n/app_en.arb && ! grep -q x-feature \$D/lib/l10n/app_en.arb"
+check "the picked starter has the social buttons, the native settings of all four providers and their value examples" bash -c "D='$P3/apps/shop_app' && [ -f \$D/lib/screens/social_buttons.dart ] && [ -f \$D/lib/social_support.dart ] && [ -f \$D/android/social.properties.example ] && [ -f \$D/ios/Flutter/Social.xcconfig.example ] && grep -q NidClientID \$D/ios/Runner/Info.plist && grep -q GIDClientID \$D/ios/Runner/Info-Debug.plist && grep -q AuthCodeHandlerActivity \$D/android/app/src/main/AndroidManifest.xml && grep -q NidThirdPartyLogin \$D/ios/Runner/AppDelegate.swift && grep -q social.properties \$D/android/.gitignore && grep -q Social.xcconfig \$D/ios/Flutter/Debug.xcconfig && grep -q signInWithKakao \$D/lib/l10n/app_en.arb"
 check "the picked starter has the format dart format wants and no marker line" bash -c "cd '$P3' && ! dart format --output=none --set-exit-if-changed apps 2>/dev/null | grep -q Changed && ! grep -rIq -e '#if ' -e '#endif' -e '#file ' --include='*.dart' --include='*.yaml' --include='*.plist' --include='*.xml' apps"
 check "the four are kept, apps/sample is gone" test -d "$P3/packages/board" -a -d "$P3/packages/push" -a -d "$P3/packages/notifications" -a -d "$P3/packages/realtime" -a ! -e "$P3/apps/sample"
 check "the workspace lists the four and not the sample" bash -c "grep -q '  - packages/board' '$P3/pubspec.yaml' && grep -q '  - packages/push' '$P3/pubspec.yaml' && grep -q '  - packages/notifications' '$P3/pubspec.yaml' && grep -q '  - packages/realtime' '$P3/pubspec.yaml' && ! grep -q 'apps/sample' '$P3/pubspec.yaml'"

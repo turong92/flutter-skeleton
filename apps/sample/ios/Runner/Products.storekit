@@ -1,0 +1,85 @@
+{
+  "identifier" : "A1B2C3D4",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "3.99",
+      "familyShareable" : false,
+      "internalID" : "6740000001",
+      "localizations" : [
+        {
+          "description" : "Support the sample app",
+          "displayName" : "Cheer",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.example.sample.cheer3000",
+      "referenceName" : "Cheer (consumable)",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "4.99",
+      "familyShareable" : false,
+      "internalID" : "6740000002",
+      "localizations" : [
+        {
+          "description" : "Remove ads for good",
+          "displayName" : "Remove ads",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.example.sample.removeads",
+      "referenceName" : "Remove ads (non-consumable)",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_storefront" : "USA"
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "21000001",
+      "localizations" : [
+
+      ],
+      "name" : "Standard",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "2.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6740000003",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Standard plan, billed monthly",
+              "displayName" : "Standard monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.example.sample.standard.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Standard monthly",
+          "subscriptionGroupID" : "21000001",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

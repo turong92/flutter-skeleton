@@ -47,3 +47,7 @@ dev_dependencies:
 flutter:
   generate: true # gen_l10n runs on pub get / build (l10n.yaml)
   uses-material-design: true
+  config:
+    # firebase_messaging (firebase-ios-sdk 13) and google_sign_in_ios (GoogleSignIn 9) cannot be
+    # resolved together by SwiftPM (gtm-session-fetcher range clash); CocoaPods resolves them.
+    enable-swift-package-manager: false

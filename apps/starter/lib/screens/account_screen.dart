@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
+// #if ads
+import 'package:skeleton_ads/skeleton_ads.dart';
+// #endif
 // #if iap
 import 'package:skeleton_iap/skeleton_iap.dart';
 // #endif
@@ -118,6 +121,12 @@ class AccountScreen extends ConsumerWidget {
               revokeAppleBeforeDelete(ref, context.l10n.appleUnreachable),
           // #endif
         ),
+        // #if ads
+        // Draws nothing where Google's consent policy asks for no entry.
+        AdsPrivacyOptionsButton(
+          labels: context.byLocale(const AdsLabels.ko(), const AdsLabels()),
+        ),
+        // #endif
         const SizedBox(height: SkeletonSpace.md),
         OutlinedButton(
           onPressed: () => context.go('/me'),

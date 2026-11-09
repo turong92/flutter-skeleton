@@ -60,6 +60,13 @@
         <meta-data android:name="com.naver.sdk.clientSecret" android:value="${naverClientSecret}"/>
         <meta-data android:name="com.naver.sdk.clientName" android:value="${naverClientName}"/>
         <!-- #endif -->
+        <!-- #if ads -->
+        <!-- Google's test app id: replace it with the app id of your AdMob app
+             (it is public). Without this line the ads SDK stops the app at start. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713"/>
+        <!-- #endif -->
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

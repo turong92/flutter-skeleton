@@ -49,6 +49,10 @@
   - take: `--packages storage`; needs: api-client
   - backend: modules `storage` · `storage-s3` · more when present `storage-image` · paths `/api/v1/storage`; react twin: storage
   - keywords: 사진 올리기, 이미지 업로드, 첨부, 프리사인, 사진 고르기 / photo upload, image upload, attachment, presigned url, image picker
+- `ads`: Google AdMob banner: Google's consent flow (UMP) before the SDK starts, one anchored adaptive banner that stays empty until ads may be asked for, a button to change the ad consent where Google's policy asks for one, and ad unit ids that are Google's test units everywhere except a release build. The AdMob SDK sits behind a boundary with a test fake. No backend.
+  - take: `--packages ads`; needs: —
+  - backend: —; react twin: —
+  - keywords: 광고, 배너 광고, 애드몹, 구글 광고, 광고 동의, 수익화 / ads, admob, banner ad, google mobile ads, ump, consent, monetization
 - `i18n`: Language choice for the app: the saved pick (kept on the device), then the device language, then Korean; a language menu that shows each language in its own name; and a check that the ko and en ARB files have the same keys and placeholders. The texts are the app's (ARB files and gen_l10n); packages take theirs as Labels and some ship a Korean set.
   - take: `--packages i18n`; needs: —
   - backend: —; react twin: i18n
@@ -82,6 +86,6 @@
   - backend: modules `auth` · `auth-session` · `account` · `legal` · `platform` · paths `/api/v1/auth` · `/api/v1/account` · `/api/v1/legal`; react twin: app-starter
   - keywords: 스타터, 시작 템플릿, 새 앱, 모바일 시작 / starter, boilerplate, new app, mobile start
 - `app-sample`: The reference app: the starter's flows plus a board tab, a store tab (products, buy, restore, web checkout, my subscription, the cancel-in-the-store notice before account deletion), social sign-in buttons with linking in settings, a language menu (Korean and English, kept on the device), a notifications tab (inbox with an unread badge, realtime while in front, a push in front or a tapped push reading the inbox again), notification settings (push and promotional push consent) and a settings tab, wired the way a project would. Read it for wiring; a stamp removes it.
-  - take: never stamped (reference app); needs: api-client, auth, board, i18n, iap, legal, notifications, push, realtime, social-login, social-login-apple, social-login-google, social-login-kakao, social-login-naver, storage, ui
+  - take: never stamped (reference app); needs: ads, api-client, auth, board, i18n, iap, legal, notifications, push, realtime, social-login, social-login-apple, social-login-google, social-login-kakao, social-login-naver, storage, ui
   - backend: modules `auth` · `auth-session` · `account` · `legal` · `board` · `notification` · `notification-jdbc` · `notification-sse` · `notification-push` · `notification-push-legal` · `notification-fcm` · `payment` · `payment-iap` · `storage` · `storage-s3` · `platform` · `auth-social` · `auth-social-google` · `auth-social-apple` · `auth-social-kakao` · `auth-social-naver` · one of `payment-appstore` | `payment-googleplay` · more when present `author-profile` · `idempotency` · `auth-web-handoff` · `storage-image` · paths `/api/v1/auth` · `/api/v1/account` · `/api/v1/legal` · `/api/v1/boards` · `/api/v1/push` · `/api/v1/notifications` · `/api/v1/payments/iap` · `/api/v1/payments/subscriptions` · `/api/v1/storage`; react twin: app-sample
   - keywords: 샘플 앱, 참조 앱, 연결 예시 / sample app, reference app, wiring example

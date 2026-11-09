@@ -22,6 +22,11 @@ abstract final class AppConfig {
   );
   static const firebaseIosAppId = String.fromEnvironment('FIREBASE_IOS_APP_ID');
 
+  /// The real banner ad units of your AdMob app. Empty = Google's test unit.
+  /// Only a release build uses them (see `AdUnitIds`).
+  static const adsBannerAndroid = String.fromEnvironment('ADS_BANNER_ANDROID');
+  static const adsBannerIos = String.fromEnvironment('ADS_BANNER_IOS');
+
   // Social sign-in. An empty value hides that provider's button. The native
   // files read their own copy (`ios/Flutter/Social.xcconfig`,
   // `android/social.properties`); the Kakao key is in both places.

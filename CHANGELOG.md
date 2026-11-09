@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `skeleton_ads` (`--packages ads`): Google AdMob banner behind a fakeable `AdsSdk` boundary: UMP consent (update, form, `canRequestAds`) before one SDK start (`adsControllerProvider`), `AdBanner` (anchored adaptive, empty until ready), `AdsPrivacyOptionsButton` (only where the consent entry is required), `AdUnitIds.banner` (real unit only in a release build, Google's test unit otherwise), `AdsLabels` with `.ko()`, `FakeAdsSdk`. Banner only; no interstitial or rewarded ads.
 - `koBoardReactionStyles` (좋아요 · 싫어요 · 공감, the sample server's types), the Korean twin of `defaultBoardReactionStyles`; `apps/sample` and `apps/starter` pass it to the post detail by the device language.
 - `BoardLabels.commentCountText` (`String Function(int)`, optional): the whole phrase of a comment count in the post list, so Korean reads `댓글 3` and not `3 댓글`; without it the list keeps `3 ` + `comments`.
 - Korean sets `BoardLabels.ko()`, `LegalLabels.ko()` and `ImageUploadLabels.ko()` (polite 해요 style, with the Korean refusal reasons of the photo field), each with a test that the set names every field. The English defaults are unchanged. `iap` has no Labels class (its texts are the app's), so it has no Korean set; the sample and the starter hand them by the device language (`context.byLocale`).

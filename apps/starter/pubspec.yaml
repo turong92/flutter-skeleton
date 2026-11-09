@@ -25,6 +25,9 @@ dependencies:
   # #if social-login-apple
   sign_in_with_apple: ^8.2.0 # SignInWithAppleButton (HIG)
   # #endif
+  # #if ads
+  skeleton_ads: any # workspace sibling
+  # #endif
   skeleton_api_client: any # workspace sibling; ApiRequestError, and its testing.dart has the fake HTTP adapter of the tests
   skeleton_auth: any # workspace sibling
   # #if board

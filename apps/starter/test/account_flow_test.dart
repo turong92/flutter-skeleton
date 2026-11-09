@@ -4,6 +4,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+// #if ads
+import 'package:skeleton_ads/skeleton_ads.dart';
+import 'package:skeleton_ads/testing.dart';
+// #endif
 import 'package:skeleton_api_client/testing.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 // #if iap
@@ -198,6 +202,10 @@ Future<(_Harness, ProviderContainer)> _start(
         // #if social-login
         // a provider's SDK cannot run in a widget test
         socialProvidersProvider.overrideWithValue(const []),
+        // #endif
+        // #if ads
+        // no ad SDK on the test host
+        adsSdkProvider.overrideWithValue(FakeAdsSdk()),
         // #endif
         // #if iap
         // no store on the test host

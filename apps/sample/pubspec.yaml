@@ -19,6 +19,7 @@ dependencies:
   intl: ^0.20.2 # gen_l10n output (lib/l10n) imports it
   kakao_flutter_sdk_user: ^2.1.0 # KakaoSdk.init in main
   sign_in_with_apple: ^8.2.0 # SignInWithAppleButton (HIG)
+  skeleton_ads: any # workspace sibling
   skeleton_api_client: any # workspace sibling
   skeleton_auth: any # workspace sibling
   skeleton_board: any # workspace sibling

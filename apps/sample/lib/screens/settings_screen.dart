@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:skeleton_ads/skeleton_ads.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_i18n/skeleton_i18n.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
@@ -45,6 +46,10 @@ class SettingsScreen extends ConsumerWidget {
           OutlinedButton(
             onPressed: () => context.go('/account'),
             child: Text(context.l10n.accountSettings),
+          ),
+          // Draws nothing where Google's consent policy asks for no entry.
+          AdsPrivacyOptionsButton(
+            labels: context.byLocale(const AdsLabels.ko(), const AdsLabels()),
           ),
           const SizedBox(height: SkeletonSpace.sm),
           FilledButton(

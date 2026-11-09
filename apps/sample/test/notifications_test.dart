@@ -8,6 +8,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sample/main.dart';
 import 'package:sample/wiring.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:skeleton_ads/skeleton_ads.dart';
+import 'package:skeleton_ads/testing.dart';
 import 'package:skeleton_api_client/testing.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_iap/skeleton_iap.dart';
@@ -115,6 +117,8 @@ Widget _app(_Backend backend) => ProviderScope(
     ...sampleWiring,
     socialProvidersProvider.overrideWithValue(const []),
     iapPlatformProvider.overrideWithValue(null),
+    // no ad SDK in a widget test
+    adsSdkProvider.overrideWithValue(FakeAdsSdk()),
   ],
   child: const SampleApp(),
 );

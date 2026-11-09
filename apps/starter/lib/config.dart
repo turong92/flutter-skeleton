@@ -43,6 +43,13 @@ abstract final class AppConfig {
   );
   // #endif
 
+  // #if ads
+  /// The real banner ad units of your AdMob app. Empty = Google's test unit.
+  /// Only a release build uses them (see `AdUnitIds`).
+  static const adsBannerAndroid = String.fromEnvironment('ADS_BANNER_ANDROID');
+  static const adsBannerIos = String.fromEnvironment('ADS_BANNER_IOS');
+  // #endif
+
   // #if board
   /// The board this app shows: a board code of your server (`--dart-define BOARD_CODE=...`).
   static const board = String.fromEnvironment(

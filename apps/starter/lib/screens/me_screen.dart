@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
+// #if ads
+import 'package:skeleton_ads/skeleton_ads.dart';
+// #endif
 // #if i18n
 import 'package:skeleton_i18n/skeleton_i18n.dart';
 // #endif
@@ -14,6 +17,10 @@ import 'package:skeleton_push/skeleton_push.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
 import '../l10n/l10n.dart';
+// #if ads
+import '../config.dart';
+
+// #endif
 
 /// `GET /auth/me`, read when the screen opens.
 final _meProvider = FutureProvider.autoDispose<Principal>(
@@ -40,6 +47,16 @@ class MeScreen extends ConsumerWidget {
           ),
         ],
       ),
+      // #if ads
+      bottomNavigationBar: SafeArea(
+        child: AdBanner(
+          unitId: AdUnitIds.banner(
+            android: AppConfig.adsBannerAndroid,
+            ios: AppConfig.adsBannerIos,
+          ),
+        ),
+      ),
+      // #endif
       body: me.when(
         loading: () => const LoadingView(),
         error: (error, _) => ErrorView(

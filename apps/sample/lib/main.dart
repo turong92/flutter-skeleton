@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
+import 'package:skeleton_ads/skeleton_ads.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_i18n/skeleton_i18n.dart';
 import 'package:skeleton_iap/skeleton_iap.dart';
@@ -90,6 +91,8 @@ class SampleApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Consent first, then the SDK: the banner stays empty until it is ready.
+    ref.watch(adsControllerProvider);
     ref.watch(_pushSetupProvider);
     ref.watch(_socialSetupProvider);
     // Watched from the root so the store's left-over purchases are picked up

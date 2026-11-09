@@ -270,6 +270,28 @@
       }
     },
     {
+      "id": "ads",
+      "kind": "package",
+      "summary": "Google AdMob banner: Google's consent flow (UMP) before the SDK starts, one anchored adaptive banner that stays empty until ads may be asked for, a button to change the ad consent where Google's policy asks for one, and ad unit ids that are Google's test units everywhere except a release build. The AdMob SDK sits behind a boundary with a test fake. No backend.",
+      "package": "skeleton_ads",
+      "path": "packages/ads",
+      "stampFlag": { "flag": "--packages ads", "included": "flag" },
+      "needs": [],
+      "backend": null,
+      "pairsWith": { "react": [] },
+      "docs": ["packages/ads/README.md"],
+      "notFor": [
+        "Interstitial, rewarded, app-open and native ads, and mediation: only the banner is built",
+        "Removing ads by purchase (iap) or by sign-in level",
+        "Child-directed or rating-capped requests: the app sets RequestConfiguration itself",
+        "Creating the AdMob account, the consent messages in its console, app-ads.txt or the Play ads declaration (a checklist in the README)"
+      ],
+      "keywords": {
+        "ko": ["광고", "배너 광고", "애드몹", "구글 광고", "광고 동의", "수익화"],
+        "en": ["ads", "admob", "banner ad", "google mobile ads", "ump", "consent", "monetization"]
+      }
+    },
+    {
       "id": "i18n",
       "kind": "package",
       "summary": "Language choice for the app: the saved pick (kept on the device), then the device language, then Korean; a language menu that shows each language in its own name; and a check that the ko and en ARB files have the same keys and placeholders. The texts are the app's (ARB files and gen_l10n); packages take theirs as Labels and some ship a Korean set.",
@@ -472,7 +494,7 @@
       "package": "sample",
       "path": "apps/sample",
       "stampFlag": { "flag": null, "included": "never" },
-      "needs": ["api-client", "auth", "board", "i18n", "iap", "legal", "notifications", "push", "realtime", "social-login", "social-login-apple", "social-login-google", "social-login-kakao", "social-login-naver", "storage", "ui"],
+      "needs": ["ads", "api-client", "auth", "board", "i18n", "iap", "legal", "notifications", "push", "realtime", "social-login", "social-login-apple", "social-login-google", "social-login-kakao", "social-login-naver", "storage", "ui"],
       "backend": {
         "modules": ["auth", "auth-session", "account", "legal", "board", "notification", "notification-jdbc", "notification-sse", "notification-push", "notification-push-legal", "notification-fcm", "payment", "payment-iap", "storage", "storage-s3", "platform", "auth-social", "auth-social-google", "auth-social-apple", "auth-social-kakao", "auth-social-naver"],
         "oneOfModules": [["payment-appstore", "payment-googleplay"]],

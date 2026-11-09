@@ -9,6 +9,8 @@ import 'package:sample/router.dart';
 import 'package:sample/screens/email_screen.dart';
 import 'package:sample/wiring.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:skeleton_ads/skeleton_ads.dart';
+import 'package:skeleton_ads/testing.dart';
 import 'package:skeleton_api_client/testing.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_board/skeleton_board.dart';
@@ -258,6 +260,8 @@ Widget _app(
     socialProvidersProvider.overrideWithValue(const []),
     // no store in a widget test: the real one would try to reach billing
     iapPlatformProvider.overrideWithValue(null),
+    // no ad SDK in a widget test
+    adsSdkProvider.overrideWithValue(FakeAdsSdk()),
     if (pushSource != null)
       pushTokenSourceProvider.overrideWithValue(pushSource),
   ],
@@ -286,6 +290,8 @@ void main() {
         ...sampleWiring,
         socialProvidersProvider.overrideWithValue(const []),
         iapPlatformProvider.overrideWithValue(null),
+        // no ad SDK in a widget test
+        adsSdkProvider.overrideWithValue(FakeAdsSdk()),
       ],
     );
     addTearDown(container.dispose);
@@ -304,6 +310,8 @@ void main() {
 
     expect(find.text('First post'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
+    // the ads started (consent, then the SDK): the banner sits over the tabs
+    expect(find.byKey(FakeAdsSdk.bannerKey), findsOneWidget);
     // the board needs an author profile on this server: the app asked for it
     // only when writing, never at start
     expect(

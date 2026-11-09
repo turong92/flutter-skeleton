@@ -1,0 +1,18 @@
+name: skeleton_ads
+description: Google AdMob banner with the UMP consent flow (consent check, then SDK start, then the banner) and a button to change the consent, behind a fakeable boundary.
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.13.0
+  flutter: 3.47.9
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^3.4.3
+  google_mobile_ads: ^9.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

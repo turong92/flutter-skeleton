@@ -7,6 +7,9 @@ import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:flutter/foundation.dart';
 // #endif
 import 'package:skeleton_auth/skeleton_auth.dart';
+// #if ads
+import 'package:skeleton_ads/skeleton_ads.dart';
+// #endif
 // #if i18n
 import 'package:skeleton_i18n/skeleton_i18n.dart';
 // #endif
@@ -130,6 +133,10 @@ class StarterApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // #if social-login
     ref.watch(_socialSetupProvider);
+    // #endif
+    // #if ads
+    // Consent first, then the SDK: the banner stays empty until it is ready.
+    ref.watch(adsControllerProvider);
     // #endif
     // #if iap
     // Watched from the root so the store's left-over purchases are picked up

@@ -2,6 +2,10 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+// #if ads
+import 'package:skeleton_ads/skeleton_ads.dart';
+import 'package:skeleton_ads/testing.dart';
+// #endif
 import 'package:skeleton_api_client/testing.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 // #if i18n
@@ -83,6 +87,10 @@ Widget _app(TokenStore store, {List<Override> extra = const []}) =>
         // #if social-login
         // a provider's SDK cannot run in a widget test
         socialProvidersProvider.overrideWithValue(const []),
+        // #endif
+        // #if ads
+        // no ad SDK on the test host
+        adsSdkProvider.overrideWithValue(FakeAdsSdk()),
         // #endif
         ...extra,
         // #if iap
@@ -197,5 +205,9 @@ void main() {
 
     expect(find.text('user@example.com'), findsOneWidget);
     expect(find.byKey(LoginForm.emailKey), findsNothing);
+    // #if ads
+    // consent and start are over: the banner of the fake SDK is under the page
+    expect(find.byKey(FakeAdsSdk.bannerKey), findsOneWidget);
+    // #endif
   });
 }

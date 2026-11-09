@@ -375,7 +375,7 @@ void main() {
           isNot(
             contains(
               RegExp(
-                'board|storage|Board|otification|ealtime|push|Push|irebase|iap|Iap|i18n|LanguageMenu|localeProvider|ocial|akao|aver|NidThirdParty',
+                'board|storage|Board|otification|ealtime|push|Push|irebase|iap|Iap|i18n|LanguageMenu|localeProvider|ocial|akao|aver|NidThirdParty|skeleton_ads|AdBanner|AdUnitIds|AdsPrivacy|AdsLabels|adsController|adsSdk|adsBanner|FakeAdsSdk',
               ),
             ),
           ),
@@ -592,6 +592,60 @@ void main() {
         isNot(contains('url_launcher')),
       );
       expect(fileFeatures(starter('lib/screens/store_screen.dart')), ['iap']);
+    });
+
+    test('ads gives the banner, the consent entry and the native app id; without it none is left', () {
+      final kept = {'ads'};
+      expect(stamped('pubspec.yaml', kept), contains('skeleton_ads'));
+      expect(
+        stamped('lib/config.dart', kept),
+        allOf(contains('ADS_BANNER_ANDROID'), contains('ADS_BANNER_IOS')),
+      );
+      expect(
+        stamped('lib/main.dart', kept),
+        contains('ref.watch(adsControllerProvider)'),
+      );
+      expect(
+        stamped('lib/screens/me_screen.dart', kept),
+        contains('AdBanner('),
+      );
+      expect(
+        stamped('lib/screens/account_screen.dart', kept),
+        contains('AdsPrivacyOptionsButton('),
+      );
+      expect(
+        stamped('android/app/src/main/AndroidManifest.xml', kept),
+        contains('com.google.android.gms.ads.APPLICATION_ID'),
+      );
+      for (final plist in [
+        'ios/Runner/Info.plist',
+        'ios/Runner/Info-Debug.plist',
+      ]) {
+        expect(
+          stamped(plist, kept),
+          allOf(
+            contains('GADApplicationIdentifier'),
+            contains('SKAdNetworkItems'),
+            contains('NSUserTrackingUsageDescription'),
+          ),
+          reason: plist,
+        );
+        expect(
+          stamped(plist, {}),
+          isNot(
+            anyOf(
+              contains('GADApplicationIdentifier'),
+              contains('SKAdNetwork'),
+              contains('NSUserTracking'),
+            ),
+          ),
+          reason: plist,
+        );
+      }
+      expect(
+        stamped('android/app/src/main/AndroidManifest.xml', {}),
+        isNot(contains('gms.ads')),
+      );
     });
 
     test('the ARB texts of a package go with it, in both languages', () {

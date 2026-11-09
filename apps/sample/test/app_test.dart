@@ -247,6 +247,7 @@ Widget _app(
   _Backend backend, {
   TokenStore? store,
   PushTokenSource? pushSource,
+  FakeAdsSdk? ads,
 }) => ProviderScope(
   overrides: [
     authConfigProvider.overrideWithValue(
@@ -261,7 +262,7 @@ Widget _app(
     // no store in a widget test: the real one would try to reach billing
     iapPlatformProvider.overrideWithValue(null),
     // no ad SDK in a widget test
-    adsSdkProvider.overrideWithValue(FakeAdsSdk()),
+    adsSdkProvider.overrideWithValue(ads ?? FakeAdsSdk()),
     if (pushSource != null)
       pushTokenSourceProvider.overrideWithValue(pushSource),
   ],
@@ -675,6 +676,23 @@ void main() {
       isEmpty,
     );
   });
+
+  testWidgets(
+    'the reward button in settings carries the account id and shows the reward',
+    (tester) async {
+      final ads = FakeAdsSdk(reward: const AdReward(type: 'coin', amount: 5));
+      await tester.pumpWidget(_app(_Backend(), ads: ads));
+      await _signIn(tester);
+      await tester.tap(find.text('Settings'));
+      await tester.pumpAndSettle();
+      expect(ads.lastSsvUserId, isNotNull);
+
+      await tester.tap(find.text('Watch an ad for a reward'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Reward received: 5 coin'), findsOneWidget);
+    },
+  );
 
   testWidgets('sign out removes this device from the server first', (
     tester,

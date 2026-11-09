@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:skeleton_ads/skeleton_ads.dart';
 import 'package:skeleton_board/skeleton_board.dart';
 import 'package:skeleton_push/skeleton_push.dart';
 import 'package:skeleton_storage/skeleton_storage.dart';
@@ -17,6 +18,8 @@ class BoardListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Keeps one interstitial loaded for when a post is left.
+    ref.watch(interstitialAdProvider(_interstitialUnit));
     return Scaffold(
       appBar: AppBar(title: Text(context.l10n.boardTitle)),
       body: Column(
@@ -48,13 +51,32 @@ class BoardListScreen extends ConsumerWidget {
   }
 }
 
-class PostDetailScreen extends StatelessWidget {
+/// The unit of the interstitial shown when a post is left.
+String get _interstitialUnit => AdUnitIds.interstitial(
+  android: AppConfig.adsInterstitialAndroid,
+  ios: AppConfig.adsInterstitialIos,
+);
+
+class PostDetailScreen extends ConsumerWidget {
   const PostDetailScreen({super.key, required this.postId});
 
   final int postId;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Leaving a post for the list is a natural break; the list screen keeps
+    // the interstitial loaded, and the minimum interval keeps it rare.
+    return PopScope(
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) {
+          ref.read(interstitialAdProvider(_interstitialUnit)).showIfAllowed();
+        }
+      },
+      child: _detail(context),
+    );
+  }
+
+  Widget _detail(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(context.l10n.postTitle)),
       body: Column(

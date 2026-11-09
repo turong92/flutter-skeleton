@@ -26,6 +26,16 @@ abstract final class AppConfig {
   /// Only a release build uses them (see `AdUnitIds`).
   static const adsBannerAndroid = String.fromEnvironment('ADS_BANNER_ANDROID');
   static const adsBannerIos = String.fromEnvironment('ADS_BANNER_IOS');
+  static const adsInterstitialAndroid = String.fromEnvironment(
+    'ADS_INTERSTITIAL_ANDROID',
+  );
+  static const adsInterstitialIos = String.fromEnvironment(
+    'ADS_INTERSTITIAL_IOS',
+  );
+  static const adsRewardedAndroid = String.fromEnvironment(
+    'ADS_REWARDED_ANDROID',
+  );
+  static const adsRewardedIos = String.fromEnvironment('ADS_REWARDED_IOS');
 
   // Social sign-in. An empty value hides that provider's button. The native
   // files read their own copy (`ios/Flutter/Social.xcconfig`,

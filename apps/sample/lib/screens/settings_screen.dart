@@ -6,6 +6,7 @@ import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_i18n/skeleton_i18n.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
+import '../config.dart';
 import '../l10n/l10n.dart';
 
 /// Who is signed in, the way to the notification settings, social sign-in
@@ -47,6 +48,12 @@ class SettingsScreen extends ConsumerWidget {
             onPressed: () => context.go('/account'),
             child: Text(context.l10n.accountSettings),
           ),
+          // A rewarded ad is the person's choice: the button is on only when one
+          // is loaded. The account id goes along for server-side verification.
+          _RewardButton(
+            ssvUserId: session is SignedIn ? session.principal.accountId : null,
+          ),
+          const SizedBox(height: SkeletonSpace.sm),
           // Draws nothing where Google's consent policy asks for no entry.
           AdsPrivacyOptionsButton(
             labels: context.byLocale(const AdsLabels.ko(), const AdsLabels()),
@@ -58,6 +65,46 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _RewardButton extends ConsumerWidget {
+  const _RewardButton({required this.ssvUserId});
+
+  final String? ssvUserId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final key = (
+      unitId: AdUnitIds.rewarded(
+        android: AppConfig.adsRewardedAndroid,
+        ios: AppConfig.adsRewardedIos,
+      ),
+      ssvUserId: ssvUserId,
+    );
+    final ready = ref.watch(rewardedAdProvider(key)) == RewardedStatus.ready;
+    return OutlinedButton.icon(
+      onPressed: !ready
+          ? null
+          : () async {
+              final reward = await ref
+                  .read(rewardedAdProvider(key).notifier)
+                  .show();
+              if (reward == null || !context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    context.l10n.rewardEarned(
+                      reward.amount.toString(),
+                      reward.type,
+                    ),
+                  ),
+                ),
+              );
+            },
+      icon: const Icon(Icons.play_circle_outline, size: 18),
+      label: Text(context.l10n.watchAdForReward),
     );
   }
 }

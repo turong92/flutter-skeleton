@@ -112,5 +112,17 @@
   "socialMfaRequired": "이 계정은 이 앱에 없는 두 번째 로그인 단계가 필요해요.",
   "socialNetwork": "연결할 수 없어요. 네트워크를 확인하고 다시 시도해 주세요.",
   "socialSdk": "로그인에 실패했어요. 다시 시도해 주세요.",
-  "socialOther": "문제가 생겼어요. 다시 시도해 주세요."
+  "socialOther": "문제가 생겼어요. 다시 시도해 주세요.",
+  "watchAdForReward": "광고 보고 보상 받기",
+  "rewardEarned": "보상을 받았어요: {amount} {type}",
+  "@rewardEarned": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "type": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -112,5 +112,17 @@
   "socialMfaRequired": "This account needs a second sign-in step this app does not have.",
   "socialNetwork": "No connection. Check the network and try again.",
   "socialSdk": "The sign-in failed. Try again.",
-  "socialOther": "Something went wrong. Try again."
+  "socialOther": "Something went wrong. Try again.",
+  "watchAdForReward": "Watch an ad for a reward",
+  "rewardEarned": "Reward received: {amount} {type}",
+  "@rewardEarned": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "type": {
+        "type": "String"
+      }
+    }
+  }
 }

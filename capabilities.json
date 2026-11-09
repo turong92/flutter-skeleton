@@ -272,23 +272,30 @@
     {
       "id": "ads",
       "kind": "package",
-      "summary": "Google AdMob banner: Google's consent flow (UMP) before the SDK starts, one anchored adaptive banner that stays empty until ads may be asked for, a button to change the ad consent where Google's policy asks for one, and ad unit ids that are Google's test units everywhere except a release build. The AdMob SDK sits behind a boundary with a test fake. No backend.",
+      "summary": "Google AdMob: Google's consent flow (UMP) before the SDK starts, one anchored adaptive banner that stays empty until ads may be asked for, an interstitial kept loaded with a minimum interval between shows (also after the start), a rewarded ad whose reward the app reads only for a non-currency gain (a server credit goes through the server-side verification callback of the ads-admob module), a button to change the ad consent where Google's policy asks for one, and ad unit ids that are Google's test units everywhere except a release build. The AdMob SDK sits behind a boundary with a test fake. A backend is needed only for server-side reward verification.",
       "package": "skeleton_ads",
       "path": "packages/ads",
       "stampFlag": { "flag": "--packages ads", "included": "flag" },
       "needs": [],
-      "backend": null,
+      "backend": {
+        "modules": [],
+        "oneOfModules": [],
+        "optionalModules": ["ads-admob"],
+        "basePaths": ["/api/v1/ads/admob"],
+        "docs": ["docs/modules/ads-admob.md"]
+      },
       "pairsWith": { "react": [] },
       "docs": ["packages/ads/README.md"],
       "notFor": [
-        "Interstitial, rewarded, app-open and native ads, and mediation: only the banner is built",
+        "App-open, native and rewarded-interstitial ads, and mediation: banner, interstitial and rewarded are built",
         "Removing ads by purchase (iap) or by sign-in level",
+        "Crediting a server balance from the app: the reward is shown to the person, a server credit comes only from the server-side verification callback",
         "Child-directed or rating-capped requests: the app sets RequestConfiguration itself",
         "Creating the AdMob account, the consent messages in its console, app-ads.txt or the Play ads declaration (a checklist in the README)"
       ],
       "keywords": {
-        "ko": ["광고", "배너 광고", "애드몹", "구글 광고", "광고 동의", "수익화"],
-        "en": ["ads", "admob", "banner ad", "google mobile ads", "ump", "consent", "monetization"]
+        "ko": ["광고", "배너 광고", "전면 광고", "보상형 광고", "애드몹", "구글 광고", "광고 동의", "수익화"],
+        "en": ["ads", "admob", "banner ad", "interstitial ad", "rewarded ad", "google mobile ads", "ump", "consent", "monetization"]
       }
     },
     {

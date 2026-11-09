@@ -46,4 +46,35 @@ void main() {
       );
     },
   );
+
+  test('the interstitial and rewarded units follow the same rule', () {
+    expect(
+      AdUnitIds.interstitial(
+        android: real,
+        release: false,
+        platform: TargetPlatform.android,
+      ),
+      'ca-app-pub-3940256099942544/1033173712',
+    );
+    expect(
+      AdUnitIds.interstitial(release: true, platform: TargetPlatform.iOS),
+      'ca-app-pub-3940256099942544/4411468910',
+    );
+    expect(
+      AdUnitIds.rewarded(
+        android: real,
+        release: true,
+        platform: TargetPlatform.android,
+      ),
+      real,
+    );
+    expect(
+      AdUnitIds.rewarded(
+        ios: real,
+        release: false,
+        platform: TargetPlatform.iOS,
+      ),
+      'ca-app-pub-3940256099942544/1712485313',
+    );
+  });
 }

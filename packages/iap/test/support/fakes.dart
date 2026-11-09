@@ -252,6 +252,12 @@ class Harness {
           entitlementReads++;
           if (entitlementsFail) return errorBody(503, 'COMMON.UNAVAILABLE');
           return valueBody({'values': entitlements});
+        case '/payments/subscriptions/me':
+          subscriptionReads++;
+          if (subscriptionStatus != null) {
+            return errorBody(subscriptionStatus!, 'COMMON.X');
+          }
+          return valueBody({'subscription': subscription, 'orders': []});
         case '/payments/iap/web-checkout-link':
           return linkResponse ?? valueBody({'url': linkUrl});
         default:
@@ -277,6 +283,12 @@ class Harness {
   List<Map<String, String>> entitlements = [];
   int entitlementReads = 0;
   bool entitlementsFail = false;
+
+  /// `GET /subscriptions/me`: the row, or null; [subscriptionStatus] makes it
+  /// answer an error status instead (404 = the feature is off).
+  Map<String, Object?>? subscription;
+  int? subscriptionStatus;
+  int subscriptionReads = 0;
   bool configFails = false;
   late final FakeStorePlatform store;
   final android = FakeAndroidAddition();

@@ -23,6 +23,15 @@ class _CheckingSession extends AuthSession {
   AuthState build() => const AuthChecking();
 }
 
+final signedFlag = NotifierProvider<_Flag, bool>(_Flag.new);
+
+class _Flag extends Notifier<bool> {
+  @override
+  bool build() => true;
+
+  void set(bool value) => state = value;
+}
+
 class _SignedOutSession extends AuthSession {
   @override
   AuthState build() => const SignedOut();
@@ -34,9 +43,34 @@ final _adsRemoved = Provider<bool>(
   (ref) => adsRemovedFor(ref, itemType: 'ads-removal', itemRef: 'remove'),
 );
 
+final _now = DateTime.utc(2026, 6, 1);
+
+// the subscription way only, standard plan
+final _adsRemovedBySub = Provider<bool>(
+  (ref) => adsRemovedFor(
+    ref,
+    itemType: '',
+    itemRef: '',
+    planCode: 'standard',
+    now: () => _now,
+  ),
+);
+
+// both ways
+final _adsRemovedByBoth = Provider<bool>(
+  (ref) => adsRemovedFor(
+    ref,
+    itemType: 'ads-removal',
+    itemRef: 'remove',
+    planCode: 'standard',
+    now: () => _now,
+  ),
+);
+
 ProviderContainer _container(
   ResponseBody Function() entitlements, {
   bool signedIn = true,
+  ResponseBody Function()? subscription,
 }) {
   final container = ProviderContainer(
     overrides: [
@@ -48,7 +82,11 @@ ProviderContainer _container(
         IapApi(
           ApiClient(
             baseUrl: 'http://x/api/v1',
-            adapter: FakeAdapter((_) => entitlements()),
+            adapter: FakeAdapter(
+              (o) => o.path.endsWith('/subscriptions/me')
+                  ? (subscription ?? _noSubscription)()
+                  : entitlements(),
+            ),
           ),
         ),
       ),
@@ -58,15 +96,39 @@ ProviderContainer _container(
   return container;
 }
 
+ResponseBody _noSubscription() => FakeAdapter.json(200, {
+  'value': {'subscription': null, 'orders': <Object>[]},
+  'meta': _meta,
+});
+
+ResponseBody _sub(String status, {String plan = 'standard', String? end}) =>
+    FakeAdapter.json(200, {
+      'value': {
+        'subscription': {
+          'id': 's1',
+          'status': status,
+          'planCode': plan,
+          'provider': 'googleplay',
+          'currentPeriodEnd': end ?? '2999-01-01T00:00:00Z',
+        },
+        'orders': <Object>[],
+      },
+      'meta': _meta,
+    });
+
 ResponseBody _owns(List<Map<String, String>> values) => FakeAdapter.json(200, {
   'value': {'values': values},
   'meta': _meta,
 });
 
-Future<bool> _settled(ProviderContainer container) async {
-  container.listen(_adsRemoved, (_, _) {});
+Future<bool> _settled(
+  ProviderContainer container, [
+  Provider<bool>? provider,
+]) async {
+  final p = provider ?? _adsRemoved;
+  container.listen(p, (_, _) {});
   await pumpEventQueue();
-  return container.read(_adsRemoved);
+  return container.read(p);
 }
 
 void main() {
@@ -117,12 +179,125 @@ void main() {
       expect(container.read(_adsRemoved), isTrue);
     });
 
+    test('another account after a logout does not inherit the ads removal', () async {
+      var fails = false;
+      final container = ProviderContainer(
+        overrides: [
+          authSessionProvider.overrideWith(_SignedInSession.new),
+          signedFlag.overrideWith(() => _Flag()),
+          iapPlatformProvider.overrideWithValue('android'),
+          iapSignedInProvider.overrideWith((ref) => ref.watch(signedFlag)),
+          iapApiProvider.overrideWithValue(
+            IapApi(
+              ApiClient(
+                baseUrl: 'http://x/api/v1',
+                adapter: FakeAdapter(
+                  (o) => o.path.endsWith('/subscriptions/me')
+                      ? _noSubscription()
+                      : fails
+                      ? FakeAdapter.json(500, {
+                          'code': 'COMMON.X',
+                          'title': 'x',
+                          'status': 500,
+                        })
+                      : _owns([owned]),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      // the app root watches the signed-in flag (through the iap service)
+      container.listen(iapServiceProvider, (_, _) {});
+      expect(await _settled(container), isTrue, reason: 'account A owns it');
+
+      // A signs out (nobody reads while signed out), B signs in, the read fails
+      container.read(signedFlag.notifier).set(false);
+      await pumpEventQueue();
+      fails = true;
+      container.read(signedFlag.notifier).set(true);
+      await pumpEventQueue();
+      await pumpEventQueue();
+      expect(container.read(_adsRemoved), isFalse);
+    });
+
     test('an app that does not sell it keeps its ads', () async {
       final container = _container(() => _owns([owned]));
       final off = Provider<bool>(
         (ref) => adsRemovedFor(ref, itemType: '', itemRef: ''),
       );
       expect(container.read(off), isFalse);
+    });
+  });
+
+  group('ads removed by a subscription', () {
+    Future<bool> by(
+      ResponseBody Function() sub, {
+      ResponseBody Function()? owns,
+      Provider<bool>? provider,
+    }) => _settled(
+      _container(owns ?? () => _owns([]), subscription: sub),
+      provider ?? _adsRemovedBySub,
+    );
+
+    ResponseBody failure(int status) => FakeAdapter.json(status, {
+      'code': 'COMMON.X',
+      'title': 'x',
+      'status': status,
+    });
+
+    test('ACTIVE and CANCELING (paid to the end) of the plan: off', () async {
+      expect(await by(() => _sub('ACTIVE')), isTrue);
+      expect(await by(() => _sub('CANCELING')), isTrue);
+    });
+
+    test('PAST_DUE, PENDING, ENDED: ads show', () async {
+      for (final status in ['PAST_DUE', 'PENDING', 'ENDED']) {
+        expect(await by(() => _sub(status)), isFalse, reason: status);
+      }
+    });
+
+    test('a period that is over, or another plan: ads show', () async {
+      expect(
+        await by(() => _sub('ACTIVE', end: '2026-05-31T00:00:00Z')),
+        isFalse,
+      );
+      expect(await by(() => _sub('ACTIVE', plan: 'premium')), isFalse);
+    });
+
+    test('no subscription, a server without the feature (404), a failed read: ads show', () async {
+      expect(await by(_noSubscription), isFalse);
+      expect(await by(() => failure(404)), isFalse);
+      expect(await by(() => failure(500)), isFalse);
+    });
+
+    test('while it is being read the ads are off', () {
+      final container = _container(
+        () => _owns([]),
+        subscription: () => _sub('ACTIVE'),
+      );
+      container.listen(_adsRemovedBySub, (_, _) {});
+      expect(container.read(_adsRemovedBySub), isTrue);
+    });
+
+    test('either way is enough: bought, or subscribed', () async {
+      expect(
+        await by(
+          _noSubscription,
+          owns: () => _owns([owned]),
+          provider: _adsRemovedByBoth,
+        ),
+        isTrue,
+      );
+      expect(
+        await by(() => _sub('ACTIVE'), provider: _adsRemovedByBoth),
+        isTrue,
+      );
+      expect(
+        await by(() => _sub('PAST_DUE'), provider: _adsRemovedByBoth),
+        isFalse,
+      );
     });
   });
 

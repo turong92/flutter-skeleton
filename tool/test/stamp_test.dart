@@ -657,6 +657,7 @@ void main() {
           anyOf(
             contains('adsRemovedProvider.overrideWith'),
             contains('ADS_REMOVAL_ITEM_TYPE'),
+            contains('ADS_REMOVAL_PLAN_CODE'),
           ),
           reason: rel,
         );

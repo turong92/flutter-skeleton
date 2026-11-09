@@ -43,6 +43,10 @@ A one-time product the server maps with `consumable: false` (for example "remove
 
 `iapEntitlementsProvider` reads `GET /iap/entitlements` (what the signed-in account owns of those products, refunds taken out) and reads it again after every grant, so a purchase or a restore updates it. `owns(itemType, itemRef)` answers for one item; signed out owns nothing; a failed read is an error state, so decide in the app what to do then. Hide the buy button of an owned product (the store would refuse a second purchase anyway, but the person should see "bought").
 
+## The subscription, for the app's own gates
+
+`iapSubscriptionProvider` reads `GET /subscriptions/me` once per account (none when signed out, and none on a server with the feature off: `404`), reads it again after every grant and when a failed read meets the app coming back to the front. `IapSubscription.keepsOn(planCode, now)` says whether that plan is running and paid for: `ACTIVE`, or `CANCELING` until the period ends; `PAST_DUE`, `PENDING`, `ENDED`, another plan, or a period that is over are not. The package decides nothing for the app: what a running plan unlocks (for example no ads) is the app's call.
+
 ## Web checkout
 
 Only when `config.showsWebCheckout`. `service.openWebCheckout()` asks `POST /iap/web-checkout-link` for a one-time sign-in address and opens it with `LaunchMode.externalApplication` (the outside browser; never a web view). The address holds a sign-in code: it is not logged or stored, and a failure throws `IapWebLinkException` without it. Only `http` / `https` addresses are opened. In an `IAP_ONLY` channel the server answers `404` (`ApiRequestError`).

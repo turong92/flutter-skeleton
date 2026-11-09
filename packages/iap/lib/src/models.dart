@@ -155,6 +155,14 @@ class IapSubscription {
   /// A store bills this one and only the store can end it.
   bool get isFromStore => provider == 'appstore' || provider == 'googleplay';
 
+  /// The plan [plan] is running and paid for now: `ACTIVE` or `CANCELING`
+  /// (cancelled but paid to the end of the period), the period not over.
+  /// `PAST_DUE`, `PENDING` and `ENDED` are not.
+  bool keepsOn(String plan, DateTime now) =>
+      planCode == plan &&
+      (status == 'ACTIVE' || status == 'CANCELING') &&
+      (currentPeriodEnd?.isAfter(now) ?? false);
+
   /// Still billed or running: `ACTIVE`, `CANCELING`, `PAST_DUE`.
   bool get isInUse =>
       status == 'ACTIVE' || status == 'CANCELING' || status == 'PAST_DUE';

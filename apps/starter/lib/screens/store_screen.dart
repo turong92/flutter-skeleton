@@ -61,7 +61,7 @@ class _StoreList extends ConsumerWidget {
     final service = ref.watch(iapServiceProvider);
     final subscription = ref.watch(mySubscriptionProvider);
     // What was bought once and kept: shown as bought, not as something to buy.
-    final entitlements = ref.watch(iapEntitlementsProvider).value;
+    final entitlements = ref.watch(iapEntitlementsProvider).forThisAccount;
     // A server that sells on the web only has no store purchase to offer.
     final storeSells = catalog.config.channel != IapChannel.webOnly;
     return ListView(

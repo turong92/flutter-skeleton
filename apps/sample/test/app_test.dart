@@ -66,9 +66,18 @@ class _Backend {
     this.accountMe,
     this.boardLoginIdRequired = false,
     this.deletionGrace = false,
+    this.subscription,
+    this.entitlements = const [],
   });
 
   final bool fcm;
+
+  /// `GET /payments/subscriptions/me`: this row, or (null) the feature is off
+  /// and the route is 404, as on the sample server by default.
+  final Map<String, Object?>? subscription;
+
+  /// `GET /payments/iap/entitlements`: the once-bought items owned.
+  final List<Map<String, String>> entitlements;
 
   /// The account is in its deletion grace: the sign-in answers `403
   /// AUTH.ACCOUNT_DELETION_PENDING` with a restore token until it is used.
@@ -214,6 +223,16 @@ class _Backend {
           'pagination': _pagination,
           'meta': _meta,
         });
+      case ('GET', '/payments/subscriptions/me') when subscription != null:
+        return FakeAdapter.json(200, {
+          'value': {'subscription': subscription, 'orders': <Object?>[]},
+          'meta': _meta,
+        });
+      case ('GET', '/payments/iap/entitlements'):
+        return FakeAdapter.json(200, {
+          'value': {'values': entitlements},
+          'meta': _meta,
+        });
       case ('GET', '/push/config'):
         return FakeAdapter.json(200, {
           'value': {
@@ -319,6 +338,52 @@ void main() {
       backend.adapter.requests.where((r) => r.path == '/author-profiles'),
       isEmpty,
     );
+  });
+
+  Map<String, Object?> sub(String status) => {
+    'id': 's1',
+    'status': status,
+    'planCode': 'standard',
+    'provider': 'googleplay',
+    'currentPeriodEnd': '2999-01-01T00:00:00Z',
+  };
+
+  testWidgets(
+    'a running ad-removal subscription (ACTIVE, standard) shows no banner',
+    (tester) async {
+      await tester.pumpWidget(_app(_Backend(subscription: sub('ACTIVE'))));
+      await _signIn(tester);
+
+      expect(find.byType(NavigationBar), findsOneWidget);
+      expect(find.byKey(FakeAdsSdk.bannerKey), findsNothing);
+    },
+  );
+
+  testWidgets('the once-bought ad removal shows no banner either', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _app(
+        _Backend(
+          entitlements: [
+            {'itemType': 'ads-removal', 'itemRef': 'ads-removal'},
+          ],
+        ),
+      ),
+    );
+    await _signIn(tester);
+
+    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byKey(FakeAdsSdk.bannerKey), findsNothing);
+  });
+
+  testWidgets('a subscription that is past due keeps the banner', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_app(_Backend(subscription: sub('PAST_DUE'))));
+    await _signIn(tester);
+
+    expect(find.byKey(FakeAdsSdk.bannerKey), findsOneWidget);
   });
 
   testWidgets('the gates come one after another: ID, consent, nickname', (

@@ -22,6 +22,23 @@ abstract final class AppConfig {
   );
   static const firebaseIosAppId = String.fromEnvironment('FIREBASE_IOS_APP_ID');
 
+  /// The once-bought ad removal (`itemType` / `itemRef` of its row in the
+  /// server's product map, `consumable: false`).
+  static const adsRemovalItemType = String.fromEnvironment(
+    'ADS_REMOVAL_ITEM_TYPE',
+    defaultValue: 'ads-removal',
+  );
+  static const adsRemovalItemRef = String.fromEnvironment(
+    'ADS_REMOVAL_ITEM_REF',
+    defaultValue: 'ads-removal',
+  );
+
+  /// The plan whose running subscription removes the banner and interstitial.
+  static const adsRemovalPlanCode = String.fromEnvironment(
+    'ADS_REMOVAL_PLAN_CODE',
+    defaultValue: 'standard',
+  );
+
   /// The real banner ad units of your AdMob app. Empty = Google's test unit.
   /// Only a release build uses them (see `AdUnitIds`).
   static const adsBannerAndroid = String.fromEnvironment('ADS_BANNER_ANDROID');

@@ -58,6 +58,7 @@ final starterWiring = <Override>[
       ref,
       itemType: AppConfig.adsRemovalItemType,
       itemRef: AppConfig.adsRemovalItemRef,
+      planCode: AppConfig.adsRemovalPlanCode,
     ),
   ),
   // #endif

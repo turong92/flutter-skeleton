@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:skeleton_ads/skeleton_ads.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:skeleton_board/skeleton_board.dart';
 import 'package:skeleton_iap/skeleton_iap.dart';
@@ -9,6 +10,7 @@ import 'package:skeleton_push/advertising.dart';
 import 'package:skeleton_push/skeleton_push.dart';
 import 'package:skeleton_storage/skeleton_storage.dart';
 
+import 'config.dart';
 import 'email_gate.dart';
 import 'login_id_gate.dart';
 import 'router.dart';
@@ -64,6 +66,34 @@ final sampleWiring = <Override>[
   iapSignedInProvider.overrideWith(
     (ref) => ref.watch(authSessionProvider) is SignedIn,
   ),
+  // The ad removal is sold two ways: bought once (`ads-removal` /
+  // `ads-removal`, a `consumable: false` product) or a monthly subscription
+  // (planCode `standard`). Either one switches the banner and interstitial
+  // off. While the stored session or a source is still being read the ads are
+  // off, so a buyer sees none flash at start; a failed read (or a server with
+  // the feature off: 404) leaves the ads on.
+  adsRemovedProvider.overrideWith((ref) {
+    final session = ref.watch(authSessionProvider);
+    if (session is AuthChecking) return true;
+    if (session is! SignedIn) return false;
+    final entitlements = ref.watch(iapEntitlementsProvider);
+    final subscription = ref.watch(iapSubscriptionProvider);
+    final bought =
+        entitlements.forThisAccount?.owns(
+          AppConfig.adsRemovalItemType,
+          AppConfig.adsRemovalItemRef,
+        ) ??
+        false;
+    final subscribed =
+        subscription.forThisAccount?.keepsOn(
+          AppConfig.adsRemovalPlanCode,
+          DateTime.now(),
+        ) ??
+        false;
+    if (bought || subscribed) return true;
+    return entitlements.isReadingForThisAccount ||
+        subscription.isReadingForThisAccount;
+  }),
   pushOpenLinkProvider.overrideWith(
     (ref) =>
         (link) => ref.read(routerProvider).go(link),

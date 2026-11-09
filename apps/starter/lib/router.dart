@@ -8,6 +8,7 @@ import 'package:skeleton_board/skeleton_board.dart';
 import 'package:skeleton_legal/skeleton_legal.dart';
 import 'package:skeleton_ui/skeleton_ui.dart';
 
+import 'l10n/l10n.dart';
 import 'screens/account_screen.dart';
 // #if board
 import 'screens/board_screens.dart';
@@ -148,6 +149,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/consent',
         builder: (context, state) => ReconsentScreen(
+          labels: context.byLocale(const LegalLabels.ko(), const LegalLabels()),
           onLeave: ref.read(authSessionProvider.notifier).logout,
         ),
       ),

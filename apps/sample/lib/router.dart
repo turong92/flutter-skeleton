@@ -10,6 +10,7 @@ import 'package:skeleton_ui/skeleton_ui.dart';
 
 import 'deletion_pending_gate.dart';
 import 'email_gate.dart';
+import 'l10n/l10n.dart';
 import 'login_id_gate.dart';
 import 'nickname_gate.dart';
 import 'screens/account_screen.dart';
@@ -193,6 +194,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/consent',
         builder: (context, state) => Consumer(
           builder: (context, ref, _) => ReconsentScreen(
+            labels: context.byLocale(
+              const LegalLabels.ko(),
+              const LegalLabels(),
+            ),
             // The way out for someone who will not agree.
             onLeave: () => ref.read(authSessionProvider.notifier).logout(),
           ),

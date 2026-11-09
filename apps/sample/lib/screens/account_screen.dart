@@ -103,6 +103,10 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             resolveUrl: (url) => resolveStoredUrl(url, AppConfig.apiBaseUrl),
             onSaved: (_) => ref.invalidate(accountMeProvider),
             picker: (context, value, onChanged, onBusy) => ImageUploadField(
+              labels: context.byLocale(
+                const ImageUploadLabels.ko(),
+                const ImageUploadLabels(),
+              ),
               uploader: ref.watch(uploaderProvider),
               value: value == null ? const [] : [value],
               max: 1,

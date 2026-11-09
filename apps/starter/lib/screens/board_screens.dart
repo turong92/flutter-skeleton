@@ -19,6 +19,7 @@ class BoardListScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text(context.l10n.boardTitle)),
       body: PostListView(
+        labels: context.byLocale(const BoardLabels.ko(), const BoardLabels()),
         board: AppConfig.board,
         onOpen: (post) => context.push('/board/${post.id}'),
         onCompose: () => context.push('/board/new'),
@@ -37,6 +38,7 @@ class PostDetailScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text(context.l10n.postTitle)),
       body: PostDetailView(
+        labels: context.byLocale(const BoardLabels.ko(), const BoardLabels()),
         board: AppConfig.board,
         postId: postId,
         onEdit: (post) => context.push('/board/${post.id}/edit', extra: post),
@@ -65,6 +67,7 @@ class PostEditorScreen extends ConsumerWidget {
         ),
       ),
       body: PostEditor(
+        labels: context.byLocale(const BoardLabels.ko(), const BoardLabels()),
         board: AppConfig.board,
         post: post,
         onSaved: (saved) => post == null
@@ -72,6 +75,10 @@ class PostEditorScreen extends ConsumerWidget {
             : context.pop(),
         // #if storage
         attachmentField: (context, keys, onChanged, onBusy) => ImageUploadField(
+          labels: context.byLocale(
+            const ImageUploadLabels.ko(),
+            const ImageUploadLabels(),
+          ),
           uploader: ref.watch(uploaderProvider),
           value: keys,
           onChanged: onChanged,

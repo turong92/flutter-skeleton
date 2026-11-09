@@ -27,6 +27,10 @@ class BoardListScreen extends ConsumerWidget {
           const EmailWriteNotice(),
           Expanded(
             child: PostListView(
+              labels: context.byLocale(
+                const BoardLabels.ko(),
+                const BoardLabels(),
+              ),
               board: AppConfig.board,
               onOpen: (post) => context.go('/board/${post.id}'),
               // An account that must add an address to write is told now, not
@@ -59,6 +63,10 @@ class PostDetailScreen extends StatelessWidget {
           const EmailWriteNotice(),
           Expanded(
             child: PostDetailView(
+              labels: context.byLocale(
+                const BoardLabels.ko(),
+                const BoardLabels(),
+              ),
               board: AppConfig.board,
               postId: postId,
               onEdit: (post) =>
@@ -158,11 +166,16 @@ class PostEditorScreen extends ConsumerWidget {
         ),
       ),
       body: PostEditor(
+        labels: context.byLocale(const BoardLabels.ko(), const BoardLabels()),
         board: AppConfig.board,
         post: post,
         onSaved: (saved) =>
             post == null ? context.go('/board/${saved.id}') : context.pop(),
         attachmentField: (context, keys, onChanged, onBusy) => ImageUploadField(
+          labels: context.byLocale(
+            const ImageUploadLabels.ko(),
+            const ImageUploadLabels(),
+          ),
           uploader: ref.watch(uploaderProvider),
           value: keys,
           onChanged: onChanged,

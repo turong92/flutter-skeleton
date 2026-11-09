@@ -24,6 +24,10 @@ class SignUpScreen extends ConsumerWidget {
             const auth.SignUpLabels(),
           ),
           consentBuilder: (context, controller) => legal.SignUpConsents(
+            labels: context.byLocale(
+              const legal.LegalLabels.ko(),
+              const legal.LegalLabels(),
+            ),
             onChanged: (value) => controller.update(
               ready: value.complete,
               // The two packages each have a ConsentClaim; this is the join.

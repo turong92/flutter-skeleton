@@ -153,7 +153,7 @@ class _PostTile extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 '${labels.authorName(post.author)} · ${formatDate(post.createdAt)}'
-                ' · ${post.commentCount} ${labels.comments}',
+                ' · ${labels.commentCount(post.commentCount)}',
                 style: theme.textTheme.bodySmall,
               ),
             ],

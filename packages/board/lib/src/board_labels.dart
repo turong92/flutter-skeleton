@@ -3,6 +3,8 @@ import 'package:skeleton_api_client/skeleton_api_client.dart';
 
 import 'models.dart';
 
+String _koCommentCount(int count) => '댓글 $count';
+
 /// The texts of the board widgets. The package does not translate: the app
 /// passes its own (defaults are English). Reaction names are not here: they
 /// come with their icon from the reaction style map.
@@ -17,6 +19,7 @@ class BoardLabels {
     this.loadMore = 'Load more',
     this.moreComments = 'More comments',
     this.comments = 'comments',
+    this.commentCountText,
     this.edit = 'Edit',
     this.delete = 'Delete',
     this.cancel = 'Cancel',
@@ -54,6 +57,7 @@ class BoardLabels {
         loadMore: '더 보기',
         moreComments: '댓글 더 보기',
         comments: '댓글',
+        commentCountText: _koCommentCount,
         edit: '수정',
         delete: '삭제',
         cancel: '취소',
@@ -91,8 +95,13 @@ class BoardLabels {
   final String loadMore;
   final String moreComments;
 
-  /// After a comment count in the post list: `3 comments`.
+  /// After a comment count in the post list: `3 comments`. Used when
+  /// [commentCountText] is not given.
   final String comments;
+
+  /// The whole phrase for a comment count, for a language that puts the number
+  /// after the word (`댓글 3`). Without it the list shows `3 ` + [comments].
+  final String Function(int count)? commentCountText;
   final String edit;
   final String delete;
   final String cancel;
@@ -139,6 +148,9 @@ class BoardLabels {
     }
     return fallback;
   }
+
+  String commentCount(int count) =>
+      commentCountText?.call(count) ?? '$count $comments';
 
   String authorName(BoardAuthor author) {
     if (author.deleted) return deletedAuthor;

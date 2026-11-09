@@ -10,6 +10,7 @@ Google AdMob banner for an app that picks `--packages ads`: consent check (Googl
 | `AdUnitIds.banner(android:, ios:)` | Picks the platform's unit. Release build and a value: the real unit; anything else (debug, profile, empty): Google's test unit |
 | `interstitialAdProvider(unitId)` | Keeps one interstitial loaded once ads are ready. `showIfAllowed()` shows it only when `interstitialMinIntervalProvider` (default 60 s) has passed since the last close, or since the first ad loaded, so none opens right at the start. Never waits: nothing loaded = false. The next one is loaded after each show |
 | `rewardedAdProvider((unitId:, ssvUserId:))` | Keeps one rewarded ad loaded; state `RewardedStatus.loading / ready / unavailable`. Turn the "watch an ad" button on only when `ready`. `.notifier.show()` gives an `AdReward?`: the reward only if the SDK said it was earned, null if closed early. `ssvUserId` (the account id) travels to Google's server-side verification |
+| `adsRemovedProvider` | `false` by default; the app overrides it with "this person paid to remove ads". True: no banner, no interstitial loaded or shown. The rewarded ad (a person's own choice), the consent flow and the privacy button stay |
 | `AdsLabels` / `AdsLabels.ko()` | The one text of the button |
 | `AdsSdk` (`adsSdkProvider`) | The boundary over the SDK. `FakeAdsSdk` in `package:skeleton_ads/testing.dart` for widget tests (platform-view ads do not run in `flutter test`) |
 

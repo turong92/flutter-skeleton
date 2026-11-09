@@ -73,6 +73,9 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   dio: ^5.11.1 # the fake adapter in tests speaks its request and response types
+  # #if iap
+  in_app_purchase: ^3.2.3 # ProductDetails of the store screen test
+  # #endif
 
 flutter:
   generate: true # gen_l10n runs on pub get / build (l10n.yaml)

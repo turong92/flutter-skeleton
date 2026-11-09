@@ -192,6 +192,10 @@
   "@restoreFailed": {
     "x-feature": "iap"
   },
+  "purchased": "Purchased",
+  "@purchased": {
+    "x-feature": "iap"
+  },
   "restorePurchases": "Restore purchases",
   "@restorePurchases": {
     "x-feature": "iap"

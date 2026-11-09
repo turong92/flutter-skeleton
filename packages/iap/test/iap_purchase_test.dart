@@ -263,6 +263,92 @@ void main() {
     });
   });
 
+  group('a product that is bought once (consumable: false)', () {
+    test('is bought as non-consumable', () async {
+      final h = Harness();
+      addTearDown(h.dispose);
+      final catalog = await h.service.loadCatalog();
+      await h.service.buy(
+        catalog.offers.firstWhere(
+          (o) => o.product.storeProductId == 'ads_removal',
+        ),
+      );
+      expect(h.store.bought.single.consumable, isFalse);
+    });
+
+    test(
+      'Android keeps it: acknowledged by completing, never consumed',
+      () async {
+        final h = Harness();
+        addTearDown(h.dispose);
+        await h.service.loadCatalog();
+        await h.start();
+
+        h.store.deliver(googlePurchase(product: 'ads_removal', token: 'ads-1'));
+        await pumpEventQueue();
+
+        expect(h.outcomes.single, isA<IapGranted>());
+        expect(h.android.consumed, isEmpty);
+        expect(h.store.completed.single.productID, 'ads_removal');
+      },
+    );
+
+    test(
+      'is kept too when it arrives at start, before any catalog was read',
+      () async {
+        final h = Harness();
+        addTearDown(h.dispose);
+        h.android.past = [
+          googlePurchase(product: 'ads_removal', token: 'ads-2'),
+        ];
+        await h.start();
+        await pumpEventQueue();
+
+        expect(h.outcomes.single, isA<IapGranted>());
+        expect(h.android.consumed, isEmpty);
+      },
+    );
+
+    test('arriving at start with the product map unreadable: held back, nothing consumed or completed', () async {
+      final h = Harness()..configFails = true;
+      addTearDown(h.dispose);
+      h.android.past = [googlePurchase(product: 'ads_removal', token: 'ads-4')];
+      await h.start();
+      await pumpEventQueue();
+
+      expect(h.purchaseCalls, isEmpty);
+      expect(h.android.consumed, isEmpty);
+      expect(h.store.completed, isEmpty);
+      expect(
+        h.outcomes.single,
+        isA<IapNotConfirmed>().having(
+          (o) => o.reason,
+          'reason',
+          IapWait.retryLater,
+        ),
+      );
+
+      // the map is readable again: the same purchase goes through, still kept
+      h.configFails = false;
+      await h.service.retryUnfinished();
+      await pumpEventQueue();
+      expect(h.outcomes.last, isA<IapGranted>());
+      expect(h.android.consumed, isEmpty);
+    });
+
+    test('a consumable one-time product is still consumed', () async {
+      final h = Harness();
+      addTearDown(h.dispose);
+      await h.service.loadCatalog();
+      await h.start();
+
+      h.store.deliver(googlePurchase());
+      await pumpEventQueue();
+
+      expect(h.android.consumed, hasLength(1));
+    });
+  });
+
   group('the same purchase', () {
     test('is sent once and completed once, however often it arrives', () async {
       final answer = Completer<ResponseBody>();

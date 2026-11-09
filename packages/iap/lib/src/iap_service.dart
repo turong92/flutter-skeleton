@@ -54,6 +54,10 @@ class IapService {
   // answers that carry no `kind`.
   final _kinds = <String, IapProductKind>{};
 
+  // Store product ids bought once and kept (`consumable: false`).
+  final _keptForGood = <String>{};
+  bool _productMapKnown = false;
+
   bool get _isAndroid => _platform != 'ios';
 
   String get _storeId => _platform == 'ios' ? 'appstore' : 'googleplay';
@@ -109,7 +113,7 @@ class IapService {
     // No store for this platform on the server: it would answer 503 to a paid
     // purchase.
     if (config.store == null) return IapCatalog(config: config, offers: []);
-    _kinds.addAll({for (final p in config.products) p.storeProductId: p.kind});
+    _remember(config);
     final found = await _store.queryProductDetails({
       for (final p in config.products) p.storeProductId,
     });
@@ -126,6 +130,33 @@ class IapService {
                 accountToken: config.appAccountToken,
               ),
       ],
+    );
+  }
+
+  void _remember(IapConfig config) {
+    for (final p in config.products) {
+      _kinds[p.storeProductId] = p.kind;
+    }
+    _rememberKept(config);
+  }
+
+  void _rememberKept(IapConfig config) {
+    _productMapKnown = true;
+    for (final p in config.products) {
+      if (p.consumable) {
+        _keptForGood.remove(p.storeProductId);
+      } else {
+        _keptForGood.add(p.storeProductId);
+      }
+    }
+  }
+
+  /// A purchase can arrive at start, before anyone loaded the catalog; whether
+  /// it may be consumed is known only from the server's product map.
+  Future<void> _ensureProducts() async {
+    if (_productMapKnown) return;
+    _rememberKept(
+      await _api.config(platform: _platform, storefront: await _storefront()),
     );
   }
 
@@ -151,7 +182,8 @@ class IapService {
     // Not consumed on its own: the store would give it away before the server
     // has checked it. StoreKit insists on `true` and consumes only when the
     // purchase is completed; Google Play is consumed by hand in [_finish].
-    if (offer.product.kind == IapProductKind.oneTime) {
+    if (offer.product.kind == IapProductKind.oneTime &&
+        offer.product.consumable) {
       await _store.buyConsumable(
         purchaseParam: param,
         autoConsume: _platform == 'ios',
@@ -231,6 +263,16 @@ class IapService {
         '${purchase.productID}|${purchase.purchaseID ?? purchase.verificationData.serverVerificationData}';
     if (_done.contains(key) || !_inFlight.add(key)) return;
     try {
+      try {
+        // Only Google Play consumes; StoreKit does not need the product map.
+        if (_isAndroid) await _ensureProducts();
+      } on Object {
+        // Without the product map a once-bought product could be consumed by
+        // mistake: wait for the next try.
+        _unfinished[key] = purchase;
+        _emit(IapNotConfirmed(purchase.productID, IapWait.retryLater));
+        return;
+      }
       final result = await _api.confirmPurchase(_storeId, _body(purchase));
       if (result.granted) {
         _done.add(key);
@@ -289,10 +331,12 @@ class IapService {
 
   /// Ends the purchase in the store. A one-time Google Play purchase is
   /// consumed (that also acknowledges it); without it the same product could
-  /// not be bought again. Everything else is completed.
+  /// not be bought again. A product bought once and kept is only completed
+  /// (acknowledged), never consumed: consuming would let it be bought twice
+  /// and keep it out of a restore. Everything else is completed.
   Future<void> _finish(PurchaseDetails purchase, {bool oneTime = false}) async {
     try {
-      if (_isAndroid && oneTime) {
+      if (_isAndroid && oneTime && !_keptForGood.contains(purchase.productID)) {
         await _store
             .getPlatformAddition<InAppPurchaseAndroidPlatformAddition>()
             .consumePurchase(purchase);

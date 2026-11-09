@@ -50,6 +50,17 @@ abstract final class AppConfig {
   static const adsBannerIos = String.fromEnvironment('ADS_BANNER_IOS');
   // #endif
 
+  // #if ads iap
+  /// The ad removal you sell: the `itemType` / `itemRef` of its row in the
+  /// server's product map (`consumable: false`). Empty = not sold, ads stay.
+  static const adsRemovalItemType = String.fromEnvironment(
+    'ADS_REMOVAL_ITEM_TYPE',
+  );
+  static const adsRemovalItemRef = String.fromEnvironment(
+    'ADS_REMOVAL_ITEM_REF',
+  );
+  // #endif
+
   // #if board
   /// The board this app shows: a board code of your server (`--dart-define BOARD_CODE=...`).
   static const board = String.fromEnvironment(

@@ -29,6 +29,7 @@ class IapProduct {
     this.itemRef,
     this.plan,
     this.basePlanId,
+    this.consumable = true,
   });
 
   factory IapProduct.fromJson(Map<String, Object?> json) => IapProduct(
@@ -40,6 +41,7 @@ class IapProduct {
     itemRef: json['itemRef'] as String?,
     plan: json['plan'] as String?,
     basePlanId: json['basePlanId'] as String?,
+    consumable: json['consumable'] != false,
   );
 
   final IapProductKind kind;
@@ -52,6 +54,12 @@ class IapProduct {
 
   /// Google subscriptions only.
   final String? basePlanId;
+
+  /// A one-time product the person can buy again (`true`, the default and the
+  /// answer of a server that has no such column) or one that is bought once
+  /// and kept, like "remove ads" (`false`: never consumed in the store, so it
+  /// can be restored and cannot be bought twice).
+  final bool consumable;
 }
 
 /// `GET /iap/config`.
@@ -201,4 +209,22 @@ class IapStoreError extends IapOutcome {
   const IapStoreError(super.productId, this.message);
 
   final String message;
+}
+
+/// `GET /iap/entitlements`: the once-bought items the account owns.
+class IapEntitlements {
+  const IapEntitlements(this._items);
+
+  static const none = IapEntitlements({});
+
+  factory IapEntitlements.fromJson(Map<String, Object?> json) =>
+      IapEntitlements({
+        for (final v in json['values']! as List)
+          '${(v as Map)['itemType']}|${v['itemRef']}',
+      });
+
+  final Set<String> _items;
+
+  bool owns(String itemType, String itemRef) =>
+      _items.contains('$itemType|$itemRef');
 }

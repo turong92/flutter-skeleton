@@ -5,11 +5,12 @@ import 'package:skeleton_ads/testing.dart';
 
 var _now = DateTime(2026, 1, 1, 12);
 
-ProviderContainer containerWith(FakeAdsSdk sdk) {
+ProviderContainer containerWith(FakeAdsSdk sdk, {bool removed = false}) {
   _now = DateTime(2026, 1, 1, 12);
   final container = ProviderContainer(
     overrides: [
       adsSdkProvider.overrideWithValue(sdk),
+      adsRemovedProvider.overrideWithValue(removed),
       adsClockProvider.overrideWithValue(() => _now),
       adsRetryDelayProvider.overrideWithValue(
         (_) => const Duration(milliseconds: 5),
@@ -117,6 +118,19 @@ void main() {
       expect(await ads.showIfAllowed(), isTrue);
     });
 
+    test('ads removed: none is loaded and none is shown', () async {
+      final sdk = FakeAdsSdk();
+      final container = containerWith(sdk, removed: true);
+      container.listen(adsControllerProvider, (_, _) {});
+      container.listen(interstitialAdProvider(unit), (_, _) {});
+      final ads = container.read(interstitialAdProvider(unit));
+      await settle();
+      _now = _now.add(const Duration(minutes: 5));
+
+      expect(await ads.showIfAllowed(), isFalse);
+      expect(sdk.calls.where((c) => c == 'loadInterstitial'), isEmpty);
+    });
+
     test('a failed load shows nothing and does not wait', () async {
       final sdk = FakeAdsSdk(interstitialLoadFails: true);
       final container = containerWith(sdk);
@@ -151,6 +165,15 @@ void main() {
 
       final ok = await started(FakeAdsSdk());
       expect(ok.read(rewardedAdProvider(key)), RewardedStatus.ready);
+    });
+
+    test('ads removed does not touch the rewarded ad', () async {
+      final sdk = FakeAdsSdk();
+      final container = containerWith(sdk, removed: true);
+      container.listen(adsControllerProvider, (_, _) {});
+      container.listen(rewardedAdProvider(key), (_, _) {});
+      await settle();
+      expect(container.read(rewardedAdProvider(key)), RewardedStatus.ready);
     });
 
     test('the reward comes only when the SDK reported one; closing early gives null', () async {

@@ -49,3 +49,9 @@ class AdsController extends Notifier<AdsStatus> {
 final adsControllerProvider = NotifierProvider<AdsController, AdsStatus>(
   AdsController.new,
 );
+
+/// True when the person has paid to remove ads: the banner is not drawn and no
+/// interstitial is loaded or shown. Rewarded ads (a person's own choice), the
+/// consent flow and the privacy button are not affected. The app overrides it
+/// with what its server said; `skeleton_ads` does not know how it was bought.
+final adsRemovedProvider = Provider<bool>((ref) => false);

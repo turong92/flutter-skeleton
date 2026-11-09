@@ -88,6 +88,40 @@ void main() {
     expect(find.byKey(FakeAdsSdk.bannerKey), findsNothing);
   });
 
+  testWidgets(
+    'ads removed: the banner is not drawn, the privacy button stays',
+    (tester) async {
+      final sdk = FakeAdsSdk(privacyRequired: true);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            adsSdkProvider.overrideWithValue(sdk),
+            adsRemovedProvider.overrideWithValue(true),
+          ],
+          child: MaterialApp(
+            home: Consumer(
+              builder: (context, ref, _) {
+                ref.watch(adsControllerProvider);
+                return const Column(
+                  children: [
+                    AdBanner(unitId: 'unit'),
+                    AdsPrivacyOptionsButton(),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      for (var i = 0; i < 4; i++) {
+        await tester.pump();
+      }
+
+      expect(find.byKey(FakeAdsSdk.bannerKey), findsNothing);
+      expect(find.text('Ad privacy settings'), findsOneWidget);
+    },
+  );
+
   testWidgets('the privacy button shows only when the form is required', (
     tester,
   ) async {

@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:skeleton_auth/skeleton_auth.dart';
+// #if ads iap
+import 'package:skeleton_ads/skeleton_ads.dart';
+// #endif
 // #if board
 import 'package:skeleton_board/skeleton_board.dart';
 // #endif
@@ -18,6 +21,10 @@ import 'package:skeleton_push/skeleton_push.dart';
 import 'package:skeleton_storage/skeleton_storage.dart';
 // #endif
 
+// #if ads iap
+import 'ads_removal.dart';
+import 'config.dart';
+// #endif
 // #if notifications|push
 import 'router.dart';
 
@@ -42,6 +49,16 @@ final starterWiring = <Override>[
   // true only once the stored session is checked
   iapSignedInProvider.overrideWith(
     (ref) => ref.watch(authSessionProvider) is SignedIn,
+  ),
+  // #endif
+  // #if ads iap
+  // Bought the ad removal: no banner, no interstitial.
+  adsRemovedProvider.overrideWith(
+    (ref) => adsRemovedFor(
+      ref,
+      itemType: AppConfig.adsRemovalItemType,
+      itemRef: AppConfig.adsRemovalItemRef,
+    ),
   ),
   // #endif
   // #if push

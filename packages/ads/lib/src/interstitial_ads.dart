@@ -57,11 +57,13 @@ class InterstitialAds {
   bool _disposed = false;
   // set by the provider from adsControllerProvider: no request before consent
   bool _ready = false;
+  // set from adsRemovedProvider: paid for, so none is loaded or shown
+  bool _removed = false;
   int _misses = 0;
   Timer? _retry;
 
   Future<void> _load() async {
-    if (!_ready || _loading || _ad != null || _disposed) return;
+    if (!_ready || _removed || _loading || _ad != null || _disposed) return;
     _retry?.cancel();
     _loading = true;
     LoadedInterstitial? ad;
@@ -71,7 +73,8 @@ class InterstitialAds {
       ad = null;
     }
     _loading = false;
-    if (_disposed) {
+    // gone, or paid for while this one was loading
+    if (_disposed || _removed) {
       ad?.dispose();
       return;
     }
@@ -90,6 +93,7 @@ class InterstitialAds {
   /// was shown. Never waits: with nothing loaded it only asks for one for
   /// next time.
   Future<bool> showIfAllowed() async {
+    if (_removed) return false;
     final ad = _ad;
     final since = _clock.last;
     if (_showing || ad == null || since == null) {
@@ -113,6 +117,12 @@ class InterstitialAds {
     return shown;
   }
 
+  void _dropLoaded() {
+    _retry?.cancel();
+    _ad?.dispose();
+    _ad = null;
+  }
+
   void dispose() {
     _disposed = true;
     _retry?.cancel();
@@ -125,6 +135,14 @@ class InterstitialAds {
 final interstitialAdProvider = Provider.autoDispose
     .family<InterstitialAds, String>((ref, unitId) {
       final ads = InterstitialAds(ref, unitId);
+      ref.listen(adsRemovedProvider, (_, removed) {
+        ads._removed = removed;
+        if (removed) {
+          ads._dropLoaded();
+        } else {
+          ads._load();
+        }
+      }, fireImmediately: true);
       ref.listen(adsControllerProvider, (_, status) {
         ads._ready = status == AdsStatus.ready;
         if (ads._ready) ads._load();

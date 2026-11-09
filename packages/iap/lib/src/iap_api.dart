@@ -80,6 +80,13 @@ class IapApi {
     decode: IapPurchaseResult.fromJson,
   );
 
+  /// `GET /payments/iap/entitlements`: the once-bought items (products with
+  /// `consumable: false`) this account has paid for and not had refunded.
+  Future<IapEntitlements> entitlements() => _client.value(
+    '/payments/iap/entitlements',
+    decode: IapEntitlements.fromJson,
+  );
+
   /// `POST /payments/iap/web-checkout-link`: a one-time address with a sign-in
   /// code in it. A secret: open it, never log or store it.
   Future<String> webCheckoutLink({

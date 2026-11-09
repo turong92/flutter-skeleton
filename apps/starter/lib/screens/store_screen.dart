@@ -60,6 +60,8 @@ class _StoreList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final service = ref.watch(iapServiceProvider);
     final subscription = ref.watch(mySubscriptionProvider);
+    // What was bought once and kept: shown as bought, not as something to buy.
+    final entitlements = ref.watch(iapEntitlementsProvider).value;
     // A server that sells on the web only has no store purchase to offer.
     final storeSells = catalog.config.channel != IapChannel.webOnly;
     return ListView(
@@ -76,20 +78,31 @@ class _StoreList extends ConsumerWidget {
             ListTile(
               title: Text(offer.details.title),
               subtitle: Text(offer.details.description),
-              trailing: FilledButton(
-                onPressed: service == null
-                    ? null
-                    : () async {
-                        try {
-                          await service.buy(offer);
-                        } on Object {
-                          if (context.mounted) {
-                            _say(context, context.l10n.startPurchaseFailed);
-                          }
-                        }
-                      },
-                child: Text(offer.details.price),
-              ),
+              trailing:
+                  !offer.product.consumable &&
+                      entitlements != null &&
+                      entitlements.owns(
+                        offer.product.itemType ?? '',
+                        offer.product.itemRef ?? '',
+                      )
+                  ? Chip(label: Text(context.l10n.purchased))
+                  : FilledButton(
+                      onPressed: service == null
+                          ? null
+                          : () async {
+                              try {
+                                await service.buy(offer);
+                              } on Object {
+                                if (context.mounted) {
+                                  _say(
+                                    context,
+                                    context.l10n.startPurchaseFailed,
+                                  );
+                                }
+                              }
+                            },
+                      child: Text(offer.details.price),
+                    ),
             ),
           const SizedBox(height: SkeletonSpace.sm),
           OutlinedButton(

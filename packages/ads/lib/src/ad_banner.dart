@@ -14,7 +14,8 @@ class AdBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (ref.watch(adsControllerProvider) != AdsStatus.ready) {
+    if (ref.watch(adsRemovedProvider) ||
+        ref.watch(adsControllerProvider) != AdsStatus.ready) {
       return const SizedBox.shrink();
     }
     return ref.watch(adsSdkProvider).banner(context, unitId);

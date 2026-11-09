@@ -648,6 +648,45 @@ void main() {
       );
     });
 
+    test('the ad removal needs both ads and iap', () {
+      const files = ['lib/wiring.dart', 'lib/config.dart'];
+      for (final rel in files) {
+        final both = stamped(rel, {'ads', 'iap'});
+        expect(
+          both,
+          anyOf(
+            contains('adsRemovedProvider.overrideWith'),
+            contains('ADS_REMOVAL_ITEM_TYPE'),
+          ),
+          reason: rel,
+        );
+        for (final one in [
+          {'ads'},
+          {'iap'},
+        ]) {
+          expect(
+            stamped(rel, one),
+            isNot(
+              anyOf(
+                contains('adsRemovedProvider'),
+                contains('ADS_REMOVAL_ITEM_TYPE'),
+              ),
+            ),
+            reason: '$rel $one',
+          );
+        }
+      }
+      expect(fileFeatures(starter('lib/ads_removal.dart')), ['ads', 'iap']);
+      expect(fileFeatures(starter('test/ads_removal_test.dart')), [
+        'ads',
+        'iap',
+      ]);
+      expect(
+        stamped('lib/screens/store_screen.dart', {'iap'}),
+        contains('iapEntitlementsProvider'),
+      );
+    });
+
     test('the ARB texts of a package go with it, in both languages', () {
       Set<String> keys(String lang, Set<String> kept) => (jsonDecode(
         pruneFeatureArb(starter('lib/l10n/app_$lang.arb'), kept),

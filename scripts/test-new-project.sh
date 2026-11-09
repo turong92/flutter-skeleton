@@ -7,6 +7,7 @@
 #   2. default stamp (acme_app, com.example): renames, no leftovers, pub get + analyze + test of the whole workspace
 #   3. --packages auth --org com.shop --prefix shop (shop_app): the same, with the prefix and org applied
 #   4. --packages board,storage,push,notifications,realtime,iap,i18n,ads and the four social providers: all stay with their starter screens, apps/sample is gone, the same checks
+#   5. --packages ads alone: the banner without the ad removal
 #
 # Needs the Flutter SDK and network for `flutter pub get` (a few minutes). The temp folder goes away at the end (KEEP=1 keeps it).
 # Texts that cannot be found stopping the stamp is tested in tool/test/stamp_test.dart.
@@ -98,7 +99,14 @@ check "the picked starter has the format dart format wants and no marker line" b
 check "the four are kept, apps/sample is gone" test -d "$P3/packages/board" -a -d "$P3/packages/push" -a -d "$P3/packages/notifications" -a -d "$P3/packages/realtime" -a -d "$P3/packages/ads" -a ! -e "$P3/apps/sample"
 check "the workspace lists the four and not the sample" bash -c "grep -q '  - packages/board' '$P3/pubspec.yaml' && grep -q '  - packages/push' '$P3/pubspec.yaml' && grep -q '  - packages/notifications' '$P3/pubspec.yaml' && grep -q '  - packages/realtime' '$P3/pubspec.yaml' && ! grep -q 'apps/sample' '$P3/pubspec.yaml'"
 check "the CI file builds only the app" bash -c "! grep -q 'apps/sample' '$P3/.github/workflows/ci.yml'"
+check "ads and iap together bring the ad removal" bash -c "D='$P3/apps/shop_app' && [ -f \$D/lib/ads_removal.dart ] && grep -q adsRemovedProvider \$D/lib/wiring.dart && grep -q ADS_REMOVAL_ITEM_TYPE \$D/lib/config.dart"
 verify "$P3"
+
+echo "== 5. --packages ads (without iap)"
+P4="$TMP/shop3"
+expect_exit 0 "stamp shop_app with ads only" bash "$SCRIPT" "$P4" shop_app --packages ads
+check "ads alone: the banner is there, the ad removal is not" bash -c "D='$P4/apps/shop_app' && grep -q AdBanner \$D/lib/screens/me_screen.dart && [ ! -f \$D/lib/ads_removal.dart ] && ! grep -q adsRemovedProvider \$D/lib/wiring.dart && ! grep -rq skeleton_iap \$D/lib \$D/pubspec.yaml"
+verify "$P4"
 
 echo
 if [ "$FAILURES" -eq 0 ]; then echo "all passed"; else echo "$FAILURES failed"; exit 1; fi

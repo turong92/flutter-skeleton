@@ -37,6 +37,12 @@ ProviderScope(overrides: [
 - Nothing is for sale when `config.store` is null (the server has no store for this platform and would answer `503` to a paid purchase). On Google Play a subscription is offered only for the base plan the server maps (`basePlanId`); other plans of the same product are hidden.
 - The same purchase is sent once and completed once, however often the stream delivers it.
 
+## Bought once and kept (`consumable: false`)
+
+A one-time product the server maps with `consumable: false` (for example "remove ads") is bought as non-consumable and **never consumed** on Android: it is only acknowledged. Consuming it would let the person buy it twice and keep it out of a restore. The flag comes from `GET /iap/config`; a purchase that arrives at start, before any catalog was loaded, reads the config first, and if that fails it stays open for the next try.
+
+`iapEntitlementsProvider` reads `GET /iap/entitlements` (what the signed-in account owns of those products, refunds taken out) and reads it again after every grant, so a purchase or a restore updates it. `owns(itemType, itemRef)` answers for one item; signed out owns nothing; a failed read is an error state, so decide in the app what to do then. Hide the buy button of an owned product (the store would refuse a second purchase anyway, but the person should see "bought").
+
 ## Web checkout
 
 Only when `config.showsWebCheckout`. `service.openWebCheckout()` asks `POST /iap/web-checkout-link` for a one-time sign-in address and opens it with `LaunchMode.externalApplication` (the outside browser; never a web view). The address holds a sign-in code: it is not logged or stored, and a failure throws `IapWebLinkException` without it. Only `http` / `https` addresses are opened. In an `IAP_ONLY` channel the server answers `404` (`ApiRequestError`).

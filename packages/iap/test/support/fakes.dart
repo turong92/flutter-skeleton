@@ -43,6 +43,15 @@ Map<String, Object?> configJson({
       'basePlanId': null,
     },
     {
+      'kind': 'ONE_TIME',
+      'itemType': 'ads-removal',
+      'itemRef': 'remove',
+      'plan': null,
+      'storeProductId': 'ads_removal',
+      'basePlanId': null,
+      'consumable': false,
+    },
+    {
       'kind': 'SUBSCRIPTION',
       'itemType': null,
       'itemRef': null,
@@ -237,7 +246,12 @@ class Harness {
     adapter = FakeAdapter((options) {
       switch (options.path) {
         case '/payments/iap/config':
+          if (configFails) return errorBody(503, 'COMMON.UNAVAILABLE');
           return valueBody(configJson(channel: channel, store: configStore));
+        case '/payments/iap/entitlements':
+          entitlementReads++;
+          if (entitlementsFail) return errorBody(503, 'COMMON.UNAVAILABLE');
+          return valueBody({'values': entitlements});
         case '/payments/iap/web-checkout-link':
           return linkResponse ?? valueBody({'url': linkUrl});
         default:
@@ -258,6 +272,12 @@ class Harness {
   final String platform;
   final String linkUrl;
   final ResponseBody? linkResponse;
+
+  /// What `GET /iap/entitlements` answers: `{itemType, itemRef}` rows.
+  List<Map<String, String>> entitlements = [];
+  int entitlementReads = 0;
+  bool entitlementsFail = false;
+  bool configFails = false;
   late final FakeStorePlatform store;
   final android = FakeAndroidAddition();
   late final FakeAdapter adapter;

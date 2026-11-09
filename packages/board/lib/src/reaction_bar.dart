@@ -22,6 +22,14 @@ const defaultBoardReactionStyles = <String, BoardReactionStyle>{
   'EMPATHY': BoardReactionStyle(label: 'Empathy', icon: Icons.favorite_border),
 };
 
+/// The same types in Korean, for an app that follows the device language
+/// (`context.byLocale(koBoardReactionStyles, defaultBoardReactionStyles)`).
+const koBoardReactionStyles = <String, BoardReactionStyle>{
+  'LIKE': BoardReactionStyle(label: '좋아요', icon: Icons.thumb_up_outlined),
+  'DISLIKE': BoardReactionStyle(label: '싫어요', icon: Icons.thumb_down_outlined),
+  'EMPATHY': BoardReactionStyle(label: '공감', icon: Icons.favorite_border),
+};
+
 /// One button per reaction type. Every button has an outline (picked ones are
 /// filled), so it reads as pressable at rest. [keyPrefix] makes the keys
 /// `<prefix>-<TYPE>`.

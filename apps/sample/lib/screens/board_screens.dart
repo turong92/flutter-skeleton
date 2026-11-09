@@ -63,6 +63,10 @@ class PostDetailScreen extends StatelessWidget {
           const EmailWriteNotice(),
           Expanded(
             child: PostDetailView(
+              reactionStyles: context.byLocale(
+                koBoardReactionStyles,
+                defaultBoardReactionStyles,
+              ),
               labels: context.byLocale(
                 const BoardLabels.ko(),
                 const BoardLabels(),

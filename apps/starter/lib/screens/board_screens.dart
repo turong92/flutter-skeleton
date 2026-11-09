@@ -38,6 +38,10 @@ class PostDetailScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text(context.l10n.postTitle)),
       body: PostDetailView(
+        reactionStyles: context.byLocale(
+          koBoardReactionStyles,
+          defaultBoardReactionStyles,
+        ),
         labels: context.byLocale(const BoardLabels.ko(), const BoardLabels()),
         board: AppConfig.board,
         postId: postId,

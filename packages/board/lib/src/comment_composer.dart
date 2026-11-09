@@ -97,6 +97,8 @@ class _CommentComposerState extends ConsumerState<CommentComposer> {
       _key.reset();
       _text.clear();
       ref.invalidate(boardCommentsProvider(widget.post));
+      // the list shows this post's comment count
+      ref.invalidate(boardPostListProvider(widget.post.board));
       widget.onPosted();
     } catch (e) {
       if (mounted) {

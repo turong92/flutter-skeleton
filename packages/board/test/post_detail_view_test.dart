@@ -101,6 +101,50 @@ void main() {
       expect(find.byKey(const ValueKey('reply-12')), findsNothing);
     });
 
+    testWidgets('a sent comment shows on screen once the list is read again', (
+      tester,
+    ) async {
+      final server = FakeBoard();
+      server.respond = (o) {
+        if (o.method == 'POST' && o.path.endsWith('/posts/1/comments')) {
+          server.comments = [commentJson(100, body: 'fresh one')];
+        }
+        return null;
+      };
+      await pumpBoard(tester, server, detail());
+      expect(find.text('No comments yet.'), findsOneWidget);
+
+      await send(tester, 'fresh one');
+
+      expect(find.text('fresh one'), findsOneWidget);
+      expect(find.text('No comments yet.'), findsNothing);
+    });
+
+    testWidgets('a comment sent or deleted reads the post list again', (
+      tester,
+    ) async {
+      final server = FakeBoard()..comments = [commentJson(10, mine: true)];
+      server.respond = (o) =>
+          o.method == 'DELETE' && o.path.endsWith('/comments/10')
+          ? FakeAdapter.empty(204)
+          : null;
+      final container = await pumpBoard(tester, server, detail());
+      // the list screen stays alive under the detail screen
+      final sub = container.listen(boardPostListProvider('general'), (_, _) {});
+      addTearDown(sub.close);
+      await tester.pumpAndSettle();
+      expect(server.where('GET', '/boards/general/posts'), hasLength(1));
+
+      await send(tester, 'hello');
+      expect(server.where('GET', '/boards/general/posts'), hasLength(2));
+
+      await tester.tap(find.byKey(const ValueKey('delete-comment-10')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+      await tester.pumpAndSettle();
+      expect(server.where('GET', '/boards/general/posts'), hasLength(3));
+    });
+
     testWidgets('sending posts with a key, then re-reads only the comments', (
       tester,
     ) async {

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `skeleton_board`: sending or deleting a comment reads the post list again, so the list's comment count is not stale under the detail screen.
+
 ### Added
 
 - `koBoardReactionStyles` (좋아요 · 싫어요 · 공감, the sample server's types), the Korean twin of `defaultBoardReactionStyles`; `apps/sample` and `apps/starter` pass it to the post detail by the device language.

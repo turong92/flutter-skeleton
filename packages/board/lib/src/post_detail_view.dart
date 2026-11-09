@@ -119,6 +119,8 @@ class _PostDetailViewState extends ConsumerState<PostDetailView> {
           .read(boardApiProvider)
           .deleteComment(widget.board, widget.postId, comment.id);
       ref.invalidate(boardCommentsProvider(_ref));
+      // the list shows this post's comment count
+      ref.invalidate(boardPostListProvider(widget.board));
     });
   }
 

@@ -37,3 +37,7 @@ cd packages/legal && flutter test      # unit + widget (fake backend); backend t
 API_BASE_URL=http://localhost:8080/api/v1 API_SEED_EMAIL=user@example.com API_SEED_PASSWORD=password \
   flutter test --tags backend test/backend
 ```
+
+## Korean
+
+English is the default. Korean (polite 해요 style) is `LegalLabels.ko()`; the app picks it by the chosen language (see `skeleton_i18n`). `test/ko_labels_test.dart` checks that a Korean set names every field.

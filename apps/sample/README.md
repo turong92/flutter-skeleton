@@ -9,7 +9,7 @@ The reference app: everything the starter has (sign up with the consent boxes, c
 | Store | products to buy, restore purchases, web checkout when the server allows it, my subscription | `iap` |
 | Settings | who is signed in, a way to the notification settings (`/settings/notifications`: this device's push switch, one switch per kind, a test notification, consent to promotional push), social sign-in links, account settings (delete), sign out | `push`, `legal`, `auth`, `social-login` |
 
-Languages: Korean and English. The texts are in `lib/l10n/app_ko.arb` and `app_en.arb` (gen_l10n; `flutter pub get` writes the Dart files); the packages get their `*Labels` (`.ko()` for `auth`, `push`, `notifications`) from `context.byLocale`. The language is the saved pick, else the device language, else Korean (`skeleton_i18n`); the menu is in Settings. `board`, `legal`, `iap` and `social-login` texts of the packages stay English.
+Languages: Korean and English. The texts are in `lib/l10n/app_ko.arb` and `app_en.arb` (gen_l10n; `flutter pub get` writes the Dart files); the packages get their `*Labels` (`.ko()` for `auth`, `push`, `notifications`) from `context.byLocale`. The language is the saved pick, else the device language, else Korean (`skeleton_i18n`); the menu is in Settings. The `board`, `legal` and `storage` Korean sets exist but the sample does not hand them yet; `social-login` texts stay English.
 
 The starter is the smaller app (accounts only). Pick the packages you need from here; this app is not meant to ship as it is.
 

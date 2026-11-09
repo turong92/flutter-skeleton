@@ -35,3 +35,7 @@ A server whose public base is a path (kotlin `base-url: /files`) gives addresses
 ## Not here
 
 Multipart (big files, video), camera capture, cropping or reordering, guest upload. A key becomes a picture through the record that holds it (a board post's `attachmentUrls` / `attachmentImages`), then `StoredImage(url: ...)`.
+
+## Korean
+
+English is the default. Korean (polite 해요 style) is `ImageUploadLabels.ko()`; the app picks it by the chosen language (see `skeleton_i18n`). `test/ko_labels_test.dart` checks that a Korean set names every field.

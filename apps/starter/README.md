@@ -17,7 +17,7 @@ The starter also carries the default screens of `board`, `storage` (the photo fi
 
 ## Languages
 
-The texts are in `lib/l10n/app_ko.arb` (template) and `app_en.arb` (gen_l10n; `flutter pub get` writes the Dart files, which are git-ignored). The app follows the device language and falls back to Korean. A package's texts come from its `*Labels`: `context.byLocale(const LoginLabels.ko(), const LoginLabels())`. With the `i18n` package the app also keeps the language the person picked (device only) and shows a menu on the account page. The default language is Korean, but the `legal`, `board`, `iap` and `storage` Labels have English defaults only, so the app fills them from its own ARB texts. A new text goes into both ARB files; `skeleton_i18n/testing.dart` has `arbProblems` to check that they match.
+The texts are in `lib/l10n/app_ko.arb` (template) and `app_en.arb` (gen_l10n; `flutter pub get` writes the Dart files, which are git-ignored). The app follows the device language and falls back to Korean. A package's texts come from its `*Labels`: `context.byLocale(const LoginLabels.ko(), const LoginLabels())`. With the `i18n` package the app also keeps the language the person picked (device only) and shows a menu on the account page. The default language is Korean, and the `legal`, `board` and `storage` Labels have a Korean set too (`.ko()`), which the starter does not hand them yet; `iap` has no Labels (its texts are in the app's ARB files). A new text goes into both ARB files; `skeleton_i18n/testing.dart` has `arbProblems` to check that they match.
 
 ## Run
 

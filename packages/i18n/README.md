@@ -1,6 +1,6 @@
 # skeleton_i18n
 
-Which language the app shows, and a menu to change it. Twin of the web `@skeleton/i18n`: the language is the saved pick (kept on this device only), else the first device language the app supports, else Korean. The texts are not here: the app owns its ARB files (`flutter_localizations` + `gen_l10n`), and the packages take their texts as `*Labels` classes (English by default; `auth`, `push` and `notifications` also have a Korean set, `XxxLabels.ko()`).
+Which language the app shows, and a menu to change it. Twin of the web `@skeleton/i18n`: the language is the saved pick (kept on this device only), else the first device language the app supports, else Korean. The texts are not here: the app owns its ARB files (`flutter_localizations` + `gen_l10n`), and the packages take their texts as `*Labels` classes (English by default; `auth`, `push`, `notifications`, `board`, `legal` and `storage` also have a Korean set, `XxxLabels.ko()`).
 
 | Piece | What it is |
 |---|---|

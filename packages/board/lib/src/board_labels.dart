@@ -43,6 +43,43 @@ class BoardLabels {
     this.loginIdRequired = 'Choose a login ID for your account first.',
   });
 
+  /// Korean texts, in the polite 해요 style.
+  const BoardLabels.ko()
+    : this(
+        write: '글쓰기',
+        authorMissing: '글을 쓰려면 작성자 프로필이 필요한데, 이 앱에는 아직 정해 두지 않았어요.',
+        empty: '아직 글이 없어요.',
+        loadFailed: '불러오지 못했어요.',
+        retry: '다시 시도',
+        loadMore: '더 보기',
+        moreComments: '댓글 더 보기',
+        comments: '댓글',
+        edit: '수정',
+        delete: '삭제',
+        cancel: '취소',
+        confirmDeletePost: '이 글을 삭제할까요?',
+        confirmDeleteComment: '이 댓글을 삭제할까요?',
+        reply: '답글',
+        replyingTo: '답글 대상',
+        commentHint: '댓글을 써 주세요',
+        send: '보내기',
+        noComments: '아직 댓글이 없어요.',
+        commentDeleted: '삭제된 댓글이에요.',
+        commentHidden: '숨겨진 댓글이에요.',
+        commentPending: '승인을 기다리는 댓글이에요.',
+        titleHint: '제목',
+        bodyHint: '내용',
+        publish: '올리기',
+        save: '저장',
+        deletedAuthor: '탈퇴한 사용자',
+        unknownAuthor: '알 수 없음',
+        guest: '비회원',
+        submitFailed: '보내지 못했어요. 다시 시도해 주세요.',
+        actionFailed: '처리하지 못했어요. 다시 시도해 주세요.',
+        emailRequired: '먼저 계정에 이메일 주소를 추가해 주세요.',
+        loginIdRequired: '먼저 계정의 아이디를 정해 주세요.',
+      );
+
   final String write;
 
   /// Shown instead of the write button, the editor and the comment box when

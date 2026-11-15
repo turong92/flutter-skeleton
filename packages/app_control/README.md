@@ -25,9 +25,10 @@ final on = ref.watch(featureProvider('new-checkout'));   // a switch nobody made
 | `AppControlGate(child:, labels:)` | Maintenance screen · forced-update screen (store button) · closable notice above `child`. Reads the config at start and every time the app comes back to the front; while maintenance is on it reads again by itself (`appControlPollIntervalProvider`, 30 s) and goes away when it is lifted. A failed read keeps what was known and never holds the app back. |
 | `appStateOf(config, appVersion:, platform:, dismissed:)` | The decision as a pure function: maintenance, then forced, then recommended (not the one already closed), otherwise `AppOk`. |
 | `isVersionBelow(version, limit)` · `AppVersion` | Numbers part by part: `1.9` is below `1.10`, `1.2` equals `1.2.0`; `+build` and `-suffix` are cut; unreadable is never below. |
-| `appVersionProvider` · `appPlatformProvider` | The installed version name (`package_info_plus`) and `android` / `ios` — override them in tests. |
+| `appVersionProvider` · `appPlatformProvider` | The installed version name (`package_info_plus`) and the platform key: `ios`, `android` or the target platform's own name (`macos` ...) - a desktop build never takes the phone rules. Override them in tests. |
 | `storeLauncherProvider` | Opens the store link (`url_launcher`, outside the app) — override it in tests. |
-| `featureProvider(key)` | A switch visible to clients; missing = off. |
+| `featureProvider(key)` · `featureOrProvider((key:, fallback:))` | A switch visible to clients; missing = off, or the `fallback` (true for a feature that is on until an operator turns it off). |
+| `installMaintenanceWatch(client, onMaintenance)` · `isMaintenanceError` | Any request that gets `503 APP_CONTROL.MAINTENANCE` reads the config again at once (the starter wires it to `appConfigProvider.notifier.refresh()`), so the maintenance screen does not wait for the next resume. |
 | `AppControlLabels` · `AppControlLabels.ko()` | The texts (English default, Korean 해요 style). |
 
-The server never refuses a request for the app version: the minimum is enforced here, from the config. The **Update** button exists only when the platform's `storeUrl` is set on the server. In the starter it is wired with `--packages app-control` (`// #if app-control`).
+If the store link cannot be opened (the store says no, or the platform throws) the person gets a snackbar (`AppControlLabels.storeOpenFailed`). The server never refuses a request for the app version: the minimum is enforced here, from the config. The **Update** button exists only when the platform's `storeUrl` is set on the server. In the starter it is wired with `--packages app-control` (`// #if app-control`).

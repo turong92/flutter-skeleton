@@ -44,9 +44,16 @@ final starterWiring = <Override>[
     (ref) => LegalApi(ref.watch(apiClientProvider)),
   ),
   // #if app-control
-  appControlApiProvider.overrideWith(
-    (ref) => AppControlApi(ref.watch(apiClientProvider)),
-  ),
+  appControlApiProvider.overrideWith((ref) {
+    final client = ref.watch(apiClientProvider);
+    // Any request that gets the 503 maintenance answer reads the config again
+    // at once, so the maintenance screen does not wait for the next resume.
+    installMaintenanceWatch(
+      client,
+      () => ref.read(appConfigProvider.notifier).refresh(),
+    );
+    return AppControlApi(client);
+  }),
   // #endif
   // #if board
   // A server whose config says `authorRequired` also needs

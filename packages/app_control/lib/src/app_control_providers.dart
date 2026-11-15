@@ -23,9 +23,11 @@ final appVersionProvider = FutureProvider<String>(
   retry: (_, _) => null,
 );
 
-/// The key of this platform in the server's version rules.
+/// The key of this platform in the server's version rules: `ios`, `android`, or the
+/// target platform's own name (`macos`, `windows` ...) - a desktop build never
+/// takes the phone rules by mistake.
 final appPlatformProvider = Provider<String>(
-  (ref) => defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
+  (ref) => defaultTargetPlatform.name.toLowerCase(),
 );
 
 /// How often the config is read again while maintenance is on.
@@ -46,6 +48,7 @@ final storeLauncherProvider = Provider<StoreLauncher>(
 /// maintenance is on it is read again by itself, until it is lifted.
 class AppControlConfigController extends AsyncNotifier<AppControlConfig?> {
   Timer? _timer;
+  var _refreshing = false;
 
   @override
   Future<AppControlConfig?> build() {
@@ -55,7 +58,13 @@ class AppControlConfigController extends AsyncNotifier<AppControlConfig?> {
 
   /// Read it again (the gate does when the app comes back to the front).
   Future<void> refresh() async {
-    state = AsyncData(await _read(state.value));
+    if (_refreshing) return; // a burst of 503s reads once
+    _refreshing = true;
+    try {
+      state = AsyncData(await _read(state.value));
+    } finally {
+      _refreshing = false;
+    }
   }
 
   Future<AppControlConfig?> _read(AppControlConfig? known) async {
@@ -63,7 +72,11 @@ class AppControlConfigController extends AsyncNotifier<AppControlConfig?> {
     AppControlConfig? config;
     try {
       config = await ref.read(appControlApiProvider).config();
-    } catch (_) {
+    } on Exception catch (e) {
+      // Not holding the app back is the point; an Error (a bug) is not caught.
+      debugPrint(
+        'app-control: reading the config failed, keeping what was known: $e',
+      );
       config = known;
     }
     if (config != null && config.maintenance.enabled) {
@@ -104,4 +117,11 @@ final appControlStateProvider = Provider<AppState>(
 /// config not read yet) is off.
 final featureProvider = Provider.family<bool, String>(
   (ref, key) => ref.watch(appConfigProvider).value?.flags[key] ?? false,
+);
+
+/// Like [featureProvider] with the answer for a switch nobody made (`fallback: true` for
+/// a feature that is on until an operator turns it off).
+final featureOrProvider = Provider.family<bool, ({String key, bool fallback})>(
+  (ref, spec) =>
+      ref.watch(appConfigProvider).value?.flags[spec.key] ?? spec.fallback,
 );

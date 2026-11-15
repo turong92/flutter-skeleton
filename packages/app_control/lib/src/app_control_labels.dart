@@ -12,6 +12,8 @@ class AppControlLabels {
     this.updateRecommendedTitle = 'A new version is available',
     this.updateRecommendedBody = 'Update the app to get the latest version.',
     this.later = 'Later',
+    this.storeOpenFailed =
+        'Could not open the store. Please update the app from the store.',
   });
 
   /// Korean texts, in the polite 해요 style.
@@ -26,6 +28,7 @@ class AppControlLabels {
         updateRecommendedTitle: '새 버전이 나왔어요',
         updateRecommendedBody: '업데이트하면 최신 버전을 쓸 수 있어요.',
         later: '나중에',
+        storeOpenFailed: '스토어를 열지 못했어요. 스토어에서 직접 업데이트해 주세요.',
       );
 
   final String maintenanceTitle;
@@ -45,4 +48,7 @@ class AppControlLabels {
 
   /// Closes the recommended notice.
   final String later;
+
+  /// Shown when the store link could not be opened.
+  final String storeOpenFailed;
 }

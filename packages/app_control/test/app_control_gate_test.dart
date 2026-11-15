@@ -54,6 +54,7 @@ Widget app(
   FakeServer server, {
   String version = '1.0',
   List<Uri>? launched,
+  Future<bool> Function(Uri url)? launcher,
   Duration poll = const Duration(seconds: 30),
 }) => ProviderScope(
   overrides: [
@@ -65,10 +66,13 @@ Widget app(
     appVersionProvider.overrideWith((ref) => version),
     appPlatformProvider.overrideWithValue('ios'),
     appControlPollIntervalProvider.overrideWithValue(poll),
-    storeLauncherProvider.overrideWithValue((url) async {
-      launched?.add(url);
-      return true;
-    }),
+    storeLauncherProvider.overrideWithValue(
+      launcher ??
+          (url) async {
+            launched?.add(url);
+            return true;
+          },
+    ),
   ],
   child: const MaterialApp(
     home: AppControlGate(child: Scaffold(body: Text('the app'))),
@@ -150,6 +154,27 @@ void main() {
     },
   );
 
+  for (final failure in <String, Future<bool> Function(Uri)>{
+    'the store says no': (url) async => false,
+    'the platform throws': (url) async => throw Exception('no browser'),
+  }.entries) {
+    testWidgets(
+      'the forced screen says so when the store cannot be opened: ${failure.key}',
+      (tester) async {
+        final server = FakeServer()..platforms = ios(min: '1.10');
+        await tester.pumpWidget(
+          app(server, version: '1.9', launcher: failure.value),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.widgetWithText(FilledButton, 'Update'));
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('Could not open the store'), findsOneWidget);
+      },
+    );
+  }
+
   testWidgets('1.10 is not below 1.9', (tester) async {
     final server = FakeServer()..platforms = ios(min: '1.9');
     await tester.pumpWidget(app(server, version: '1.10'));
@@ -202,7 +227,8 @@ void main() {
               return Text(
                 '${ref.watch(featureProvider('beta'))}'
                 ' ${ref.watch(featureProvider('old'))}'
-                ' ${ref.watch(featureProvider('never-made'))}',
+                ' ${ref.watch(featureProvider('never-made'))}'
+                ' ${ref.watch(featureOrProvider((key: 'never-made', fallback: true)))}',
               );
             },
           ),
@@ -210,9 +236,9 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.text('false false false'), findsOneWidget);
+    expect(find.text('false false false true'), findsOneWidget);
     await tester.pumpAndSettle();
 
-    expect(find.text('true false false'), findsOneWidget);
+    expect(find.text('true false false true'), findsOneWidget);
   });
 }

@@ -48,7 +48,18 @@ class _AppControlGateState extends ConsumerState<AppControlGate>
 
   Future<void> _openStore(String? storeUrl) async {
     if (storeUrl == null) return;
-    await ref.read(storeLauncherProvider)(Uri.parse(storeUrl));
+    var opened = false;
+    try {
+      opened = await ref.read(storeLauncherProvider)(Uri.parse(storeUrl));
+    } on Exception catch (e) {
+      // PlatformException, FormatException ...: the person must still learn it failed
+      debugPrint('app-control: opening the store failed: $e');
+    }
+    if (!opened && mounted) {
+      ScaffoldMessenger.maybeOf(
+        context,
+      )?.showSnackBar(SnackBar(content: Text(widget.labels.storeOpenFailed)));
+    }
   }
 
   @override

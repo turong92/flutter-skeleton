@@ -8,4 +8,5 @@ export 'src/app_control_labels.dart';
 export 'src/app_control_providers.dart';
 export 'src/app_state.dart';
 export 'src/app_version.dart';
+export 'src/maintenance_watch.dart';
 export 'src/models.dart';

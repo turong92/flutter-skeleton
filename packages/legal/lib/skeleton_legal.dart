@@ -1,6 +1,7 @@
 /// Legal documents and consents for the kotlin-skeleton legal modules.
 library;
 
+export 'src/consent_history_view.dart';
 export 'src/legal_api.dart';
 export 'src/legal_document_page.dart';
 export 'src/legal_labels.dart';

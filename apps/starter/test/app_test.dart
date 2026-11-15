@@ -63,6 +63,28 @@ final _backend = FakeAdapter((options) {
       return FakeAdapter.json(200, {'value': _principal, 'meta': _meta});
     case '/auth/logout':
       return FakeAdapter.empty(204);
+    case '/legal/consents/me/history':
+      return FakeAdapter.json(200, {
+        'values': [
+          {
+            'type': 'terms',
+            'version': '2026-01-01',
+            'action': 'AGREED',
+            'locale': 'en',
+            'source': 'sign-up',
+            'at': '2026-03-01T12:00:00Z',
+          },
+        ],
+        'pagination': {
+          'page': 0,
+          'size': 20,
+          'totalElements': 1,
+          'totalPages': 1,
+          'hasNext': false,
+          'hasPrevious': false,
+        },
+        'meta': _meta,
+      });
   }
   return FakeAdapter.json(404, {
     'code': 'COMMON.NOT_FOUND',
@@ -189,6 +211,20 @@ void main() {
     expect(sound.saved?.bgmEnabled, isFalse);
   });
   // #endif
+
+  testWidgets('the account settings open the consent history', (tester) async {
+    await tester.pumpWidget(_app(MemoryTokenStore()));
+    await tester.pumpAndSettle();
+    await _signIn(tester, 'password');
+    await tester.tap(find.text('Account settings'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Consent history'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('terms'), findsOneWidget);
+    expect(find.textContaining('Agreed'), findsOneWidget);
+  });
 
   testWidgets('sign in, see my account, sign out', (tester) async {
     final store = MemoryTokenStore();

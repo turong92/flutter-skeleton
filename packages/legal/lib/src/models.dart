@@ -110,3 +110,37 @@ class ConsentStatus {
   final bool blocked;
   final List<MissingConsent> missing;
 }
+
+/// One entry of the caller's consent history (`GET /legal/consents/me/history`):
+/// an agreement or a withdrawal. Consent is only ever added to, so a withdrawal
+/// is an event of its own.
+class ConsentEvent {
+  const ConsentEvent({
+    required this.type,
+    required this.version,
+    required this.action,
+    required this.locale,
+    required this.source,
+    required this.at,
+  });
+
+  factory ConsentEvent.fromJson(Map<String, Object?> json) => ConsentEvent(
+    type: json['type']! as String,
+    version: json['version']! as String,
+    action: json['action']! as String,
+    locale: json['locale'] as String?,
+    source: json['source'] as String?,
+    at: DateTime.parse(json['at']! as String),
+  );
+
+  final String type;
+  final String version;
+
+  /// `AGREED` or `WITHDRAWN`.
+  final String action;
+  final String? locale;
+  final String? source;
+  final DateTime at;
+
+  bool get withdrawn => action == 'WITHDRAWN';
+}

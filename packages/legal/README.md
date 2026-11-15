@@ -18,6 +18,8 @@ legalApiProvider.overrideWith((ref) => LegalApi(ref.watch(apiClientProvider)))
 | `reconsentProvider` | `Reconsent` notifier, state `List<MissingConsent>` (empty = nothing to agree to). Wire: `ReconsentInterceptor(onRequired: ref.read(reconsentProvider.notifier).require)`. |
 | `reconsentRedirect(ref)` · `reconsentRefreshListenable(ref)` · `reconsentRedirectFor(missing, uri)` | go_router: something missing sends every route to `/consent?from=<where>`; when it is done the consent route returns to `from` (an app path only, else `/`). Chain after the auth redirect: `authRedirect(c, s) ?? reconsentRedirect(ref)(c, s)`. |
 | `ReconsentScreen(locale:, labels:)` | The `/consent` route: a box per missing document, one button that posts `POST /legal/consents` with `source: re-consent`. A newer version in between shows the new list; a refused version reads the status again. |
+| `LegalApi.history({page, size})` · `ConsentEvent` | `GET /legal/consents/me/history`: the caller's agreements and withdrawals, newest first, no IP. |
+| `ConsentHistoryView(labels:)` | The history as a list (document title, agreed or withdrawn with the time in the device's zone, version), "Load more" for the next page, a retry on a failed read. Twin of the history in the web `ConsentSettings`; put it in a screen of its own (the starter opens it from the account settings at `/account/consents`). The state of each document and the switch for an optional one are not built here (push has its own for promotional push). |
 | `LegalLabels` | Every text. The package does not translate; defaults are English. |
 
 Notes

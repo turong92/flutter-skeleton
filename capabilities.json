@@ -87,7 +87,7 @@
     {
       "id": "legal",
       "kind": "package",
-      "summary": "Legal documents and consents: the sign-up consent boxes, a document page, the re-consent screen and the 403 LEGAL.RECONSENT_REQUIRED handling (go_router redirect to /consent).",
+      "summary": "Legal documents and consents: the sign-up consent boxes, a document page, the re-consent screen and the 403 LEGAL.RECONSENT_REQUIRED handling (go_router redirect to /consent), and the person's consent history (agreements and withdrawals, newest first, paged).",
       "package": "skeleton_legal",
       "path": "packages/legal",
       "stampFlag": { "flag": null, "included": "always" },

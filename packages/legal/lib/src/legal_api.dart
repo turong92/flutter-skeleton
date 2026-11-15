@@ -47,6 +47,15 @@ class LegalApi {
         decode: ConsentStatus.fromJson,
       );
 
+  /// `GET /legal/consents/me/history`: the caller's own agreements and
+  /// withdrawals, newest first (no IP).
+  Future<Page<ConsentEvent>> history({int page = 0, int size = 20}) =>
+      _client.page(
+        '/legal/consents/me/history',
+        query: {'page': page, 'size': size},
+        decode: ConsentEvent.fromJson,
+      );
+
   /// `POST /legal/consents/{type}/withdraw`: withdraw an optional agreement
   /// (marketing ...). Idempotent. A required type is refused with 409
   /// LEGAL.WITHDRAWAL_NOT_ALLOWED.

@@ -13,6 +13,7 @@ import 'screens/account_screen.dart';
 // #if board
 import 'screens/board_screens.dart';
 // #endif
+import 'screens/consent_history_screen.dart';
 import 'screens/forgot_password_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/me_screen.dart';
@@ -96,6 +97,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/account',
         builder: (context, state) => const AccountScreen(),
+      ),
+      GoRoute(
+        path: '/account/consents',
+        builder: (context, state) => const ConsentHistoryScreen(),
       ),
       // #if iap
       GoRoute(path: '/store', builder: (context, state) => const StoreScreen()),

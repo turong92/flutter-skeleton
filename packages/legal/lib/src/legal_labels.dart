@@ -12,6 +12,12 @@ class LegalLabels {
     this.agree = 'Agree and continue',
     this.agreeFailed = 'Could not save your agreement. Please try again.',
     this.signOut = 'Sign out',
+    this.history = 'Consent history',
+    this.historyEmpty = 'Nothing recorded yet.',
+    this.historyLoadFailed = 'Could not load the history.',
+    this.historyAgreed = 'Agreed',
+    this.historyWithdrawn = 'Withdrawn',
+    this.loadMore = 'Load more',
   });
 
   /// Korean texts, in the polite 해요 style.
@@ -27,6 +33,12 @@ class LegalLabels {
         agree: '동의하고 계속하기',
         agreeFailed: '동의를 저장하지 못했어요. 다시 시도해 주세요.',
         signOut: '로그아웃',
+        history: '동의 이력',
+        historyEmpty: '아직 기록이 없어요.',
+        historyLoadFailed: '이력을 불러오지 못했어요.',
+        historyAgreed: '동의했어요',
+        historyWithdrawn: '철회했어요',
+        loadMore: '더 보기',
       );
 
   /// Next to a document that has to be agreed to.
@@ -46,4 +58,16 @@ class LegalLabels {
 
   /// The way out of the consent screen (see `ReconsentScreen.onLeave`).
   final String signOut;
+
+  /// The title of the consent history (a screen title or a button).
+  final String history;
+  final String historyEmpty;
+  final String historyLoadFailed;
+
+  /// What an event says, with the time next to it.
+  final String historyAgreed;
+  final String historyWithdrawn;
+
+  /// Reads the next page of the history.
+  final String loadMore;
 }

@@ -21,7 +21,7 @@
   - take: in every project; needs: api-client
   - backend: modules `auth` · `auth-session` · `account` · more when present `account-jdbc` · `auth-session-jdbc` · paths `/api/v1/auth` · `/api/v1/account`; react twin: auth, account-lifecycle, session-refresh
   - keywords: 로그인, 로그아웃, 인증, 토큰, 토큰 갱신, 세션, 리프레시 토큰, 로그인 상태, 가입, 회원가입, 비밀번호 재설정, 탈퇴, 이메일 인증 / login, logout, auth, token, session, refresh token, sign in, secure storage, sign up, password reset, account deletion, email verification
-- `legal`: Legal documents and consents: the sign-up consent boxes, a document page, the re-consent screen and the 403 LEGAL.RECONSENT_REQUIRED handling (go_router redirect to /consent).
+- `legal`: Legal documents and consents: the sign-up consent boxes, a document page, the re-consent screen and the 403 LEGAL.RECONSENT_REQUIRED handling (go_router redirect to /consent), and the person's consent history (agreements and withdrawals, newest first, paged).
   - take: in every project; needs: api-client, auth
   - backend: modules `legal` · `legal-jdbc` · paths `/api/v1/legal`; react twin: legal, legal-documents
   - keywords: 약관, 동의, 재동의, 개인정보 처리방침, 법적 문서 / terms, consent, reconsent, privacy policy, legal documents

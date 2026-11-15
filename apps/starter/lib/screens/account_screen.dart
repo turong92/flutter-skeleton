@@ -11,6 +11,7 @@ import 'package:skeleton_audio/skeleton_audio.dart';
 // #if iap
 import 'package:skeleton_iap/skeleton_iap.dart';
 // #endif
+import 'package:skeleton_legal/skeleton_legal.dart';
 // #if storage
 import 'package:skeleton_storage/skeleton_storage.dart';
 // #endif
@@ -109,6 +110,15 @@ class AccountScreen extends ConsumerWidget {
           const SizedBox(height: SkeletonSpace.sm),
         ],
         // #endif
+        OutlinedButton(
+          onPressed: () => context.go('/account/consents'),
+          child: Text(
+            context
+                .byLocale(const LegalLabels.ko(), const LegalLabels())
+                .history,
+          ),
+        ),
+        const SizedBox(height: SkeletonSpace.md),
         // #if audio
         // The switches and volumes only. The starter ships no sound files and
         // plays nothing; when yours do, call `ref.read(audioProvider).playBgm(...)`.

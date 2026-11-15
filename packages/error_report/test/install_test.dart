@@ -65,6 +65,18 @@ void main() {
       },
     );
 
+    test('a silent framework error (one the framework meant to hide) is not reported', () {
+      final reporter = _Recording();
+      FlutterError.onError = (_) {};
+      installErrorReporting(reporter);
+
+      FlutterError.reportError(
+        FlutterErrorDetails(exception: StateError('hidden'), silent: true),
+      );
+
+      expect(reporter.reports, isEmpty);
+    });
+
     test('uninstall puts the previous handlers back', () {
       final reporter = _Recording();
       final uninstall = installErrorReporting(reporter);

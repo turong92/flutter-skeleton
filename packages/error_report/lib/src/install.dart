@@ -13,13 +13,17 @@ void Function() installErrorReporting(ErrorReporter reporter) {
   final previousPlatform = PlatformDispatcher.instance.onError;
 
   FlutterError.onError = (details) {
-    _safely(
-      () => reporter.report(
-        details.exception,
-        details.stack,
-        source: 'FlutterError.onError',
-      ),
-    );
+    // `silent`: the framework itself chose not to show it (a cancelled image
+    // load, ...), so it is not an error to report either.
+    if (!details.silent) {
+      _safely(
+        () => reporter.report(
+          details.exception,
+          details.stack,
+          source: 'FlutterError.onError',
+        ),
+      );
+    }
     if (previousFlutter != null) {
       previousFlutter(details);
     } else {

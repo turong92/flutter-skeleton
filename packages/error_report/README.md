@@ -29,7 +29,7 @@ What it guards
 - **Cuts**: message 500, stack 4,000 characters, before sending. The server cuts and scrubs again (tokens, e-mail addresses, URL queries) — still, never put a secret in an error message.
 - The transport is a plain `Dio` without interceptors: a report must not trigger a token refresh or a sign-out.
 
-The trace id needs `skeleton_api_client`'s `ApiClient.lastTraceId` (every request carries a W3C `traceparent` and `X-Trace-Id`). Backend: kotlin-skeleton `alert` (`skeleton.alert.client-errors.enabled=true`, **off by default**).
+The trace id needs `skeleton_api_client`'s `ApiClient.lastTraceId` (every request carries a W3C `traceparent`). Backend: kotlin-skeleton `alert` (`skeleton.alert.client-errors.enabled=true`, **off by default**).
 
 ## Tests
 

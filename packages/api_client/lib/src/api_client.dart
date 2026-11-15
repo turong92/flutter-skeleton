@@ -58,7 +58,7 @@ class ApiClient {
   final Dio dio;
 
   /// The trace id of the latest request sent (success or failure), null before
-  /// the first one. Every request carries a W3C `traceparent` and `X-Trace-Id`
+  /// the first one. Every request carries a W3C `traceparent`
   /// so the server log can be followed from the app; an error report carries
   /// this value.
   String? get lastTraceId => _lastTraceId;
@@ -66,14 +66,22 @@ class ApiClient {
 
   static final _random = Random.secure();
 
+  // The same form the server accepts (`TraceIdFilter`); anything else is replaced.
+  static final _traceparent = RegExp(
+    r'^00-([0-9a-f]{32})-([0-9a-f]{16})-[0-9a-f]{2}$',
+  );
+
   void _traceRequest(RequestOptions options) {
     final given = options.headers['traceparent'];
-    final parts = given is String ? given.split('-') : const <String>[];
-    final traceId = parts.length == 4 ? parts[1] : _hex(16);
-    if (parts.length != 4) {
-      options.headers['traceparent'] = '00-$traceId-${_hex(8)}-01';
-    }
-    options.headers.putIfAbsent('X-Trace-Id', () => traceId);
+    final match = given is String
+        ? _traceparent.firstMatch(given.trim())
+        : null;
+    final valid =
+        match != null &&
+        match.group(1)!.replaceAll('0', '').isNotEmpty &&
+        match.group(2)!.replaceAll('0', '').isNotEmpty;
+    final traceId = valid ? match.group(1)! : _hex(16);
+    if (!valid) options.headers['traceparent'] = '00-$traceId-${_hex(8)}-01';
     _lastTraceId = traceId;
   }
 

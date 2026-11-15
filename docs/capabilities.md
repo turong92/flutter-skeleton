@@ -24,6 +24,7 @@ The source is `capabilities.json` (schema `docs/capabilities.schema.json`); this
 | `push` | Push notifications through FCM: device registration, permission prompt, per-kind settings, a test notification, tapped-link handling (with a fallback path for a push without a link), removing the device on sign-out, and the consent screen for promotional push (advertising and night delivery, withdrawal, two-year reconfirmation) in package:skeleton_push/advertising.dart. The app initializes Firebase. | `--packages push` | notification-push, notification-push-jdbc, notification-fcm | `push` |
 | `notifications` | The notification inbox: the list with paging and pull to refresh, unread marks, folded rows, mark one and mark all as read, an unread badge for a tab, and one "read it again" call for a realtime event, a push in front or the app coming back. Everything is keyed by the signed-in account. The app builds the tab and the route. | `--packages notifications` | notification, notification-jdbc | `notifications` |
 | `realtime` | Server-sent events for the notification stream: one connection over the app's own Dio (Bearer and token refresh apply), every event but the greeting handed to the app, reopened after a drop or a silent line with a capped back-off, and not tried again after a 404. Pure Dart, no screens; the app opens it only in front and signed in. | `--packages realtime` | notification, notification-sse | `realtime` |
+| `error-report` | Errors from the device go to the backend, not into the void: FlutterError.onError, PlatformDispatcher.instance.onError and the zone of main reach an ErrorReporter (the default posts to the alert module's client-errors path, off unless ERROR_REPORT=true) with the screen, the app version and the trace id of the last API request; an equal error is folded into a count, a run sends a few at most, and a failing or offline send is dropped without touching the app (no queue). A service such as Sentry replaces the reporter by implementing the interface. No screens. | in every project | alert | `api-client` |
 | `iap` | In-app purchase through the App Store and Google Play: the server's product list as the store prices it, buy and restore with the server's account token, every purchase checked by the server before anything opens or finishes, products bought once and kept (never consumed on Android) with the account's entitlements read from the server, left-over purchases at start, a web checkout address opened in the outside browser (only when the server's channel has the web), and the lookup that tells a person to cancel a store subscription before deleting the account. No screens. | `--packages iap` | payment, payment-iap | — |
 | `storage` | Photo upload straight to the storage with a presigned address: presign, PUT with progress and cancel (no app token sent to the storage host), complete so the server checks the bytes; the app's own file rules (none by default), a photo field over image_picker and a widget that draws a stored picture from its address. | `--packages storage` | storage, storage-s3 | `storage` |
 | `video` | Video upload straight to the storage in parts (start, signed part PUTs three at a time with retries, resume, complete with the ETags), the video calls of the server (status, playback grant, remove) and the choice of the playlist to play (the compat tier first for a big original, one renewal of an ended grant). No screens. | `--packages video` | video, video-jdbc | `video` |
@@ -132,6 +133,18 @@ The source is `capabilities.json` (schema `docs/capabilities.schema.json`); this
 - Web twin (react-skeleton): `realtime`
 - Not for: WebSocket (STOMP): only SSE is built / Delivery while the app is in the background: push does that
 - Keywords: 실시간, SSE, 서버 푸시 연결, 알림 실시간 / realtime, server-sent events, sse, live notifications
+
+### `error-report` — Errors from the device go to the backend, not into the void: FlutterError.onError, PlatformDispatcher.instance.onError and the zone of main reach an ErrorReporter (the default posts to the alert module's client-errors path, off unless ERROR_REPORT=true) with the screen, the app version and the trace id of the last API request; an equal error is folded into a count, a run sends a few at most, and a failing or offline send is dropped without touching the app (no queue). A service such as Sentry replaces the reporter by implementing the interface. No screens.
+
+- Where: `skeleton_error_report` (`packages/error_report`) · package
+- How to take it: in every project
+- Needs: —
+- Backend: modules `alert` · paths `/api/v1/client-errors`
+- Backend docs (kotlin-skeleton): `docs/modules/alert.md` · `docs/alert.md`
+- Docs: `packages/error_report/README.md`
+- Web twin (react-skeleton): `api-client`
+- Not for: Crash reports with symbolication, breadcrumbs or sessions: that is a service (Sentry, Crashlytics) — implement ErrorReporter for it / Native crashes that kill the process before Dart runs: only Dart-side errors are seen / Delivery when offline: the report is dropped, there is no queue
+- Keywords: 오류 보고, 에러 로그, 앱 크래시, 클라이언트 오류, 예외 수집 / error reporting, crash report, client error, FlutterError.onError, sentry alternative
 
 ### `iap` — In-app purchase through the App Store and Google Play: the server's product list as the store prices it, buy and restore with the server's account token, every purchase checked by the server before anything opens or finishes, products bought once and kept (never consumed on Android) with the account's entitlements read from the server, left-over purchases at start, a web checkout address opened in the outside browser (only when the server's channel has the web), and the lookup that tells a person to cancel a store subscription before deleting the account. No screens.
 
@@ -278,7 +291,7 @@ The source is `capabilities.json` (schema `docs/capabilities.schema.json`); this
 
 - Where: `starter` (`apps/starter`) · app
 - How to take it: in every project
-- Needs: `api-client` · `auth` · `legal` · `ui`
+- Needs: `api-client` · `auth` · `error-report` · `legal` · `ui`
 - Backend: modules `auth` · `auth-session` · `account` · `legal` · `platform` · paths `/api/v1/auth` · `/api/v1/account` · `/api/v1/legal`
 - Backend docs (kotlin-skeleton): `docs/account-http-contract.md` · `docs/legal-http-contract.md`
 - Docs: `apps/starter/README.md`

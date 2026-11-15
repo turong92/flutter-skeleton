@@ -7,6 +7,7 @@ import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:flutter/foundation.dart';
 // #endif
 import 'package:skeleton_auth/skeleton_auth.dart';
+import 'package:skeleton_error_report/skeleton_error_report.dart';
 // #if ads
 import 'package:skeleton_ads/skeleton_ads.dart';
 // #endif
@@ -48,8 +49,39 @@ import 'screens/store_screen.dart';
 // #endif
 import 'wiring.dart';
 
+/// The app's providers, once it has started: the error reporter reads the last
+/// request's trace id and the current screen from it.
+ProviderContainer? _container;
+
+/// Where what the app could not handle goes: the backend's client-errors path
+/// (off unless `ERROR_REPORT=true`, like the path on the server). Replace it
+/// with another `ErrorReporter` (Sentry, ...) and nothing else changes.
+ErrorReporter _errorReporter() {
+  if (!AppConfig.errorReport) return const NoopErrorReporter();
+  return ServerErrorReporter(
+    endpoint: Uri.parse('${AppConfig.apiBaseUrl}/client-errors'),
+    release: AppConfig.appRelease.isEmpty ? null : AppConfig.appRelease,
+    traceId: () => _container?.read(apiClientProvider).lastTraceId,
+    route: () => _container
+        ?.read(routerProvider)
+        .routeInformationProvider
+        .value
+        .uri
+        .path,
+  );
+}
+
 Future<void> main() async {
+  final reporter = _errorReporter();
+  installErrorReporting(reporter);
+  // The whole start in one zone, so an error nobody caught also reaches it.
+  await runReportedZoned(reporter, () => _start(reporter));
+}
+
+Future<void> _start(ErrorReporter reporter) async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Repeats that were folded are sent when the app goes to the background.
+  AppLifecycleListener(onPause: reporter.flush);
   // Not an assert: a release build without the define would otherwise start
   // and fail on every request.
   if (AppConfig.apiBaseUrl.isEmpty) {
@@ -78,33 +110,32 @@ Future<void> main() async {
   const audioStore = SharedPreferencesAudioSettingsStore();
   final savedAudio = await loadSavedAudioSettings(audioStore);
   // #endif
+  final container = ProviderContainer(
+    overrides: [
+      // #if audio
+      savedAudioSettingsProvider.overrideWithValue(savedAudio),
+      // #endif
+      // #if i18n
+      savedLocaleProvider.overrideWithValue(savedLocale),
+      localeStoreProvider.overrideWithValue(languageStore),
+      // #endif
+      authConfigProvider.overrideWithValue(
+        const AuthConfig(apiBaseUrl: AppConfig.apiBaseUrl),
+      ),
+      tokenStoreProvider.overrideWithValue(SecureTokenStore()),
+      signUpAttemptStoreProvider.overrideWithValue(SecureSignUpAttemptStore()),
+      ...starterWiring,
+      // #if social-login
+      // Which providers this build has; the server's /auth/methods then
+      // narrows them to the ones shown. Not in starterWiring: tests bring
+      // their own, since a provider SDK cannot run in a widget test.
+      socialProvidersProvider.overrideWith((ref) => buildSocialProviders()),
+      // #endif
+    ],
+  );
+  _container = container;
   runApp(
-    ProviderScope(
-      overrides: [
-        // #if audio
-        savedAudioSettingsProvider.overrideWithValue(savedAudio),
-        // #endif
-        // #if i18n
-        savedLocaleProvider.overrideWithValue(savedLocale),
-        localeStoreProvider.overrideWithValue(languageStore),
-        // #endif
-        authConfigProvider.overrideWithValue(
-          const AuthConfig(apiBaseUrl: AppConfig.apiBaseUrl),
-        ),
-        tokenStoreProvider.overrideWithValue(SecureTokenStore()),
-        signUpAttemptStoreProvider.overrideWithValue(
-          SecureSignUpAttemptStore(),
-        ),
-        ...starterWiring,
-        // #if social-login
-        // Which providers this build has; the server's /auth/methods then
-        // narrows them to the ones shown. Not in starterWiring: tests bring
-        // their own, since a provider SDK cannot run in a widget test.
-        socialProvidersProvider.overrideWith((ref) => buildSocialProviders()),
-        // #endif
-      ],
-      child: const StarterApp(),
-    ),
+    UncontrolledProviderScope(container: container, child: const StarterApp()),
   );
 }
 

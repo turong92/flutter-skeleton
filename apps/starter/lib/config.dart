@@ -4,6 +4,14 @@ abstract final class AppConfig {
   /// Backend API root including `/api/v1`, e.g. `https://api.example.com/api/v1`.
   static const apiBaseUrl = String.fromEnvironment('API_BASE_URL');
 
+  /// Send the errors the app could not handle to the backend's
+  /// `POST /client-errors` (`skeleton_error_report`). Turn it on together with
+  /// the server's `skeleton.alert.client-errors.enabled`; both are off by default.
+  static const errorReport = bool.fromEnvironment('ERROR_REPORT');
+
+  /// The app version an error report carries (e.g. `1.4.2+7`); empty = none.
+  static const appRelease = String.fromEnvironment('APP_RELEASE');
+
   // #if push
   // Firebase, for push. All empty = no Firebase: the app runs and push is
   // reported as unavailable. Take the values from your own Firebase project

@@ -26,6 +26,7 @@ final hello = await client.value('/hello', decode: (json) => json['message'] as 
 | `json:` `query:` `headers:` `method:` | Request body, query, extra headers (they win over providers), HTTP method (default `GET`). |
 | `skipAuth: true` | Leaves the header providers out and marks the request (`ApiClient.skipAuthKey`) so the 401 recovery ignores it. Login and refresh use it. |
 | `dio` | The Dio instance. Other packages add interceptors here (the auth package adds the 401 recovery). |
+| `lastTraceId` | The trace id of the latest request sent (success or failure), `null` before the first. Every request carries a W3C `traceparent` and `X-Trace-Id` (a `traceparent` set in `headers:` is kept), so the server log can be followed from the app; `skeleton_error_report` puts this value in its reports. |
 
 ## Errors
 

@@ -216,6 +216,33 @@
       }
     },
     {
+      "id": "error-report",
+      "kind": "package",
+      "summary": "Errors from the device go to the backend, not into the void: FlutterError.onError, PlatformDispatcher.instance.onError and the zone of main reach an ErrorReporter (the default posts to the alert module's client-errors path, off unless ERROR_REPORT=true) with the screen, the app version and the trace id of the last API request; an equal error is folded into a count, a run sends a few at most, and a failing or offline send is dropped without touching the app (no queue). A service such as Sentry replaces the reporter by implementing the interface. No screens.",
+      "package": "skeleton_error_report",
+      "path": "packages/error_report",
+      "stampFlag": { "flag": null, "included": "always" },
+      "needs": [],
+      "backend": {
+        "modules": ["alert"],
+        "oneOfModules": [],
+        "optionalModules": [],
+        "basePaths": ["/api/v1/client-errors"],
+        "docs": ["docs/modules/alert.md", "docs/alert.md"]
+      },
+      "pairsWith": { "react": ["api-client"] },
+      "docs": ["packages/error_report/README.md"],
+      "notFor": [
+        "Crash reports with symbolication, breadcrumbs or sessions: that is a service (Sentry, Crashlytics) — implement ErrorReporter for it",
+        "Native crashes that kill the process before Dart runs: only Dart-side errors are seen",
+        "Delivery when offline: the report is dropped, there is no queue"
+      ],
+      "keywords": {
+        "ko": ["오류 보고", "에러 로그", "앱 크래시", "클라이언트 오류", "예외 수집"],
+        "en": ["error reporting", "crash report", "client error", "FlutterError.onError", "sentry alternative"]
+      }
+    },
+    {
       "id": "iap",
       "kind": "package",
       "summary": "In-app purchase through the App Store and Google Play: the server's product list as the store prices it, buy and restore with the server's account token, every purchase checked by the server before anything opens or finishes, products bought once and kept (never consumed on Android) with the account's entitlements read from the server, left-over purchases at start, a web checkout address opened in the outside browser (only when the server's channel has the web), and the lookup that tells a person to cancel a store subscription before deleting the account. No screens.",
@@ -528,7 +555,7 @@
       "package": "starter",
       "path": "apps/starter",
       "stampFlag": { "flag": null, "included": "always" },
-      "needs": ["api-client", "auth", "legal", "ui"],
+      "needs": ["api-client", "auth", "error-report", "legal", "ui"],
       "backend": {
         "modules": ["auth", "auth-session", "account", "legal", "platform"],
         "oneOfModules": [],

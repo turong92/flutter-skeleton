@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `skeleton_error_report` (new package, in every project): errors from the device reach the backend. `installErrorReporting` chains `FlutterError.onError` and `PlatformDispatcher.instance.onError`, `runReportedZoned` guards the zone of `main`, and an `ErrorReporter` (interface — a service such as Sentry can replace the default) gets them. `ServerErrorReporter` posts to the kotlin-skeleton `alert` module's `POST /api/v1/client-errors` with the screen, the app version and the trace id of the last API request; an equal error is folded into a `count` (the first goes at once), a run sends at most 20, and a failing or offline send is dropped without touching the app (no queue). The starter wires it behind `ERROR_REPORT=true` (and `APP_RELEASE` for the version) — off by default, like the server path (`skeleton.alert.client-errors.enabled`); `apps/starter/lib/main.dart` now builds a `ProviderContainer` + `UncontrolledProviderScope` instead of `ProviderScope` so the reporter can read the router and the client.
+- `skeleton_api_client`: every request carries a W3C `traceparent` and `X-Trace-Id` (a `traceparent` the caller set is kept), and `ApiClient.lastTraceId` is the trace id of the latest request.
+
 ### Fixed
 
 - `skeleton_iap`: `iapEntitlementsProvider` and `iapSubscriptionProvider` read again when the app comes back to the front and the last read is older than `iapResumeRefreshAfterProvider` (5 minutes), so a refund or an immediate cancel brings the ads back without a restart.

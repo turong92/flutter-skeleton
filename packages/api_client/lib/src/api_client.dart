@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:dio/dio.dart';
 
@@ -35,6 +36,7 @@ class ApiClient {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
+          _traceRequest(options);
           if (options.extra[skipAuthKey] != true) {
             for (final provider in providers) {
               for (final entry in (await provider()).entries) {
@@ -54,6 +56,31 @@ class ApiClient {
 
   /// The Dio instance. Interceptors of other packages are added here.
   final Dio dio;
+
+  /// The trace id of the latest request sent (success or failure), null before
+  /// the first one. Every request carries a W3C `traceparent` and `X-Trace-Id`
+  /// so the server log can be followed from the app; an error report carries
+  /// this value.
+  String? get lastTraceId => _lastTraceId;
+  String? _lastTraceId;
+
+  static final _random = Random.secure();
+
+  void _traceRequest(RequestOptions options) {
+    final given = options.headers['traceparent'];
+    final parts = given is String ? given.split('-') : const <String>[];
+    final traceId = parts.length == 4 ? parts[1] : _hex(16);
+    if (parts.length != 4) {
+      options.headers['traceparent'] = '00-$traceId-${_hex(8)}-01';
+    }
+    options.headers.putIfAbsent('X-Trace-Id', () => traceId);
+    _lastTraceId = traceId;
+  }
+
+  static String _hex(int bytes) => [
+    for (var i = 0; i < bytes; i++)
+      _random.nextInt(256).toRadixString(16).padLeft(2, '0'),
+  ].join();
 
   /// Called once with the error just before a call throws it (logging, global
   /// handling). A throw inside it is the caller's bug, not swallowed.

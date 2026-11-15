@@ -36,6 +36,7 @@ dependencies:
   # #if board
   skeleton_board: any # workspace sibling
   # #endif
+  skeleton_error_report: any # workspace sibling
   # #if i18n
   skeleton_i18n: any # workspace sibling
   # #endif

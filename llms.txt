@@ -41,6 +41,10 @@
   - take: `--packages realtime`; needs: api-client
   - backend: modules `notification` · `notification-sse` · paths `/api/v1/notifications/sse`; react twin: realtime
   - keywords: 실시간, SSE, 서버 푸시 연결, 알림 실시간 / realtime, server-sent events, sse, live notifications
+- `error-report`: Errors from the device go to the backend, not into the void: FlutterError.onError, PlatformDispatcher.instance.onError and the zone of main reach an ErrorReporter (the default posts to the alert module's client-errors path, off unless ERROR_REPORT=true) with the screen, the app version and the trace id of the last API request; an equal error is folded into a count, a run sends a few at most, and a failing or offline send is dropped without touching the app (no queue). A service such as Sentry replaces the reporter by implementing the interface. No screens.
+  - take: in every project; needs: —
+  - backend: modules `alert` · paths `/api/v1/client-errors`; react twin: api-client
+  - keywords: 오류 보고, 에러 로그, 앱 크래시, 클라이언트 오류, 예외 수집 / error reporting, crash report, client error, FlutterError.onError, sentry alternative
 - `iap`: In-app purchase through the App Store and Google Play: the server's product list as the store prices it, buy and restore with the server's account token, every purchase checked by the server before anything opens or finishes, products bought once and kept (never consumed on Android) with the account's entitlements read from the server, left-over purchases at start, a web checkout address opened in the outside browser (only when the server's channel has the web), and the lookup that tells a person to cancel a store subscription before deleting the account. No screens.
   - take: `--packages iap`; needs: api-client
   - backend: modules `payment` · `payment-iap` · one of `payment-appstore` | `payment-googleplay` · more when present `auth-web-handoff` · `payment-jdbc` · paths `/api/v1/payments/iap` · `/api/v1/payments/subscriptions`; react twin: —
@@ -90,7 +94,7 @@
   - backend: —; react twin: ui, theme, tokens
   - keywords: 테마, 다크 모드, 디자인 토큰, 색, 로딩, 에러 화면 / theme, dark mode, design tokens, colors, loading view, error view
 - `app-starter`: The starter app: sign up with consents, verify email, sign in, reset the password, see who you are (GET /auth/me), delete the account, sign out, agree again when a document changes, restore the session on start. It becomes the new project's app; with storage: profile picture on the account screen; with i18n: the saved language and a language menu; with social-login-*: the sign-in buttons of the picked providers and their native settings; every text is in ARB files (Korean and English); the default screens of board (with photos when storage is picked too), notifications (and the realtime stream), push, and iap come along only when those packages are picked.
-  - take: in every project; needs: api-client, auth, legal, ui
+  - take: in every project; needs: api-client, auth, error-report, legal, ui
   - backend: modules `auth` · `auth-session` · `account` · `legal` · `platform` · paths `/api/v1/auth` · `/api/v1/account` · `/api/v1/legal`; react twin: app-starter
   - keywords: 스타터, 시작 템플릿, 새 앱, 모바일 시작 / starter, boilerplate, new app, mobile start
 - `app-sample`: The reference app: the starter's flows plus a board tab, a store tab (products, buy, restore, web checkout, my subscription, the cancel-in-the-store notice before account deletion), social sign-in buttons with linking in settings, a language menu (Korean and English, kept on the device), a notifications tab (inbox with an unread badge, realtime while in front, a push in front or a tapped push reading the inbox again), notification settings (push and promotional push consent) and a settings tab, wired the way a project would. Read it for wiring; a stamp removes it.

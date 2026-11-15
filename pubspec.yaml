@@ -30,6 +30,7 @@ workspace:
   - packages/social_login_apple
   - packages/social_login_kakao
   - packages/social_login_naver
+  - packages/error_report
   - apps/starter
   - apps/sample
   - tool

@@ -1,0 +1,17 @@
+name: skeleton_error_report
+description: Sends errors from the device (Flutter, platform, zone) to the kotlin-skeleton alert module's client-errors path, behind an ErrorReporter interface.
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.13.0
+  flutter: 3.47.9
+
+dependencies:
+  dio: ^5.11.1
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

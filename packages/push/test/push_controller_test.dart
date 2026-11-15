@@ -83,6 +83,9 @@ class _Rig {
 }
 
 void main() {
+  // the controller watches the app lifecycle
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   test('signed out: asks nothing and stays unavailable', () async {

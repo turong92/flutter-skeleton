@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:app_settings/app_settings.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:skeleton_api_client/skeleton_api_client.dart';
 
@@ -17,6 +19,13 @@ final pushApiProvider = Provider<PushApi>(
 /// Firebase by default. It only uses an already initialized Firebase.
 final pushTokenSourceProvider = Provider<PushTokenSource>(
   (ref) => FirebasePushTokenSource(),
+);
+
+/// Opens the device's notification settings of this app (the only place a
+/// refused permission can be changed). Tests override it.
+final pushOpenSettingsProvider = Provider<Future<void> Function()>(
+  (ref) =>
+      () => AppSettings.openAppSettings(type: AppSettingsType.notification),
 );
 
 final pushDeviceStoreProvider = Provider<PushDeviceStore>(
@@ -103,6 +112,14 @@ class PushController extends Notifier<PushState> {
         opened.cancel();
       });
     }
+    // Back from the device settings the permission may have been given.
+    final resume = _ResumeWatcher(() {
+      if (state.status == PushStatus.denied && _signedIn) {
+        _refresh(_generation);
+      }
+    });
+    WidgetsBinding.instance.addObserver(resume);
+    ref.onDispose(() => WidgetsBinding.instance.removeObserver(resume));
     Future.microtask(() => _start(generation));
     return const PushState(PushStatus.unavailable);
   }
@@ -214,6 +231,17 @@ class PushController extends Notifier<PushState> {
   /// `POST /push/devices/{id}/test`. Throws [ApiRequestError] (429
   /// [PushErrorCodes.testTooSoon]).
   Future<void> sendTest() async => _api.sendTest(await _store.installationId());
+}
+
+class _ResumeWatcher with WidgetsBindingObserver {
+  _ResumeWatcher(this.onResumed);
+
+  final void Function() onResumed;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) onResumed();
+  }
 }
 
 final pushControllerProvider = NotifierProvider<PushController, PushState>(

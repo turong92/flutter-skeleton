@@ -6,6 +6,7 @@ class PushLabels {
     this.promptEnable = 'Turn on notifications',
     this.deniedHelp =
         'Notifications are blocked. Turn them on in your device settings.',
+    this.openSettings = 'Open settings',
     this.unavailable = 'Notifications are not available in this app.',
     this.deviceSwitch = 'Notifications on this device',
     this.kindsTitle = 'Notify me about',
@@ -25,6 +26,7 @@ class PushLabels {
         promptTitle: '중요한 소식을 알림으로 받아 보세요.',
         promptEnable: '알림 켜기',
         deniedHelp: '알림이 막혀 있어요. 기기 설정에서 알림을 허용해 주세요.',
+        openSettings: '설정 열기',
         unavailable: '이 앱에서는 알림을 쓸 수 없어요.',
         deviceSwitch: '이 기기에서 알림 받기',
         kindsTitle: '받을 알림',
@@ -45,6 +47,9 @@ class PushLabels {
   /// Shown after the system refused: the app cannot ask again, only point to
   /// the settings.
   final String deniedHelp;
+
+  /// The button after a refusal: opens the device's settings of this app.
+  final String openSettings;
   final String unavailable;
   final String deviceSwitch;
   final String kindsTitle;

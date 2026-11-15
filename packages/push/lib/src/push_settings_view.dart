@@ -84,6 +84,14 @@ class _PushSettingsViewState extends ConsumerState<PushSettingsView> {
                     .read(pushControllerProvider.notifier)
                     .setDeviceEnabled(on),
         ),
+        if (denied)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: OutlinedButton(
+              onPressed: () => ref.read(pushOpenSettingsProvider)(),
+              child: Text(labels.openSettings),
+            ),
+          ),
         ..._kinds(),
         Padding(
           padding: const EdgeInsets.all(16),

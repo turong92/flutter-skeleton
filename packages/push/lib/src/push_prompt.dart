@@ -7,7 +7,8 @@ import 'push_labels.dart';
 /// The in-app band that comes before the system dialog: it explains, and only
 /// the tap on its button asks for permission. After a refusal it only points
 /// to the device settings (the system will not ask again). Hidden when push
-/// cannot work, is on, or is switched off. [open] lets the app choose the
+/// cannot work, is on, or is switched off. After a refusal its button opens
+/// the device's settings of the app. [open] lets the app choose the
 /// moment (for example after the first post).
 class PushPrompt extends ConsumerWidget {
   const PushPrompt({
@@ -36,6 +37,10 @@ class PushPrompt extends ConsumerWidget {
       PushStatus.denied => _Band(
         icon: Icons.notifications_off_outlined,
         text: labels.deniedHelp,
+        action: FilledButton(
+          onPressed: () => ref.read(pushOpenSettingsProvider)(),
+          child: Text(labels.openSettings),
+        ),
       ),
       _ => const SizedBox.shrink(),
     };

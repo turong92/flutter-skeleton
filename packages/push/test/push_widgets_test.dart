@@ -40,6 +40,7 @@ Future<FakePushServer> pumpPush(
   Widget child, {
   FakePushTokenSource? source,
   FakePushServer? server,
+  Future<void> Function()? openSettings,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final fake = server ?? FakePushServer();
@@ -50,6 +51,7 @@ Future<FakePushServer> pumpPush(
         source ?? FakePushTokenSource(),
       ),
       pushSignedInProvider.overrideWithValue(true),
+      pushOpenSettingsProvider.overrideWithValue(openSettings ?? () async {}),
     ],
   );
   addTearDown(container.dispose);
@@ -87,18 +89,37 @@ void main() {
       ); // registered: band gone
     });
 
-    testWidgets('after a refusal only explains where the setting is', (
+    testWidgets('after a refusal it says so and a button opens the settings', (
       tester,
     ) async {
+      var opened = 0;
       await pumpPush(
         tester,
         const PushPrompt(),
         source: FakePushTokenSource(permission: PushPermission.denied),
+        openSettings: () async => opened++,
       );
 
       expect(find.textContaining('device settings'), findsOneWidget);
-      expect(find.byType(FilledButton), findsNothing);
-      expect(find.byType(OutlinedButton), findsNothing);
+      expect(find.text('Turn on notifications'), findsNothing);
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Open settings'));
+      expect(opened, 1);
+    });
+
+    testWidgets('coming back from the settings with it allowed registers', (
+      tester,
+    ) async {
+      final source = FakePushTokenSource(permission: PushPermission.denied);
+      await pumpPush(tester, const PushPrompt(), source: source);
+      expect(find.text('Open settings'), findsOneWidget);
+
+      // the person allowed notifications in the settings and returns
+      source.permissionState = PushPermission.granted;
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle(const Duration(milliseconds: 50));
+
+      expect(find.text('Open settings'), findsNothing);
     });
 
     testWidgets('texts come from the labels', (tester) async {
@@ -245,19 +266,25 @@ void main() {
       expect(find.byType(Switch), findsNothing);
     });
 
-    testWidgets('denied: the device switch is off, locked and explains', (
-      tester,
-    ) async {
-      await pumpPush(
-        tester,
-        const PushSettingsView(),
-        source: FakePushTokenSource(permission: PushPermission.denied),
-      );
+    testWidgets(
+      'denied: the switch is off, locked, explains and a button opens the settings',
+      (tester) async {
+        var opened = 0;
+        await pumpPush(
+          tester,
+          const PushSettingsView(),
+          source: FakePushTokenSource(permission: PushPermission.denied),
+          openSettings: () async => opened++,
+        );
 
-      final device = tester.widget<Switch>(find.byType(Switch).first);
-      expect(device.value, isFalse);
-      expect(device.onChanged, isNull);
-      expect(find.textContaining('device settings'), findsOneWidget);
-    });
+        final device = tester.widget<Switch>(find.byType(Switch).first);
+        expect(device.value, isFalse);
+        expect(device.onChanged, isNull);
+        expect(find.textContaining('device settings'), findsOneWidget);
+
+        await tester.tap(find.widgetWithText(OutlinedButton, 'Open settings'));
+        expect(opened, 1);
+      },
+    );
   });
 }

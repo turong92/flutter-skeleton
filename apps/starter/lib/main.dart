@@ -36,6 +36,7 @@ import 'firebase_setup.dart';
 import 'inbox_realtime.dart';
 // #endif
 import 'router.dart';
+import 'session_scope.dart';
 // #if social-login
 import 'social_support.dart';
 // #endif
@@ -131,6 +132,8 @@ class StarterApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // What one person's data sits in is dropped with the session.
+    ref.watch(sessionResetProvider);
     // #if social-login
     ref.watch(_socialSetupProvider);
     // #endif

@@ -32,6 +32,7 @@ export 'src/models.dart';
 export 'src/password_reset_forms.dart';
 export 'src/profile_picture_section.dart';
 export 'src/secure_token_store.dart';
+export 'src/session_reset.dart';
 export 'src/sign_out_hooks.dart';
 export 'src/sign_up_attempt_store.dart';
 export 'src/sign_up_form.dart';

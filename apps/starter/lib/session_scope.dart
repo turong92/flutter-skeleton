@@ -11,7 +11,7 @@ import 'social_support.dart';
 
 /// Everything one person's data sits in. When the session ends (or begins, or
 /// one account is swapped for another) these are dropped, so the next person
-/// on this phone never sees it. A new public provider in `lib/` goes here or
+/// on this phone never sees it. A new provider in `lib/` goes here or
 /// into [sessionScopeExempt]; `test/session_scope_test.dart` fails until it
 /// does.
 final userScopedProviders = <String, ProviderOrFamily>{
@@ -29,6 +29,17 @@ const sessionScopeExempt = <String, String>{
   'routerProvider': 'navigation only; it follows the session itself',
   // #if notifications realtime
   'inboxRealtimeProvider': 'holds nothing; the stream is open only signed in',
+  '_foregroundProvider': 'only whether the app is in front',
+  // #endif
+  // #if push
+  '_pushSetupProvider': 'holds nothing; its sign-out hook removes the device',
+  // #endif
+  // #if social-login
+  '_socialSetupProvider': 'holds nothing; its sign-out hook ends the SDKs',
+  // #endif
+  // #if social-login-apple
+  '_appleRevokeCode':
+      'the Apple code of one account deletion, set and read inside it',
   // #endif
 };
 

@@ -1,8 +1,12 @@
 import 'dart:io';
 
+// #if social-login-apple
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+// #endif
 import 'package:flutter_test/flutter_test.dart';
+// #if social-login-apple
 import 'package:skeleton_auth/skeleton_auth.dart';
+// #endif
 import 'package:starter/session_scope.dart';
 // #if social-login-apple
 import 'package:starter/social_support.dart';

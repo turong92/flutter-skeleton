@@ -19,6 +19,9 @@ final userScopedProviders = <String, ProviderOrFamily>{
   // #if social-login
   'linkedMethodsProvider': linkedMethodsProvider,
   // #endif
+  // #if social-login-apple
+  'appleRevokeCodeProvider': appleRevokeCodeProvider,
+  // #endif
   // #if iap
   'mySubscriptionProvider': mySubscriptionProvider,
   // #endif
@@ -36,10 +39,6 @@ const sessionScopeExempt = <String, String>{
   // #endif
   // #if social-login
   '_socialSetupProvider': 'holds nothing; its sign-out hook ends the SDKs',
-  // #endif
-  // #if social-login-apple
-  '_appleRevokeCode':
-      'the Apple code of one account deletion, set and read inside it',
   // #endif
 };
 

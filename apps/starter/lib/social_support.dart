@@ -88,7 +88,7 @@ Future<Map<String, Object?>?> reauthWithLinkedProvider(WidgetRef ref) async {
     throw StateError('No linked provider can be used in this build');
   }
   // #if social-login-apple
-  ref.read(_appleRevokeCode).code = null;
+  ref.read(appleRevokeCodeProvider).code = null;
   // #endif
   try {
     final nonce = generateSocialNonce();
@@ -97,7 +97,7 @@ Future<Map<String, Object?>?> reauthWithLinkedProvider(WidgetRef ref) async {
       // The one Apple sheet also yields the code the revoke needs, so a
       // delete does not open Apple twice.
       final proof = await provider.obtainForDelete(nonce);
-      ref.read(_appleRevokeCode).code = proof.authorizationCode;
+      ref.read(appleRevokeCodeProvider).code = proof.authorizationCode;
       return SocialAuthApi.socialReauth(provider.id, proof.credential);
     }
     // #endif
@@ -114,7 +114,7 @@ class _AppleCode {
   String? code;
 }
 
-final _appleRevokeCode = Provider<_AppleCode>((ref) => _AppleCode());
+final appleRevokeCodeProvider = Provider<_AppleCode>((ref) => _AppleCode());
 
 /// Right before `POST /account/delete`: Apple drops its access (App Review).
 /// False = the person backed out (nothing is deleted); Apple off for the
@@ -126,7 +126,7 @@ Future<bool> revokeAppleBeforeDelete(WidgetRef ref, String unreachable) async {
   final available = await ref.read(availableSocialProvidersProvider.future);
   final apple = available.whereType<AppleSocialProvider>().firstOrNull;
   if (apple == null) return true;
-  final holder = ref.read(_appleRevokeCode);
+  final holder = ref.read(appleRevokeCodeProvider);
   final code = holder.code;
   holder.code = null;
   try {

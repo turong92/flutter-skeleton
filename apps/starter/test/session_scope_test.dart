@@ -1,7 +1,13 @@
 import 'dart:io';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:skeleton_auth/skeleton_auth.dart';
 import 'package:starter/session_scope.dart';
+// #if social-login-apple
+import 'package:starter/social_support.dart';
+
+// #endif
 
 /// The top-level providers a Dart source declares, public and private:
 /// `final x = FutureProvider...`, `final FutureProvider<T> x = ...`, whatever
@@ -21,6 +27,16 @@ Set<String> declaredProviders(String source) {
   };
 }
 
+// #if social-login-apple
+/// Drives the session by hand.
+class _Session extends AuthSession {
+  @override
+  AuthState build() => const SignedOut();
+
+  void set(AuthState next) => state = next;
+}
+
+// #endif
 void main() {
   test('every provider in lib/ is dropped with the session or exempt '
       '(add one to neither list and this fails)', () {
@@ -32,15 +48,40 @@ void main() {
       declared.addAll(declaredProviders(file.readAsStringSync()));
     }
     expect(declared, isNotEmpty);
-    // A provider of a package may be in the list too, so the names in the
-    // lists are not compared back: a renamed one would not compile.
     final classified = {
       ...userScopedProviders.keys,
       ...sessionScopeExempt.keys,
     };
     expect(declared.difference(classified), isEmpty);
+    // An exemption is a name only (it cannot be compiled), so one left behind
+    // by a deleted provider is found here. The list of user data is real
+    // references and may name providers of a package.
+    expect(sessionScopeExempt.keys.toSet().difference(declared), isEmpty);
   });
 
+  // #if social-login-apple
+  test("one account's Apple code is not left for the next account", () async {
+    final container = ProviderContainer(
+      overrides: [authSessionProvider.overrideWith(_Session.new)],
+    );
+    addTearDown(container.dispose);
+    container.listen(sessionResetProvider, (_, _) {});
+    container.listen(appleRevokeCodeProvider, (_, _) {});
+    final session = container.read(authSessionProvider.notifier) as _Session;
+    session.set(const SignedIn(Principal(accountId: 'a')));
+    await container.pump();
+    container.read(appleRevokeCodeProvider).code = 'a-code';
+
+    // A signs out without deleting; B signs in.
+    session.set(const SignedOut());
+    await container.pump();
+    session.set(const SignedIn(Principal(accountId: 'b')));
+    await container.pump();
+
+    expect(container.read(appleRevokeCodeProvider).code, isNull);
+  });
+
+  // #endif
   test('an exemption always gives its reason', () {
     for (final entry in sessionScopeExempt.entries) {
       expect(entry.value.trim(), isNotEmpty, reason: entry.key);

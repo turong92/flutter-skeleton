@@ -29,6 +29,9 @@ dependencies:
   skeleton_ads: any # workspace sibling
   # #endif
   skeleton_api_client: any # workspace sibling; ApiRequestError, and its testing.dart has the fake HTTP adapter of the tests
+  # #if audio
+  skeleton_audio: any # workspace sibling
+  # #endif
   skeleton_auth: any # workspace sibling
   # #if board
   skeleton_board: any # workspace sibling

@@ -1,0 +1,20 @@
+name: skeleton_audio
+description: Background music and sound effects with on/off and volume saved on the device, a settings section, and pause while the app is in the background, over audioplayers behind a fakeable boundary.
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.13.0
+  flutter: 3.47.9
+
+dependencies:
+  audioplayers: ^6.8.1
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^3.4.3
+  shared_preferences: ^2.5.6
+  skeleton_ui: any # workspace sibling; the spacing tokens of the settings section
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

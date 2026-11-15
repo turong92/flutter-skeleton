@@ -327,6 +327,28 @@
       }
     },
     {
+      "id": "audio",
+      "kind": "package",
+      "summary": "Background music and sound effects for an app such as a game or a serial: each is switched on or off and has a volume from 0 to 1, kept on the device across restarts; a settings section (switch and slider for each, with Korean labels); music that loops, changes track with a short fade, pauses when the app goes to the background and goes on when it returns; effects that overlap. Nothing reaches the player while a sound is off or at volume 0. The player (audioplayers) sits behind a boundary with a test fake. iOS plays as ambient: it follows the silent switch and mixes with other apps' music. The sound files are the app's; the starter picks only the settings section and plays nothing.",
+      "package": "skeleton_audio",
+      "path": "packages/audio",
+      "stampFlag": { "flag": "--packages audio", "included": "flag" },
+      "needs": ["ui"],
+      "backend": null,
+      "pairsWith": { "react": [] },
+      "docs": ["packages/audio/README.md"],
+      "notFor": [
+        "The sound files: the app adds them as assets",
+        "Ducking or stopping the music when another app plays: the music mixes with it (README says why and how to change it)",
+        "Playing in the background (a music player): the music pauses with the app",
+        "Voice, recording, streaming from a URL, or positional sound"
+      ],
+      "keywords": {
+        "ko": ["소리", "배경음", "효과음", "사운드", "볼륨", "음소거", "소리 설정", "게임 음악"],
+        "en": ["audio", "sound", "bgm", "background music", "sound effects", "sfx", "volume", "mute", "audioplayers"]
+      }
+    },
+    {
       "id": "i18n",
       "kind": "package",
       "summary": "Language choice for the app: the saved pick (kept on the device), then the device language, then Korean; a language menu that shows each language in its own name; and a check that the ko and en ARB files have the same keys and placeholders. The texts are the app's (ARB files and gen_l10n); packages take theirs as Labels and some ship a Korean set.",

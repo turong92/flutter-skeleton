@@ -8,6 +8,11 @@ import 'package:skeleton_ads/testing.dart';
 // #endif
 import 'package:skeleton_api_client/testing.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
+// #if audio
+import 'package:flutter/material.dart' show Switch;
+import 'package:skeleton_audio/skeleton_audio.dart';
+import 'package:skeleton_audio/testing.dart';
+// #endif
 // #if i18n
 import 'package:skeleton_i18n/skeleton_i18n.dart';
 import 'package:skeleton_i18n/testing.dart';
@@ -158,6 +163,30 @@ void main() {
 
     expect(find.text('내 계정'), findsOneWidget);
     expect(language.code, 'ko');
+  });
+  // #endif
+
+  // #if audio
+  testWidgets('the account settings have the sound settings, and keep them', (
+    tester,
+  ) async {
+    final sound = MemoryAudioSettingsStore();
+    await tester.pumpWidget(
+      _app(
+        MemoryTokenStore(),
+        extra: [audioSettingsStoreProvider.overrideWithValue(sound)],
+      ),
+    );
+    await tester.pumpAndSettle();
+    await _signIn(tester, 'password');
+    await tester.tap(find.text('Account settings'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Background music'), findsOneWidget);
+    await tester.tap(find.byType(Switch).first);
+    await tester.pumpAndSettle();
+
+    expect(sound.saved?.bgmEnabled, isFalse);
   });
   // #endif
 

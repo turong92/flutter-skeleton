@@ -375,7 +375,7 @@ void main() {
           isNot(
             contains(
               RegExp(
-                'board|storage|Board|otification|ealtime|push|Push|irebase|iap|Iap|i18n|LanguageMenu|localeProvider|ocial|akao|aver|NidThirdParty|skeleton_ads|AdBanner|AdUnitIds|AdsPrivacy|AdsLabels|adsController|adsSdk|adsBanner|FakeAdsSdk',
+                'board|storage|Board|otification|ealtime|push|Push|irebase|iap|Iap|i18n|LanguageMenu|localeProvider|ocial|akao|aver|NidThirdParty|skeleton_ads|AdBanner|AdUnitIds|AdsPrivacy|AdsLabels|adsController|adsSdk|adsBanner|FakeAdsSdk|skeleton_audio|AudioSettings|audioSettings|AudioLabels',
               ),
             ),
           ),
@@ -720,6 +720,24 @@ void main() {
       expect(keys('en', {'board', 'storage'}), contains('photoBeingPrepared'));
       expect(keys('en', {'iap'}), contains('purchaseConfirmed'));
       expect(keys('en', {'i18n'}), contains('language'));
+    });
+
+    test('audio gives the saved sound settings and the section; without it none is left', () {
+      final kept = {'audio'};
+      expect(stamped('pubspec.yaml', kept), contains('skeleton_audio'));
+      expect(
+        stamped('lib/main.dart', kept),
+        contains('savedAudioSettingsProvider'),
+      );
+      expect(
+        stamped('lib/screens/account_screen.dart', kept),
+        contains('AudioSettingsSection'),
+      );
+      expect(
+        stamped('test/app_test.dart', kept),
+        contains('the account settings have the sound settings'),
+      );
+      expect(stamped('lib/screens/account_screen.dart', {}), isNot(contains('Audio')));
     });
 
     test('i18n gives the saved language, the menu and its tests', () {

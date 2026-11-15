@@ -23,6 +23,7 @@ workspace:
   - packages/storage
   - packages/video
   - packages/ads
+  - packages/audio
   - packages/i18n
   - packages/social_login
   - packages/social_login_google

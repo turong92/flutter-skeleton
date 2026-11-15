@@ -10,6 +10,9 @@ import 'package:skeleton_auth/skeleton_auth.dart';
 // #if ads
 import 'package:skeleton_ads/skeleton_ads.dart';
 // #endif
+// #if audio
+import 'package:skeleton_audio/skeleton_audio.dart';
+// #endif
 // #if i18n
 import 'package:skeleton_i18n/skeleton_i18n.dart';
 // #endif
@@ -70,9 +73,17 @@ Future<void> main() async {
   const languageStore = SharedPreferencesLocaleStore();
   final savedLocale = await loadSavedLocale(languageStore);
   // #endif
+  // #if audio
+  // The sound settings the person kept last time (before the first frame).
+  const audioStore = SharedPreferencesAudioSettingsStore();
+  final savedAudio = await loadSavedAudioSettings(audioStore);
+  // #endif
   runApp(
     ProviderScope(
       overrides: [
+        // #if audio
+        savedAudioSettingsProvider.overrideWithValue(savedAudio),
+        // #endif
         // #if i18n
         savedLocaleProvider.overrideWithValue(savedLocale),
         localeStoreProvider.overrideWithValue(languageStore),

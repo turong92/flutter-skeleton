@@ -57,6 +57,10 @@
   - take: `--packages ads`; needs: —
   - backend: more when present `ads-admob` · paths `/api/v1/ads/admob`; react twin: —
   - keywords: 광고, 배너 광고, 전면 광고, 보상형 광고, 애드몹, 구글 광고, 광고 동의, 수익화 / ads, admob, banner ad, interstitial ad, rewarded ad, google mobile ads, ump, consent, monetization
+- `audio`: Background music and sound effects for an app such as a game or a serial: each is switched on or off and has a volume from 0 to 1, kept on the device across restarts; a settings section (switch and slider for each, with Korean labels); music that loops, changes track with a short fade, pauses when the app goes to the background and goes on when it returns; effects that overlap. Nothing reaches the player while a sound is off or at volume 0. The player (audioplayers) sits behind a boundary with a test fake. iOS plays as ambient: it follows the silent switch and mixes with other apps' music. The sound files are the app's; the starter picks only the settings section and plays nothing.
+  - take: `--packages audio`; needs: ui
+  - backend: —; react twin: —
+  - keywords: 소리, 배경음, 효과음, 사운드, 볼륨, 음소거, 소리 설정, 게임 음악 / audio, sound, bgm, background music, sound effects, sfx, volume, mute, audioplayers
 - `i18n`: Language choice for the app: the saved pick (kept on the device), then the device language, then Korean; a language menu that shows each language in its own name; and a check that the ko and en ARB files have the same keys and placeholders. The texts are the app's (ARB files and gen_l10n); packages take theirs as Labels and some ship a Korean set.
   - take: `--packages i18n`; needs: —
   - backend: —; react twin: i18n

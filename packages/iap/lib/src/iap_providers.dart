@@ -71,9 +71,18 @@ final iapStoreSubscriptionToCancelProvider =
 /// [IapAccountValue].
 void _bindToAccount(Ref ref) => ref.watch(iapServiceProvider);
 
+/// How long a successful read of the entitlements or the subscription may
+/// stand before coming back to the front reads it again: a refund or an
+/// immediate cancel is seen without a restart, and a quick switch between apps
+/// does not ask the server every time. Apps and tests override it.
+final iapResumeRefreshAfterProvider = Provider<Duration>(
+  (ref) => const Duration(minutes: 5),
+);
+
 /// When the app comes back to the front, [shouldRead] decides on a new read:
 /// after a failed read (so a buyer is not left with the ads for the whole
-/// run), or when a period that was paid for has run out.
+/// run), when a period that was paid for has run out, or when the last
+/// successful read is older than [iapResumeRefreshAfterProvider].
 void _retryOnResume(Ref ref, bool Function() shouldRead) {
   final observer = _ResumeObserver(() {
     if (shouldRead()) ref.invalidateSelf();
@@ -95,10 +104,14 @@ iapEntitlementsProvider = FutureProvider<IapEntitlements>(
       if (next.value is IapGranted) ref.invalidateSelf();
     });
     var failed = false;
-    _retryOnResume(ref, () => failed);
+    DateTime? readAt;
+    final refreshAfter = ref.watch(iapResumeRefreshAfterProvider);
+    _retryOnResume(ref, () => failed || _older(readAt, refreshAfter));
     if (!ref.watch(iapSignedInProvider)) return IapEntitlements.none;
     try {
-      return await ref.watch(iapApiProvider).entitlements();
+      final read = await ref.watch(iapApiProvider).entitlements();
+      readAt = DateTime.now();
+      return read;
     } on Object {
       failed = true;
       rethrow;
@@ -123,14 +136,19 @@ final FutureProvider<IapSubscription?> iapSubscriptionProvider =
       });
       var failed = false;
       DateTime? periodEnd;
+      DateTime? readAt;
+      final refreshAfter = ref.watch(iapResumeRefreshAfterProvider);
       _retryOnResume(ref, () {
         final end = periodEnd;
-        return failed || (end != null && !end.isAfter(DateTime.now()));
+        return failed ||
+            (end != null && !end.isAfter(DateTime.now())) ||
+            _older(readAt, refreshAfter);
       });
       if (!ref.watch(iapSignedInProvider)) return null;
       try {
         final row = await ref.watch(iapApiProvider).mySubscription();
         periodEnd = row?.currentPeriodEnd;
+        readAt = DateTime.now();
         return row;
       } on ApiRequestError catch (e) {
         if (e.status == 404) return null;
@@ -141,6 +159,9 @@ final FutureProvider<IapSubscription?> iapSubscriptionProvider =
         rethrow;
       }
     }, retry: (_, _) => null);
+
+bool _older(DateTime? readAt, Duration age) =>
+    readAt != null && DateTime.now().difference(readAt) >= age;
 
 class _ResumeObserver with WidgetsBindingObserver {
   _ResumeObserver(this._onResume);

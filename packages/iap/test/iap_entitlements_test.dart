@@ -14,7 +14,11 @@ void main() {
 
   final signedFlag = NotifierProvider<_Flag, bool>(_Flag.new);
 
-  ProviderContainer containerOn(Harness h, {bool signedIn = true}) {
+  ProviderContainer containerOn(
+    Harness h, {
+    bool signedIn = true,
+    Duration? refreshAfter,
+  }) {
     final container = ProviderContainer(
       overrides: [
         iapApiProvider.overrideWithValue(
@@ -24,6 +28,8 @@ void main() {
         iapPlatformProvider.overrideWithValue('android'),
         signedFlag.overrideWith(() => _Flag(signedIn)),
         iapSignedInProvider.overrideWith((ref) => ref.watch(signedFlag)),
+        if (refreshAfter != null)
+          iapResumeRefreshAfterProvider.overrideWithValue(refreshAfter),
       ],
     );
     addTearDown(container.dispose);
@@ -104,6 +110,45 @@ void main() {
 
       expect(h.entitlementReads, 2);
       expect(value.owns('ads-removal', 'remove'), isTrue);
+    },
+  );
+
+  test(
+    'a refund is seen when the app comes back after the wait, not before',
+    () async {
+      final h = Harness()..entitlements = [owned];
+      addTearDown(h.dispose);
+      final container = containerOn(h);
+      container.listen(iapEntitlementsProvider, (_, _) {});
+      await container.read(iapEntitlementsProvider.future);
+
+      // the item is refunded; coming back at once does not ask again
+      h.entitlements = [];
+      final binding = WidgetsBinding.instance;
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await pumpEventQueue();
+      expect(h.entitlementReads, 1);
+
+      // with the wait over it is asked again and the item is gone
+      final later = containerOn(h, refreshAfter: Duration.zero);
+      later.listen(iapEntitlementsProvider, (_, _) {});
+      expect(
+        (await later.read(iapEntitlementsProvider.future))
+            .owns('ads-removal', 'remove'),
+        isFalse,
+      );
+      h.entitlements = [owned];
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await pumpEventQueue();
+      expect(
+        later
+            .read(iapEntitlementsProvider)
+            .requireValue
+            .owns('ads-removal', 'remove'),
+        isTrue,
+      );
     },
   );
 

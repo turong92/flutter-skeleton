@@ -26,6 +26,7 @@ import 'package:skeleton_ads/skeleton_ads.dart';
 import 'package:skeleton_ads/testing.dart';
 import 'package:skeleton_api_client/testing.dart';
 import 'package:skeleton_auth/skeleton_auth.dart';
+import 'package:skeleton_iap/skeleton_iap.dart';
 import 'package:skeleton_i18n/skeleton_i18n.dart';
 import 'package:skeleton_social_login/skeleton_social_login.dart';
 
@@ -207,6 +208,8 @@ Widget _app(_Server server, TokenStore tokens) => ProviderScope(
     socialProvidersProvider.overrideWithValue(const []),
     // the ad SDK stays a double (no network); the store is the real one
     adsSdkProvider.overrideWithValue(FakeAdsSdk()),
+    // coming back to the front reads the rights again at once (5 minutes in the app)
+    iapResumeRefreshAfterProvider.overrideWithValue(Duration.zero),
   ],
   child: const SampleApp(),
 );
@@ -398,6 +401,31 @@ void main() {
 
     await _until(tester, () => _banner.evaluate().isNotEmpty, what: 'banner');
   });
+
+  for (final (name, price, product) in [
+    ('one-time purchase', r'$4.99', _removeAds),
+    ('subscription', r'$2.99', _monthly),
+  ]) {
+    testWidgets('a refunded $name brings the banner back when the app comes '
+        'back to the front, without a restart', (tester) async {
+      final server = _Server();
+      await tester.pumpWidget(_app(server, MemoryTokenStore()));
+      await _signIn(tester);
+      await _openStore(tester);
+      await tester.tap(find.widgetWithText(FilledButton, price));
+      await _until(tester, () => _banner.evaluate().isEmpty, what: 'no banner');
+
+      await _storekit.invokeMethod<void>('refund', {
+        'id': server.confirmed[product],
+      });
+      await _until(tester, () {
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        return _banner.evaluate().isNotEmpty;
+      }, what: 'the banner back after the refund');
+    });
+  }
 
   testWidgets(
     'the subscription removes the banner until it runs out, then it returns',

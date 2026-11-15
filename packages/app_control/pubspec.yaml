@@ -1,0 +1,21 @@
+name: skeleton_app_control
+description: Maintenance screen, forced and recommended updates and feature switches for the kotlin-skeleton app-control module, read from GET /app/config.
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.13.0
+  flutter: 3.47.9
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^3.4.3
+  package_info_plus: ^10.2.2 # the installed app's version name
+  skeleton_api_client: any # workspace sibling
+  url_launcher: ^6.3.2 # the store page of an update
+
+dev_dependencies:
+  dio: ^5.11.1 # test only: the fake backend answers with a ResponseBody
+  flutter_test:
+    sdk: flutter

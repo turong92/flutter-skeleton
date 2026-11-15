@@ -376,7 +376,7 @@ void main() {
           isNot(
             contains(
               RegExp(
-                'board|storage|Board|otification|ealtime|(?<!context\\.)push|Push|irebase|iap|Iap|i18n|LanguageMenu|localeProvider|ocial|akao|aver|NidThirdParty|skeleton_ads|AdBanner|AdUnitIds|AdsPrivacy|AdsLabels|adsController|adsSdk|adsBanner|FakeAdsSdk|skeleton_audio|AudioSettings|audioSettings|AudioLabels',
+                'board|storage|Board|otification|ealtime|(?<!context\\.)push|Push|irebase|iap|Iap|i18n|LanguageMenu|localeProvider|ocial|akao|aver|NidThirdParty|skeleton_ads|AdBanner|AdUnitIds|AdsPrivacy|AdsLabels|adsController|adsSdk|adsBanner|FakeAdsSdk|skeleton_audio|AudioSettings|audioSettings|AudioLabels|skeleton_app_control|AppControl|appControl',
               ),
             ),
           ),
@@ -396,6 +396,26 @@ void main() {
       expect(fileFeatures(starter('lib/screens/board_screens.dart')), [
         'board',
       ]);
+    });
+
+    test('picking app-control puts the gate above the app and gives it the api', () {
+      final kept = {'app-control'};
+      expect(
+        stamped('lib/main.dart', kept),
+        allOf(
+          contains('AppControlGate('),
+          contains('AppControlLabels.ko()'),
+          contains("package:skeleton_app_control/skeleton_app_control.dart"),
+        ),
+      );
+      expect(
+        stamped('lib/wiring.dart', kept),
+        contains('appControlApiProvider.overrideWith'),
+      );
+      expect(
+        stamped('pubspec.yaml', kept),
+        contains('skeleton_app_control: any'),
+      );
     });
 
     test('picking board gives the screens, the routes and the entry, not the photo field', () {

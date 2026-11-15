@@ -31,6 +31,7 @@ workspace:
   - packages/social_login_kakao
   - packages/social_login_naver
   - packages/error_report
+  - packages/app_control
   - apps/starter
   - apps/sample
   - tool

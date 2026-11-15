@@ -11,6 +11,9 @@ import 'package:skeleton_error_report/skeleton_error_report.dart';
 // #if ads
 import 'package:skeleton_ads/skeleton_ads.dart';
 // #endif
+// #if app-control
+import 'package:skeleton_app_control/skeleton_app_control.dart';
+// #endif
 // #if audio
 import 'package:skeleton_audio/skeleton_audio.dart';
 // #endif
@@ -243,6 +246,18 @@ class StarterApp extends ConsumerWidget {
       scaffoldMessengerKey: _messengerKey,
       // #endif
       title: 'Starter',
+      // #if app-control
+      // Maintenance, a forced update and the recommended-update notice sit
+      // above every screen; the config is read at start and whenever the app
+      // comes back to the front.
+      builder: (context, child) => AppControlGate(
+        labels: context.byLocale(
+          const AppControlLabels.ko(),
+          const AppControlLabels(),
+        ),
+        child: child!,
+      ),
+      // #endif
       // Korean first: it is the language an unsupported device language falls back to.
       supportedLocales: const [Locale('ko'), Locale('en')],
       localizationsDelegates: AppLocalizations.localizationsDelegates,

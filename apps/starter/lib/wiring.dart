@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:skeleton_auth/skeleton_auth.dart';
+// #if app-control
+import 'package:skeleton_app_control/skeleton_app_control.dart';
+// #endif
 // #if ads iap
 import 'package:skeleton_ads/skeleton_ads.dart';
 // #endif
@@ -40,6 +43,11 @@ final starterWiring = <Override>[
   legalApiProvider.overrideWith(
     (ref) => LegalApi(ref.watch(apiClientProvider)),
   ),
+  // #if app-control
+  appControlApiProvider.overrideWith(
+    (ref) => AppControlApi(ref.watch(apiClientProvider)),
+  ),
+  // #endif
   // #if board
   // A server whose config says `authorRequired` also needs
   // `boardAuthorResolverProvider` (the id of the author profile to write as).

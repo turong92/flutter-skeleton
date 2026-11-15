@@ -111,7 +111,7 @@ class AccountScreen extends ConsumerWidget {
         ],
         // #endif
         OutlinedButton(
-          onPressed: () => context.go('/account/consents'),
+          onPressed: () => context.push('/account/consents'),
           child: Text(
             context
                 .byLocale(const LegalLabels.ko(), const LegalLabels())

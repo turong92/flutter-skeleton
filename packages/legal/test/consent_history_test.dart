@@ -181,6 +181,24 @@ void main() {
       expect(find.text('Terms of service'), findsOneWidget);
     });
 
+    testWidgets('an answer that cannot be read is a failed read too', (
+      tester,
+    ) async {
+      await pumpView(
+        tester,
+        (_) => FakeAdapter.json(200, {
+          'values': [
+            {'type': 'terms'},
+          ],
+          'pagination': {'page': 0},
+          'meta': _meta,
+        }),
+      );
+
+      expect(find.text('Could not load the history.'), findsOneWidget);
+      expect(find.text('Try again'), findsOneWidget);
+    });
+
     testWidgets('the Korean labels', (tester) async {
       await pumpView(
         tester,

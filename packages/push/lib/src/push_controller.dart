@@ -22,10 +22,17 @@ final pushTokenSourceProvider = Provider<PushTokenSource>(
 );
 
 /// Opens the device's notification settings of this app (the only place a
-/// refused permission can be changed). Tests override it.
+/// refused permission can be changed). A failure to open is swallowed (the
+/// button then does nothing, the text next to it says where the setting is).
+/// Tests override it.
 final pushOpenSettingsProvider = Provider<Future<void> Function()>(
-  (ref) =>
-      () => AppSettings.openAppSettings(type: AppSettingsType.notification),
+  (ref) => () async {
+    try {
+      await AppSettings.openAppSettings(type: AppSettingsType.notification);
+    } on Object {
+      // nothing more to do
+    }
+  },
 );
 
 final pushDeviceStoreProvider = Provider<PushDeviceStore>(
@@ -112,10 +119,16 @@ class PushController extends Notifier<PushState> {
         opened.cancel();
       });
     }
-    // Back from the device settings the permission may have been given.
+    // Back from the device settings the permission may have been given (while
+    // denied) or taken away (while enabled).
     final resume = _ResumeWatcher(() {
-      if (state.status == PushStatus.denied && _signedIn) {
+      if (!_signedIn) return;
+      if (state.status == PushStatus.denied) {
         _refresh(_generation);
+      } else if (state.status == PushStatus.enabled) {
+        _source.permission().then((p) {
+          if (p == PushPermission.denied) _set(PushStatus.denied);
+        }, onError: (Object _) {});
       }
     });
     WidgetsBinding.instance.addObserver(resume);

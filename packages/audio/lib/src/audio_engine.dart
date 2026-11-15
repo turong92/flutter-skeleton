@@ -35,20 +35,28 @@ final ambientAudioContext = AudioContext(
 );
 
 /// [AudioEngine] over `audioplayers`: one looping player for the music, and
-/// one [AudioPool] per effect file.
+/// up to four players per effect file, used in turn.
 class AudioplayersEngine implements AudioEngine {
   AudioplayersEngine({AudioContext? context})
     : _context = context ?? ambientAudioContext;
 
   final AudioContext _context;
   final _bgm = AudioPlayer();
-  final _pools = <String, Future<AudioPool>>{};
-  bool _ready = false;
+  final _sfx = <String, List<AudioPlayer>>{};
+  static const _maxSfxAtOnce = 4;
+  Future<void>? _ready;
 
-  Future<void> _ensureReady() async {
-    if (_ready) return;
-    _ready = true;
+  /// The session is set on the music player itself: a player copies the
+  /// default context when it is made, so the global one comes too late for it.
+  /// A failed setup is tried again by the next call.
+  Future<void> _ensureReady() => _ready ??= _setUp().onError((e, s) {
+    _ready = null;
+    Error.throwWithStackTrace(e!, s);
+  });
+
+  Future<void> _setUp() async {
     await AudioPlayer.global.setAudioContext(_context);
+    await _bgm.setAudioContext(_context);
     await _bgm.setReleaseMode(ReleaseMode.loop);
   }
 
@@ -73,18 +81,31 @@ class AudioplayersEngine implements AudioEngine {
   @override
   Future<void> playSfx(String asset, double volume) async {
     await _ensureReady();
-    final pool = await _pools.putIfAbsent(
-      asset,
-      () => AudioPool.createFromAsset(path: asset, maxPlayers: 4),
-    );
-    await pool.start(volume: volume);
+    final players = _sfx.putIfAbsent(asset, () => []);
+    var player = players
+        .where((p) => p.state != PlayerState.playing)
+        .firstOrNull;
+    if (player == null) {
+      // A fifth sound of one file at once is dropped: the players are made
+      // once, so nothing grows with the number of calls.
+      if (players.length >= _maxSfxAtOnce) return;
+      player = AudioPlayer();
+      players.add(player);
+      await player.setAudioContext(_context);
+    }
+    await player.play(AssetSource(asset), volume: volume);
   }
 
   @override
   Future<void> dispose() async {
-    await _bgm.dispose();
-    for (final pool in _pools.values) {
-      await (await pool).dispose();
+    final all = [_bgm, for (final players in _sfx.values) ...players];
+    _sfx.clear();
+    for (final player in all) {
+      try {
+        await player.dispose();
+      } on Object {
+        // go on with the others
+      }
     }
   }
 }

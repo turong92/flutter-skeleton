@@ -28,8 +28,13 @@ final audioProvider = Provider<Audio>((ref) {
 /// is in the background does not reach the player, and plays when it may.
 class Audio with WidgetsBindingObserver {
   Audio._(this._engine, this._fade, this._settings) {
-    WidgetsBinding.instance.addObserver(this);
+    final binding = WidgetsBinding.instance..addObserver(this);
+    // the app may already be in the background when this is made
+    _background = _inBackground(binding.lifecycleState);
   }
+
+  static bool _inBackground(AppLifecycleState? state) =>
+      state == AppLifecycleState.paused || state == AppLifecycleState.hidden;
 
   final AudioEngine _engine;
   final Duration _fade;
@@ -55,10 +60,15 @@ class Audio with WidgetsBindingObserver {
     return _reconcile();
   }
 
-  /// Play a short sound; calls overlap. Nothing when effects are off or at 0.
+  /// Play a short sound; calls overlap. Nothing when effects are off or at 0,
+  /// or while the app is in the background. Never throws.
   Future<void> playSfx(String asset) async {
-    if (!_settings.sfxAudible) return;
-    await _engine.playSfx(asset, _settings.sfxVolume);
+    if (!_settings.sfxAudible || _background) return;
+    try {
+      await _engine.playSfx(asset, _settings.sfxVolume);
+    } on Object catch (e) {
+      debugPrint('skeleton_audio: sound effect $asset failed: $e');
+    }
   }
 
   void _settingsChanged(AudioSettings next) {
@@ -69,8 +79,7 @@ class Audio with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // `inactive` is a call, the control center, a dialog: the music goes on.
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.hidden) {
+    if (_inBackground(state)) {
       _background = true;
     } else if (state == AppLifecycleState.resumed) {
       _background = false;
@@ -87,19 +96,26 @@ class Audio with WidgetsBindingObserver {
   }
 
   // One change at a time, each looking at what is wanted when its turn comes.
+  // A failure is written to the log and not thrown: a caller that does not
+  // await must not get an uncaught error, and the next call tries again.
   Future<void> _reconcile() {
-    final run = _tail.then((_) => _apply());
-    _tail = run.catchError((Object _) {});
+    final run = _tail.then((_) => _apply()).catchError((Object e) {
+      debugPrint('skeleton_audio: the music could not be changed: $e');
+    });
+    _tail = run;
     return run;
   }
+
+  /// The music may not play now (background, switched off or turned to 0).
+  bool get _muted => _background || !_settings.bgmAudible;
 
   Future<void> _apply() async {
     final want = _wanted;
     final settings = _settings;
     if (want == null || !settings.bgmAudible) {
       if (_loaded == null) return;
-      if (want == null && settings.bgmAudible && !_paused && !_background) {
-        await _ramp(0);
+      if (want == null && !_muted && !_paused) {
+        if (!await _ramp(0)) return _apply();
       }
       _loaded = null;
       _paused = false;
@@ -121,16 +137,22 @@ class Audio with WidgetsBindingObserver {
       if (_volume != settings.bgmVolume) await _setVolume(settings.bgmVolume);
       return;
     }
-    if (_loaded != null && !_paused) await _ramp(0);
-    _loaded = want;
+    if (_loaded != null && !_paused) {
+      if (!await _ramp(0)) return _apply();
+    }
+    // Not "loaded" until the player took it: a start that fails is asked for
+    // again by the next call for the same track.
+    _loaded = null;
     _paused = false;
     if (_fade == Duration.zero) {
       _volume = settings.bgmVolume;
       await _engine.startBgm(want, _volume);
+      _loaded = want;
     } else {
       _volume = 0;
       await _engine.startBgm(want, 0);
-      await _ramp(settings.bgmVolume);
+      _loaded = want;
+      if (!await _ramp(settings.bgmVolume)) return _apply();
     }
   }
 
@@ -139,14 +161,17 @@ class Audio with WidgetsBindingObserver {
     await _engine.setBgmVolume(volume);
   }
 
-  /// A short straight ramp of the music volume to [to].
-  Future<void> _ramp(double to) async {
-    if (_fade == Duration.zero) return;
+  /// A short straight ramp of the music volume to [to]. False when it was cut
+  /// short because the music may not play any more (the caller looks again).
+  Future<bool> _ramp(double to) async {
+    if (_fade == Duration.zero) return true;
     const steps = 8;
     final from = _volume;
     for (var i = 1; i <= steps; i++) {
       await Future<void>.delayed(_fade ~/ steps);
+      if (_muted) return false;
       await _setVolume(i == steps ? to : from + (to - from) * i / steps);
     }
+    return true;
   }
 }

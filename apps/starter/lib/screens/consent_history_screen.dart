@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:skeleton_legal/skeleton_legal.dart';
 
 import '../l10n/l10n.dart';
@@ -15,10 +14,7 @@ class ConsentHistoryScreen extends StatelessWidget {
       const LegalLabels(),
     );
     return Scaffold(
-      appBar: AppBar(
-        leading: BackButton(onPressed: () => context.go('/account')),
-        title: Text(labels.history),
-      ),
+      appBar: AppBar(title: Text(labels.history)),
       body: ConsentHistoryView(labels: labels),
     );
   }

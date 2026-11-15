@@ -49,7 +49,7 @@ Choice: **iOS `ambient`, Android game usage without taking the audio focus** (`a
 
 ## Player choice
 
-`audioplayers` ^6 (pub.dev: 150/160 points, about 1.7 M downloads a month, updated this year). It has what is needed in one package: a looping player, `AudioPool` for overlapping short sounds and the audio session setting (`AudioContext`). `just_audio` + `audio_session` was the other candidate; it is as maintained, but has no sound pool for effects.
+`audioplayers` ^6 (pub.dev: 150/160 points, about 1.7 M downloads a month, updated this year). It has what is needed in one package: a looping player, several players for overlapping short sounds (up to four at once per effect file, a fifth is dropped, so nothing grows without bound) and the audio session setting (`AudioContext`, set on every player: a player copies the default when it is made). `just_audio` + `audio_session` was the other candidate; it is as maintained, but has no sound pool for effects.
 
 ## Not here
 

@@ -53,7 +53,7 @@ class _Row extends StatelessWidget {
   final bool enabled;
   final double volume;
   final ValueChanged<bool> onEnabled;
-  final ValueChanged<double> onVolume;
+  final Future<void> Function(double value, {bool save}) onVolume;
 
   @override
   Widget build(BuildContext context) {
@@ -65,10 +65,14 @@ class _Row extends StatelessWidget {
           value: enabled,
           onChanged: onEnabled,
         ),
-        Slider(
-          value: volume,
-          semanticFormatterCallback: (v) => '${(v * 100).round()}%',
-          onChanged: enabled ? onVolume : null,
+        Semantics(
+          label: label,
+          child: Slider(
+            value: volume,
+            semanticFormatterCallback: (v) => '${(v * 100).round()}%',
+            onChanged: enabled ? (v) => onVolume(v, save: false) : null,
+            onChangeEnd: enabled ? (v) => onVolume(v) : null,
+          ),
         ),
       ],
     );

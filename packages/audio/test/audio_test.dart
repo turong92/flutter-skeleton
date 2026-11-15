@@ -132,6 +132,50 @@ void main() {
     );
   });
 
+  group('what goes wrong', () {
+    test(
+      'a start that failed is tried again by asking for the same track',
+      () async {
+        final rig = _Rig();
+        rig.engine.failNextStart = true;
+
+        await rig.audio.playBgm('audio/a.mp3'); // does not throw
+        expect(rig.engine.calls, isEmpty);
+
+        await rig.audio.playBgm('audio/a.mp3');
+        expect(rig.engine.calls, ['startBgm audio/a.mp3 1.0']);
+      },
+    );
+
+    test(
+      'going to the background in the middle of a fade stops the fade',
+      () async {
+        final rig = _Rig(fade: const Duration(milliseconds: 80));
+
+        final playing = rig.audio.playBgm('audio/a.mp3');
+        await pumpEventQueue();
+        binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+        await playing;
+        await pumpEventQueue();
+
+        expect(rig.engine.calls.last, 'pauseBgm');
+        expect(rig.engine.calls, isNot(contains('setBgmVolume 1.0')));
+        await state(AppLifecycleState.resumed);
+      },
+    );
+
+    test('an app that starts in the background plays nothing yet', () async {
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      addTearDown(() => state(AppLifecycleState.resumed));
+      final rig = _Rig();
+
+      await rig.audio.playBgm('audio/a.mp3');
+      await rig.audio.playSfx('audio/tap.wav');
+
+      expect(rig.engine.calls, isEmpty);
+    });
+  });
+
   group('the app in the background', () {
     test('pauses the music and resumes it when the app comes back', () async {
       final rig = _Rig();

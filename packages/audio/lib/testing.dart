@@ -25,9 +25,17 @@ class MemoryAudioSettingsStore implements AudioSettingsStore {
 class FakeAudioEngine implements AudioEngine {
   final calls = <String>[];
 
+  /// The next `startBgm` throws (and is not written down).
+  bool failNextStart = false;
+
   @override
-  Future<void> startBgm(String asset, double volume) async =>
-      calls.add('startBgm $asset $volume');
+  Future<void> startBgm(String asset, double volume) async {
+    if (failNextStart) {
+      failNextStart = false;
+      throw StateError('the player could not start');
+    }
+    calls.add('startBgm $asset $volume');
+  }
 
   @override
   Future<void> setBgmVolume(double volume) async =>

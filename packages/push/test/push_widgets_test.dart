@@ -122,6 +122,20 @@ void main() {
       expect(find.text('Open settings'), findsNothing);
     });
 
+    testWidgets('turned off in the settings meanwhile: the band comes back', (
+      tester,
+    ) async {
+      final source = FakePushTokenSource(permission: PushPermission.granted);
+      await pumpPush(tester, const PushPrompt(), source: source);
+      expect(find.text('Open settings'), findsNothing);
+
+      source.permissionState = PushPermission.denied;
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle(const Duration(milliseconds: 50));
+
+      expect(find.text('Open settings'), findsOneWidget);
+    });
+
     testWidgets('texts come from the labels', (tester) async {
       await pumpPush(
         tester,

@@ -53,7 +53,8 @@ class _ConsentHistoryViewState extends ConsumerState<ConsentHistoryView> {
         _last = result.pagination;
         _loading = false;
       });
-    } on ApiRequestError {
+    } on Object {
+      // a failed call and an answer that cannot be read look the same here
       if (!mounted) return;
       setState(() {
         _failed = true;

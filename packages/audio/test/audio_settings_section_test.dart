@@ -60,8 +60,13 @@ void main() {
     slider.onChanged!(0.3);
     await tester.pump();
 
+    // heard at once, written when the finger leaves the slider
     expect(container.read(audioSettingsProvider).sfxVolume, 0.3);
     expect(container.read(audioSettingsProvider).bgmVolume, 1.0);
+    expect(store.saved, isNull);
+
+    slider.onChangeEnd!(0.3);
+    await tester.pump();
     expect(store.saved?.sfxVolume, 0.3);
   });
 

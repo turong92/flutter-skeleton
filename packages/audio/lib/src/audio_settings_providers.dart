@@ -26,17 +26,19 @@ class AudioSettingsController extends Notifier<AudioSettings> {
   Future<void> setBgmEnabled(bool value) =>
       _set(state.copyWith(bgmEnabled: value));
 
-  Future<void> setBgmVolume(double value) =>
-      _set(state.copyWith(bgmVolume: value.clamp(0.0, 1.0)));
+  /// [save] false while a slider is dragged: the volume is heard at once and
+  /// written once, when the finger leaves (call again with the default).
+  Future<void> setBgmVolume(double value, {bool save = true}) =>
+      _set(state.copyWith(bgmVolume: value.clamp(0.0, 1.0)), save: save);
 
   Future<void> setSfxEnabled(bool value) =>
       _set(state.copyWith(sfxEnabled: value));
 
-  Future<void> setSfxVolume(double value) =>
-      _set(state.copyWith(sfxVolume: value.clamp(0.0, 1.0)));
+  Future<void> setSfxVolume(double value, {bool save = true}) =>
+      _set(state.copyWith(sfxVolume: value.clamp(0.0, 1.0)), save: save);
 
-  Future<void> _set(AudioSettings next) async {
+  Future<void> _set(AudioSettings next, {bool save = true}) async {
     state = next;
-    await ref.read(audioSettingsStoreProvider).save(next);
+    if (save) await ref.read(audioSettingsStoreProvider).save(next);
   }
 }

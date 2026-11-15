@@ -375,7 +375,7 @@ void main() {
           isNot(
             contains(
               RegExp(
-                'board|storage|Board|otification|ealtime|push|Push|irebase|iap|Iap|i18n|LanguageMenu|localeProvider|ocial|akao|aver|NidThirdParty|skeleton_ads|AdBanner|AdUnitIds|AdsPrivacy|AdsLabels|adsController|adsSdk|adsBanner|FakeAdsSdk|skeleton_audio|AudioSettings|audioSettings|AudioLabels',
+                'board|storage|Board|otification|ealtime|(?<!context\\.)push|Push|irebase|iap|Iap|i18n|LanguageMenu|localeProvider|ocial|akao|aver|NidThirdParty|skeleton_ads|AdBanner|AdUnitIds|AdsPrivacy|AdsLabels|adsController|adsSdk|adsBanner|FakeAdsSdk|skeleton_audio|AudioSettings|audioSettings|AudioLabels',
               ),
             ),
           ),

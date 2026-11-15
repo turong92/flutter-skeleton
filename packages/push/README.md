@@ -7,7 +7,7 @@ Push notification registration and settings for the kotlin-skeleton `notificatio
 | `PushApi` | `config` · `preferences` · `setPreference` · `registerDevice` · `removeDevice` · `sendTest` |
 | `PushTokenSource` | Where the token and incoming messages come from. `FirebasePushTokenSource` (default) and `FakePushTokenSource` (`package:skeleton_push/testing.dart`) |
 | `pushControllerProvider` | State `unavailable / notAsked / denied / enabled / off`; registers the device |
-| `PushPrompt` | In-app band; the tap on its button asks for permission. After a refusal it says so and a button ("Open settings") opens the device's notification settings of the app (`app_settings`; `pushOpenSettingsProvider` is the boundary tests override). Coming back to the app with the permission given registers the device |
+| `PushPrompt` | In-app band; the tap on its button asks for permission. After a refusal it says so and a button ("Open settings") opens the app's settings page (`permission_handler`'s `openAppSettings`; `pushOpenSettingsProvider` is the boundary tests override). Coming back to the app with the permission given registers the device |
 | `PushSettingsView` | This device's switch (locked after a refusal, with the same "Open settings" button), one switch per kind, a test notification |
 | `pushSignOutHookProvider` | Deletes this device's registration before sign-out (2 s limit, never throws) |
 | `safePushLink` | A tapped notification's `data.link` is kept only if it is an in-app path (`/...`, not `//`, no scheme) |

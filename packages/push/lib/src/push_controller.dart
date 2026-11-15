@@ -1,6 +1,7 @@
 import 'dart:async';
 
-import 'package:app_settings/app_settings.dart';
+import 'package:permission_handler/permission_handler.dart'
+    show openAppSettings;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:skeleton_api_client/skeleton_api_client.dart';
@@ -28,7 +29,7 @@ final pushTokenSourceProvider = Provider<PushTokenSource>(
 final pushOpenSettingsProvider = Provider<Future<void> Function()>(
   (ref) => () async {
     try {
-      await AppSettings.openAppSettings(type: AppSettingsType.notification);
+      await openAppSettings();
     } on Object {
       // nothing more to do
     }

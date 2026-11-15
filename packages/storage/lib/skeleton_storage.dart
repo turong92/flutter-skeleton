@@ -4,6 +4,7 @@ library;
 
 export 'src/errors.dart';
 export 'src/file_rules.dart';
+export 'src/held_image.dart';
 export 'src/image_upload_field.dart';
 export 'src/image_upload_labels.dart';
 export 'src/models.dart';

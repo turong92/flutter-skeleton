@@ -41,6 +41,8 @@ dev_dependencies:
   dio: ^5.11.1 # the fake adapter in tests speaks its request and response types
   flutter_test:
     sdk: flutter
+  integration_test:
+    sdk: flutter # integration_test/ runs on the iOS simulator under StoreKit testing
   in_app_purchase_platform_interface: ^1.4.0 # tests build a ProductDetails
   shared_preferences: ^2.5.6 # the push device store keeps its id there; tests set mock values
 

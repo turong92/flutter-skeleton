@@ -20,6 +20,7 @@ Flutter 모바일 앱 스켈레톤. Pub Workspaces + Melos. 캡슐화된 패키�
 - 의존 해석: `flutter pub get` (루트)
 - 분석 · 시험: 바뀐 패키지 폴더에서 `flutter analyze` · `flutter test`(`api_client` 는 `dart test`). 전체는 `melos run analyze` · `melos run test` 를 조각이 끝날 때 한 번.
 - 포맷: `dart format .`
+- iOS 구매(광고 제거) 확인: `scripts/test-ios-storekit.sh` — 시뮬레이터에서 StoreKit 테스트 스토어(`apps/sample/ios/Runner/Products.storekit`)로 사람 손 없이 산다(`apps/sample/integration_test` + `ios/RunnerTests`). 서버는 가짜라 서명 검증은 덮지 않는다.
 
 ## 백엔드 계약
 

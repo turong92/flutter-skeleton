@@ -337,6 +337,7 @@ void applyStamp(Directory target, StampOptions o) {
     'tool',
     'scripts/new-project.sh',
     'scripts/test-new-project.sh',
+    'scripts/test-ios-storekit.sh', // runs apps/sample, which a project does not carry
     'docs/superpowers',
     '.github/workflows/new-project.yml',
   ]) {

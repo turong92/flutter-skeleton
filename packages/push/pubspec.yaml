@@ -8,7 +8,7 @@ environment:
   flutter: 3.47.9
 
 dependencies:
-  permission_handler: ^13.0.2 # openAppSettings: the app's settings page (CocoaPods and SwiftPM both)
+  permission_handler: ^12.0.1 # openAppSettings. Keep 12.x: 13 needs compileSdk 37, above the Flutter default (36)
   dio: ^5.11.1
   firebase_core: ^5.1.0
   firebase_messaging: ^17.0.1

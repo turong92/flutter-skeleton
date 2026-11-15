@@ -74,6 +74,7 @@ Map<String, String> fakeSkeleton() {
     'tool/x.dart': '',
     'scripts/new-project.sh': '',
     'scripts/test-new-project.sh': '',
+    'scripts/test-ios-storekit.sh': '',
     'docs/superpowers/spec.md': '',
     'capabilities.json': json(catalog),
     'docs/capabilities.schema.json': File('../docs/capabilities.schema.json')

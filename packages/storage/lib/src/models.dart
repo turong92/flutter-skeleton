@@ -107,6 +107,69 @@ class UploadInspection {
   final ImageInspection? image;
 }
 
+/// One converted size of a stored image (`thumb` or `display`). The [url] is a
+/// signed address that ends in minutes: never log it.
+class ImageVariant {
+  const ImageVariant({
+    required this.url,
+    required this.width,
+    required this.height,
+    this.contentType,
+  });
+
+  factory ImageVariant.fromJson(Map<String, Object?> json) => ImageVariant(
+    url: json['url']! as String,
+    width: (json['width']! as num).toInt(),
+    height: (json['height']! as num).toInt(),
+    contentType: json['contentType'] as String?,
+  );
+
+  final String url;
+  final int width;
+  final int height;
+  final String? contentType;
+
+  @override
+  String toString() => 'ImageVariant(${width}x$height)';
+}
+
+/// `POST /storage/images`: the state of a stored image and, once it is
+/// [ImageStatus.ready], its signed variants.
+class StoredImageInfo {
+  const StoredImageInfo({
+    required this.key,
+    required this.status,
+    this.width,
+    this.height,
+    this.thumb,
+    this.display,
+  });
+
+  factory StoredImageInfo.fromJson(Map<String, Object?> json) {
+    final variants = json['variants'];
+    ImageVariant? variant(String name) {
+      final raw = variants is Map ? variants[name] : null;
+      return raw is Map<String, Object?> ? ImageVariant.fromJson(raw) : null;
+    }
+
+    return StoredImageInfo(
+      key: _keyOf(json['key']),
+      status: ImageStatus.parse(json['status']),
+      width: (json['width'] as num?)?.toInt(),
+      height: (json['height'] as num?)?.toInt(),
+      thumb: variant('thumb'),
+      display: variant('display'),
+    );
+  }
+
+  final String key;
+  final ImageStatus status;
+  final int? width;
+  final int? height;
+  final ImageVariant? thumb;
+  final ImageVariant? display;
+}
+
 /// The key comes as a string, or as `{value}` from a Kotlin value class.
 String _keyOf(Object? raw) {
   if (raw is String) return raw;

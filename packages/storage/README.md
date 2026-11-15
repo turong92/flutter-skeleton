@@ -4,7 +4,7 @@ Photo upload for the kotlin-skeleton `storage` + `storage-s3` modules (and `stor
 
 | Piece | What it is |
 |---|---|
-| `StorageApi` | `presign` · `complete` (`/storage/*`; `basePath` if the app opened the controller elsewhere) |
+| `StorageApi` | `presign` · `complete` · `images` (`/storage/*`; `basePath` if the app opened the controller elsewhere). `images(keys)` is `POST /storage/images` of `storage-image`: the conversion state and the signed `thumb` · `display` addresses (`StoredImageInfo`) of up to 20 of the caller's own keys |
 | `Uploader` | `upload(file, onProgress, cancelToken)`: rules, presign, PUT to the storage, complete → `UploadResult(key, inspection)` |
 | `StorageFileRules` / `validateFile` | The app's own limits (size, content types, extensions). Empty by default: no limit |
 | `ImageUploadField` | A button that opens the photo library, a tile per photo (preview, progress, reason when refused, remove). `value` is the list of keys |

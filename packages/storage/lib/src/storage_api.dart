@@ -29,4 +29,17 @@ class StorageApi {
     json: {'key': key},
     decode: UploadInspection.fromJson,
   );
+
+  /// `POST /storage/images` (`storage-image`): the conversion state and the
+  /// signed `thumb` and `display` addresses of up to 20 of the caller's own
+  /// keys. A key that is not the caller's is left out of the answer.
+  Future<List<StoredImageInfo>> images(List<String> keys) => _client.value(
+    '$_base/images',
+    method: 'POST',
+    json: {'keys': keys},
+    decode: (json) => [
+      for (final item in (json['items'] as List?) ?? const [])
+        StoredImageInfo.fromJson(item as Map<String, Object?>),
+    ],
+  );
 }

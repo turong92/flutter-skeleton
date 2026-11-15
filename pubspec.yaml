@@ -21,6 +21,7 @@ workspace:
   - packages/realtime
   - packages/iap
   - packages/storage
+  - packages/video
   - packages/ads
   - packages/i18n
   - packages/social_login

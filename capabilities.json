@@ -260,13 +260,40 @@
       "pairsWith": { "react": ["storage"] },
       "docs": ["packages/storage/README.md"],
       "notFor": [
-        "Large files and video: multipart upload is not built (a photo does not need it)",
+        "Large files and video: a photo goes in one PUT; a video goes in parts through video",
         "Camera capture, cropping, reordering photos",
         "Guest uploads (the guest presign path)"
       ],
       "keywords": {
         "ko": ["사진 올리기", "이미지 업로드", "첨부", "프리사인", "사진 고르기"],
         "en": ["photo upload", "image upload", "attachment", "presigned url", "image picker"]
+      }
+    },
+    {
+      "id": "video",
+      "kind": "package",
+      "summary": "Video upload straight to the storage in parts (start, signed part PUTs three at a time with retries, resume, complete with the ETags), the video calls of the server (status, playback grant, remove) and the choice of the playlist to play (the compat tier first for a big original, one renewal of an ended grant). No screens.",
+      "package": "skeleton_video",
+      "path": "packages/video",
+      "stampFlag": { "flag": "--packages video", "included": "flag" },
+      "needs": ["api-client"],
+      "backend": {
+        "modules": ["video", "video-jdbc"],
+        "oneOfModules": [],
+        "optionalModules": [],
+        "basePaths": ["/api/v1/videos"],
+        "docs": ["docs/modules/video.md", "docs/modules/video-jdbc.md"]
+      },
+      "pairsWith": { "react": ["video"] },
+      "docs": ["packages/video/README.md"],
+      "notFor": [
+        "A player widget: the app draws one over video_player",
+        "Resume after the app is closed (the caller keeps the session)",
+        "Poster swap, quality ladder, animated lane"
+      ],
+      "keywords": {
+        "ko": ["영상 올리기", "동영상", "멀티파트", "이어 올리기", "HLS 재생"],
+        "en": ["video upload", "multipart upload", "resume upload", "hls playback"]
       }
     },
     {

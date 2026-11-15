@@ -17,6 +17,9 @@ void main() {
     VideoUploadSession? resume,
     Future<void> Function(VideoUploadSession)? onStarted,
     List<int>? progress,
+    CancelToken? cancelToken,
+    DateTime Function()? now,
+    PartPut? put,
   }) => uploadVideo(
     server.api,
     file,
@@ -24,8 +27,10 @@ void main() {
     resume: resume,
     onStarted: onStarted,
     onProgress: progress?.add,
-    put: server.put,
+    put: put ?? server.put,
     sleep: server.sleep,
+    cancelToken: cancelToken,
+    now: now,
   );
 
   test('starts with the size, the type, the purpose and PRIVATE', () async {
@@ -43,7 +48,7 @@ void main() {
     () async {
       final progress = <int>[];
       await upload(memoryVideo(10), progress: progress);
-      expect(server.presigned.single, [1, 2, 3]);
+      expect({for (final n in server.presigned) ...n}, {1, 2, 3});
       final sent = {for (final (n, bytes) in server.puts) n: bytes};
       expect(sent[1], [0, 1, 2, 3]);
       expect(sent[2], [4, 5, 6, 7]);
@@ -102,10 +107,15 @@ void main() {
     ];
     await upload(
       memoryVideo(10),
-      resume: const VideoUploadSession(id: 'v1', uploadId: 'u1', partSize: 4),
+      resume: const VideoUploadSession(
+        id: 'v1',
+        uploadId: 'u1',
+        partSize: 4,
+        bytes: 10,
+      ),
     );
     expect(server.startBodies, isEmpty);
-    expect(server.presigned.single, [2, 3]);
+    expect({for (final n in server.presigned) ...n}, {2, 3});
     expect((server.completeBodies.single! as Map)['parts'], [
       {'n': 1, 'etag': '"old-1"'},
       {'n': 2, 'etag': '"etag-2"'},
@@ -118,7 +128,12 @@ void main() {
     final started = <VideoUploadSession>[];
     await upload(
       memoryVideo(10),
-      resume: const VideoUploadSession(id: 'v1', uploadId: 'old', partSize: 4),
+      resume: const VideoUploadSession(
+        id: 'v1',
+        uploadId: 'old',
+        partSize: 4,
+        bytes: 10,
+      ),
       onStarted: (s) async => started.add(s),
     );
     expect(server.startBodies, hasLength(1));
@@ -145,6 +160,115 @@ void main() {
       expect(server.puts, isEmpty);
     },
   );
+
+  test('a cancelled token stops before anything is opened', () async {
+    final token = CancelToken()..cancel();
+    await expectLater(
+      upload(memoryVideo(10), cancelToken: token),
+      throwsA(isA<UploadCancelled>()),
+    );
+    expect(server.startBodies, isEmpty);
+    expect(server.puts, isEmpty);
+  });
+
+  test(
+    'cancelling in the middle sends no more parts and does not complete',
+    () async {
+      final token = CancelToken();
+      server.onPut = (_) => token.cancel();
+      await expectLater(
+        upload(memoryVideo(48), cancelToken: token),
+        throwsA(isA<UploadCancelled>()),
+      );
+      // The three running at once may finish; the rest are never taken.
+      expect(server.puts.length, lessThan(12));
+      expect(server.completeBodies, isEmpty);
+    },
+  );
+
+  test(
+    'a resumed session of another size is refused before anything goes',
+    () async {
+      final started = <VideoUploadSession>[];
+      await expectLater(
+        upload(
+          memoryVideo(11),
+          resume: const VideoUploadSession(
+            id: 'v1',
+            uploadId: 'u1',
+            partSize: 4,
+            bytes: 10,
+          ),
+          onStarted: (s) async => started.add(s),
+        ),
+        throwsA(isA<ResumeFileMismatchError>()),
+      );
+      expect(started, isEmpty);
+      expect(server.startBodies, isEmpty);
+      expect(server.presigned, isEmpty);
+    },
+  );
+
+  test('a big file is signed a few parts at a time, not all at once', () async {
+    await upload(memoryVideo(48));
+    expect(server.presigned.first.length, lessThan(12));
+    expect(
+      {for (final n in server.presigned) ...n},
+      {for (var n = 1; n <= 12; n++) n},
+    );
+    expect(server.puts, hasLength(12));
+  });
+
+  test(
+    'an address signed ten minutes ago is signed again before its PUT',
+    () async {
+      final base = DateTime.utc(2026, 1, 1);
+      var skew = Duration.zero;
+      DateTime now() => base.add(skew);
+      final signedAt = <int, DateTime>{};
+      server.onPresign = () => signedAt[server.presigned.length + 1] = now();
+      server.onPut = (target) {
+        // The first three go at once, before any part has finished.
+        if (target.number <= 3) return;
+        final c = int.parse(Uri.parse(target.url).queryParameters['c']!);
+        expect(
+          now().difference(signedAt[c]!),
+          lessThan(const Duration(minutes: 10)),
+          reason: 'part ${target.number} went with an old address',
+        );
+      };
+      await upload(
+        memoryVideo(48),
+        now: now,
+        put: (t, b, l, p, [c]) async {
+          final etag = await server.put(t, b, l, p, c);
+          skew = const Duration(minutes: 11); // a part took that long
+          return etag;
+        },
+      );
+      expect(server.puts, hasLength(12));
+    },
+  );
+
+  test('a cancelled part PUT is UploadCancelled, not a failed part', () async {
+    final host = FakePartHost();
+    final token = CancelToken()..cancel();
+    await expectLater(
+      dioPartPut(host.dio)(
+        const PartTarget(
+          number: 1,
+          method: 'PUT',
+          url: 'https://b.example.com/x?sig=secret',
+          headers: {},
+        ),
+        Stream.value([1]),
+        1,
+        (_) {},
+        token,
+      ),
+      throwsA(isA<UploadCancelled>()),
+    );
+  });
 
   test(
     'only mp4 and mov are sent, by type or by the ending without one',

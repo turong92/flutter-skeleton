@@ -73,6 +73,7 @@ class FakeVideoServer {
       final numbers = [
         for (final n in (o.data as Map)['numbers']! as List) n as int,
       ];
+      onPresign?.call();
       presigned.add(numbers);
       return FakeAdapter.json(200, {
         'values': [
@@ -80,7 +81,8 @@ class FakeVideoServer {
             {
               'number': n,
               'method': 'PUT',
-              'url': 'https://bucket.example.com/v1/$n?X-Signature=secret',
+              'url':
+                  'https://bucket.example.com/v1/$n?X-Signature=secret&c=${presigned.length}',
               'headers': {'Content-Type': 'video/quicktime'},
             },
         ],
@@ -145,14 +147,22 @@ class FakeVideoServer {
   /// The part `PUT`s as the test sees them: number and the bytes sent. A part
   /// that is in [failures] fails that many times before it goes through.
   final puts = <(int, List<int>)>[];
+
+  /// Told of every presign ask before it is counted.
+  void Function()? onPresign;
+
+  /// Told of every part `PUT` before it runs.
+  void Function(PartTarget target)? onPut;
   final failures = <int, int>{};
 
   Future<String> put(
     PartTarget target,
     Stream<List<int>> body,
     int length,
-    void Function(int sent) onProgress,
-  ) async {
+    void Function(int sent) onProgress, [
+    CancelToken? cancelToken,
+  ]) async {
+    onPut?.call(target);
     final bytes = [for (final c in await body.toList()) ...c];
     final left = failures[target.number] ?? 0;
     if (left > 0) {

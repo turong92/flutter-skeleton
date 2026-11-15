@@ -18,6 +18,21 @@ class UploadPartError implements Exception {
   String toString() => 'UploadPartError($part)';
 }
 
+/// The upload was cancelled (the caller's [CancelToken]). What was uploaded
+/// stays with the storage; the caller resumes it or calls `VideoApi.remove`.
+class UploadCancelled implements Exception {
+  @override
+  String toString() => 'UploadCancelled';
+}
+
+/// The session to resume was opened for a file of another size: nothing was
+/// sent. Which file it was is the caller's to keep (a fingerprint of its own);
+/// the size is only the check this package can make.
+class ResumeFileMismatchError implements Exception {
+  @override
+  String toString() => 'ResumeFileMismatchError';
+}
+
 /// The file is not MP4 or MOV: nothing was sent.
 class UnsupportedVideoFileError implements Exception {
   @override
@@ -37,25 +52,35 @@ String? videoContentTypeOf(XFile file) {
 }
 
 /// Puts one part (its [length] bytes) and gives the `ETag` the storage
-/// answered with. Tests put their own in place of [dioPartPut].
+/// answered with. Tests put their own in place of [dioPartPut]. A cancelled
+/// [cancelToken] ends it with [UploadCancelled].
 typedef PartPut = Future<String> Function(
   PartTarget target,
   Stream<List<int>> body,
   int length,
-  void Function(int sent) onProgress,
-);
+  void Function(int sent) onProgress, [
+  CancelToken? cancelToken,
+]);
 
 /// A part `PUT` through [dio], which must carry no credentials of the app: the
 /// signed address is the credential, and the app's `Authorization` sent to the
 /// storage host would hand it the token. Any failure is [UploadPartError]
-/// (never the address).
-PartPut dioPartPut(Dio dio) => (target, body, length, onProgress) async {
+/// (never the address), except a cancel, which is [UploadCancelled]. A part
+/// that has not been sent in [sendTimeout], or whose answer does not start in
+/// 60 seconds, is a failed part (the upload tries it again).
+PartPut dioPartPut(
+  Dio dio, {
+  Duration sendTimeout = const Duration(minutes: 10),
+}) => (target, body, length, onProgress, [cancelToken]) async {
   try {
     final response = await dio.request<Object?>(
       target.url,
       data: body,
+      cancelToken: cancelToken,
       onSendProgress: (sent, _) => onProgress(sent),
       options: Options(
+        sendTimeout: sendTimeout,
+        receiveTimeout: const Duration(seconds: 60),
         method: target.method,
         headers: {
           ...target.headers,
@@ -67,7 +92,8 @@ PartPut dioPartPut(Dio dio) => (target, body, length, onProgress) async {
     final etag = response.headers.value('etag');
     if (etag == null || etag.isEmpty) throw UploadPartError(target.number);
     return etag;
-  } on DioException {
+  } on DioException catch (e) {
+    if (CancelToken.isCancel(e)) throw UploadCancelled();
     // not the exception itself: its message holds the signed address
     throw UploadPartError(target.number);
   }
@@ -76,7 +102,11 @@ PartPut dioPartPut(Dio dio) => (target, body, length, onProgress) async {
 /// Each part is tried this many times: the first and three more.
 const _attempts = 4;
 const _parallel = 3;
-const _partsPerCall = 100;
+
+/// Addresses are signed for 15 minutes: they are asked for a few parts ahead
+/// only, and one older than this is asked for again before its `PUT`.
+const _signAhead = 6;
+const _addressLife = Duration(minutes: 10);
 const _retryBase = Duration(milliseconds: 500);
 
 /// Uploads one video in parts, straight to the storage. Opens the upload (or
@@ -89,7 +119,8 @@ const _retryBase = Duration(milliseconds: 500);
 /// the caller ties the video to its record there (a refusal thrown from it
 /// stops the upload). [onProgress] is told the bytes sent so far, which only
 /// grow. A refusal of the server is an [ApiRequestError] as it came; a part
-/// that never goes is [UploadPartError].
+/// that never goes is [UploadPartError]. A cancelled [cancelToken] ends it
+/// with [UploadCancelled] (checked before every part and every try).
 Future<VideoItem> uploadVideo(
   VideoApi api,
   XFile file, {
@@ -99,12 +130,23 @@ Future<VideoItem> uploadVideo(
   Future<void> Function(VideoUploadSession session)? onStarted,
   void Function(int sent)? onProgress,
   required PartPut put,
+  CancelToken? cancelToken,
   Future<void> Function(Duration wait)? sleep,
+  DateTime Function()? now,
 }) async {
   final contentType = videoContentTypeOf(file);
   if (contentType == null) throw UnsupportedVideoFileError();
   final wait = sleep ?? (d) => Future<void>.delayed(d);
+  final clock = now ?? DateTime.now;
+  void checkCancelled() {
+    if (cancelToken?.isCancelled ?? false) throw UploadCancelled();
+  }
+
+  checkCancelled();
   final total = await file.length();
+  if (resume != null && resume.bytes != total) {
+    throw ResumeFileMismatchError();
+  }
   int sizeOf(int partSize, int n) =>
       math.min(partSize, total - (n - 1) * partSize);
 
@@ -135,8 +177,10 @@ Future<VideoItem> uploadVideo(
       id: started.id,
       uploadId: started.uploadId,
       partSize: started.partSize,
+      bytes: total,
     );
   }
+  checkCancelled();
   await onStarted?.call(session);
 
   final id = session.id;
@@ -158,22 +202,38 @@ Future<VideoItem> uploadVideo(
     for (final n in numbers)
       if (!done.containsKey(n)) n,
   ];
-  final targets = <int, PartTarget>{};
-  for (var at = 0; at < missing.length; at += _partsPerCall) {
-    final slice = missing.sublist(
-      at,
-      math.min(at + _partsPerCall, missing.length),
-    );
-    for (final t in await api.presignParts(id, slice)) {
-      targets[t.number] = t;
+  final queue = [...missing];
+  // Asked for together, so a part another worker is waiting on is not asked
+  // for twice; a failed ask is forgotten and made again.
+  final signed = <int, ({Future<PartTarget> target, DateTime at})>{};
+  Future<PartTarget> targetFor(int number) async {
+    final held = signed[number];
+    if (held == null || clock().difference(held.at) >= _addressLife) {
+      final batch = [number, ...queue.take(_signAhead - 1)];
+      final at = clock();
+      final call = api.presignParts(id, batch);
+      for (final n in batch) {
+        signed[n] = (
+          target: call.then((ts) => ts.firstWhere((t) => t.number == n))
+            ..ignore(),
+          at: at,
+        );
+      }
+    }
+    try {
+      return await signed[number]!.target;
+    } on Object {
+      signed.remove(number);
+      rethrow;
     }
   }
 
   Future<void> sendPart(int number) async {
     final start = (number - 1) * partSize;
     final length = sizeOf(partSize, number);
-    var target = targets[number]!;
+    var target = await targetFor(number);
     for (var attempt = 1; ; attempt++) {
+      checkCancelled();
       try {
         final etag = await put(
           target,
@@ -183,6 +243,7 @@ Future<VideoItem> uploadVideo(
             sentByPart[number] = math.min(sent, length);
             report();
           },
+          cancelToken,
         );
         sentByPart[number] = length;
         report();
@@ -192,6 +253,7 @@ Future<VideoItem> uploadVideo(
         if (attempt >= _attempts) rethrow;
         sentByPart[number] = 0;
         await wait(_retryBase * math.pow(2, attempt - 1).toInt());
+        checkCancelled();
         // The address may have ended: this part gets a new one.
         final fresh = await api.presignParts(id, [number]);
         if (fresh.isNotEmpty) target = fresh.first;
@@ -199,7 +261,6 @@ Future<VideoItem> uploadVideo(
     }
   }
 
-  final queue = [...missing];
   Object? failure;
   StackTrace? failureTrace;
   Future<void> worker() async {

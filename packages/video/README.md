@@ -5,8 +5,8 @@ Video for the kotlin-skeleton `video` module (and its `video-jdbc`). Same ids an
 | Piece | What it is |
 |---|---|
 | `VideoApi` | `start` · `presignParts` · `listParts` · `complete` · `get` · `playback` · `remove` (`/videos/*`; `basePath` if the app opened the controller elsewhere) |
-| `uploadVideo` | Opens the upload (or takes up a `resume` one), puts the parts three at a time (each tried four times, a fresh address after a failure), completes with the `ETag`s in order |
-| `dioPartPut` | The part `PUT` over a plain `Dio` (no app credentials), reading the `ETag`; any failure is `UploadPartError` without the address |
+| `uploadVideo` | Opens the upload (or takes up a `resume` one), puts the parts three at a time (each tried four times, a fresh address after a failure; addresses are signed a few parts ahead and again when ten minutes old, as they end in fifteen), stops with `UploadCancelled` when `cancelToken` is cancelled, completes with the `ETag`s in order |
+| `dioPartPut` | The part `PUT` over a plain `Dio` (no app credentials), reading the `ETag`; a send that takes over ten minutes or an answer that does not start in 60 s fails; any failure is `UploadPartError` without the address, a cancel is `UploadCancelled` |
 | `videoContentTypeOf` | MP4 or MOV by the picker's type, else by the name's ending; null for anything else |
 | `playbackUrls` · `grantExpired` · `afterFailure` | Which playlist to try first (the compat tier when the original is `big`), when the grant ends (30 s before), and what to do when one did not play (renew once, the other tier, give up) |
 | `resolveVideoUrl` | The server's playlist paths are roots of the API host: this makes them full addresses |
@@ -26,6 +26,7 @@ final item = await uploadVideo(
   onProgress: (sent) => setState(() => fraction = sent / total),
   // After a failure, give back the remembered session: only the missing parts go.
   resume: remembered,
+  cancelToken: cancelToken, // cancel() ends it with UploadCancelled; the parts already up stay (resume, or api.remove)
 );
 ```
 
@@ -41,6 +42,7 @@ VideoPlayerController.networkUrl(Uri.parse(urls.first), formatHint: VideoFormat.
 
 - The parts go straight to the storage: the app server never sees the file. The signed addresses are never in an error text or a log.
 - The app's `Authorization` never reaches the storage host (give `dioPartPut` a `Dio` that has none).
+- A resume with a file of another size than the session's `bytes` is `ResumeFileMismatchError`, before anything is sent. Whether it is the *same* file is the caller's to keep: store a fingerprint of your own (name, modified time, a hash) with the session.
 - Resume only asks the storage which parts it has (`GET parts`); a part of the wrong size is sent again; a `404` (the upload was cleared) starts over, and `onStarted` is told of the new session.
 
 ## Not here

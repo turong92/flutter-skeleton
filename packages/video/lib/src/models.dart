@@ -192,15 +192,19 @@ class VideoPlayback {
   final DateTime? expiresAt;
 }
 
-/// What a resumed upload needs to find its way back: where it was opened.
+/// What a resumed upload needs to find its way back: where it was opened, and
+/// the size of the file it was opened for (a resume with a file of another
+/// size is refused). Which file it was is the caller's to keep.
 class VideoUploadSession {
   const VideoUploadSession({
     required this.id,
     required this.uploadId,
     required this.partSize,
+    required this.bytes,
   });
 
   final String id;
   final String uploadId;
   final int partSize;
+  final int bytes;
 }

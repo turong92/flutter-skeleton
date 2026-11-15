@@ -37,4 +37,20 @@ void main() {
     await t.pump();
     expect(_networkUrls(t), ['https://cdn.example.com/new']);
   });
+
+  testWidgets('hands its size and label on to the picture', (t) async {
+    await t.pumpWidget(
+      const MaterialApp(
+        home: HeldImage(
+          url: 'https://cdn.example.com/a',
+          width: 4,
+          height: 3,
+          semanticLabel: 'a walk',
+        ),
+      ),
+    );
+    final ratio = t.widget<AspectRatio>(find.byType(AspectRatio));
+    expect(ratio.aspectRatio, closeTo(4 / 3, 0.001));
+    expect(t.widget<Image>(find.byType(Image)).semanticLabel, 'a walk');
+  });
 }

@@ -20,6 +20,9 @@ import 'package:skeleton_push/skeleton_push.dart';
 // #if storage
 import 'package:skeleton_storage/skeleton_storage.dart';
 // #endif
+// #if video
+import 'package:skeleton_video/skeleton_video.dart';
+// #endif
 
 // #if ads iap
 import 'ads_removal.dart';
@@ -108,6 +111,11 @@ final starterWiring = <Override>[
   // #if storage
   storageApiProvider.overrideWith(
     (ref) => StorageApi(ref.watch(apiClientProvider)),
+  ),
+  // #endif
+  // #if video
+  videoApiProvider.overrideWith(
+    (ref) => VideoApi(ref.watch(apiClientProvider)),
   ),
   // #endif
 ];

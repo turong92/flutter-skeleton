@@ -8,10 +8,20 @@ import 'stored_image.dart';
 /// blink. The new address is fetched ahead, and the picture is swapped when it
 /// is there (or has failed, so the failure shows).
 class HeldImage extends StatefulWidget {
-  const HeldImage({super.key, required this.url, this.fit = BoxFit.cover});
+  const HeldImage({
+    super.key,
+    required this.url,
+    this.width,
+    this.height,
+    this.fit = BoxFit.cover,
+    this.semanticLabel,
+  });
 
   final String url;
+  final int? width;
+  final int? height;
   final BoxFit fit;
+  final String? semanticLabel;
 
   @override
   State<HeldImage> createState() => _HeldImageState();
@@ -33,6 +43,11 @@ class _HeldImageState extends State<HeldImage> {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      StoredImage(url: _shown, fit: widget.fit);
+  Widget build(BuildContext context) => StoredImage(
+    url: _shown,
+    width: widget.width,
+    height: widget.height,
+    fit: widget.fit,
+    semanticLabel: widget.semanticLabel,
+  );
 }

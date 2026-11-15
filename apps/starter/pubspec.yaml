@@ -68,6 +68,9 @@ dependencies:
   skeleton_storage: any # workspace sibling
   # #endif
   skeleton_ui: any # workspace sibling
+  # #if video
+  skeleton_video: any # workspace sibling
+  # #endif
 
 dev_dependencies:
   flutter_test:

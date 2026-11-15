@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `apps/starter` (`--packages push`): the `PushPrompt` band is no longer drawn on the first screen right after sign-in (nothing valuable has happened yet); the notification settings entry stays and its switch asks for the permission when the person chooses it. The Android manifest already carries `POST_NOTIFICATIONS` for `push` (a stamp test checks it).
 - `skeleton_board`: sending or deleting a comment reads the post list again, so the list's comment count is not stale under the detail screen.
 
 ### Added

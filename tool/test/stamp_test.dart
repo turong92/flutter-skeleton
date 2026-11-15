@@ -530,9 +530,14 @@ void main() {
         stamped('lib/router.dart', kept),
         contains("'/settings/notifications'"),
       );
+      // the entry to the notification settings, and no band that asks right
+      // after sign-in
       expect(
         stamped('lib/screens/me_screen.dart', kept),
-        contains('PushPrompt'),
+        allOf(
+          contains("'/settings/notifications'"),
+          isNot(contains('PushPrompt(')),
+        ),
       );
       expect(
         stamped('lib/wiring.dart', kept),
@@ -737,7 +742,10 @@ void main() {
         stamped('test/app_test.dart', kept),
         contains('the account settings have the sound settings'),
       );
-      expect(stamped('lib/screens/account_screen.dart', {}), isNot(contains('Audio')));
+      expect(
+        stamped('lib/screens/account_screen.dart', {}),
+        isNot(contains('Audio')),
+      );
     });
 
     test('i18n gives the saved language, the menu and its tests', () {

@@ -11,9 +11,6 @@ import 'package:skeleton_i18n/skeleton_i18n.dart';
 // #if notifications
 import 'package:skeleton_notifications/skeleton_notifications.dart';
 // #endif
-// #if push
-import 'package:skeleton_push/skeleton_push.dart';
-// #endif
 import 'package:skeleton_ui/skeleton_ui.dart';
 
 import '../l10n/l10n.dart';
@@ -71,12 +68,11 @@ class MeScreen extends ConsumerWidget {
               child: Text(context.l10n.accountSettings),
             ),
             // #if push
-            PushPrompt(
-              labels: context.byLocale(
-                const PushLabels.ko(),
-                const PushLabels(),
-              ),
-            ),
+            // No `PushPrompt` band here: right after sign-in the person has done
+            // nothing yet that notifications would serve. The switch of this
+            // entry asks for the permission when the person chooses it; put a
+            // `PushPrompt` (with its `open` flag) where your first valuable
+            // action ends (the sample shows it on the board).
             OutlinedButton(
               onPressed: () => context.push('/settings/notifications'),
               child: Text(context.l10n.notificationSettingsTitle),

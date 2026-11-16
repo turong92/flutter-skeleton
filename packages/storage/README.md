@@ -10,6 +10,7 @@ Photo upload for the kotlin-skeleton `storage` + `storage-s3` modules (and `stor
 | `ImageUploadField` | A button that opens the photo library, a tile per photo (preview, progress, reason when refused, remove). `value` is the list of keys |
 | `StoredImage` | Draws a stored picture from its address, keeping its place when the size is known |
 | `HeldImage` | A `StoredImage` for an address that changes while it is on screen (a signed address asked again): the picture drawn stays until the new one is loaded, so it does not blink to the waiting box |
+| `StoredAnimatedImage` | `display` (and `thumb`) of an animated image: plays the `video/mp4` in `ImageVariant.alternates` (`videoUrl`) silent and looping over `video_player`, still picture until ready, paused off screen; no video, or a player that cannot start, stays the `StoredImage` of `display` |
 | `storageApiProvider` · `uploaderProvider` | The app overrides the first; the second is an `Uploader` without rules |
 
 ## Wiring

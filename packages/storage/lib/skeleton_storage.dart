@@ -10,6 +10,7 @@ export 'src/image_upload_labels.dart';
 export 'src/models.dart';
 export 'src/storage_api.dart';
 export 'src/storage_providers.dart';
+export 'src/stored_animated_image.dart';
 export 'src/stored_image.dart';
 export 'src/upload_file.dart';
 export 'src/uploader.dart';

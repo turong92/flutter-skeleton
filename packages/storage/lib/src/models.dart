@@ -107,6 +107,20 @@ class UploadInspection {
   final ImageInspection? image;
 }
 
+/// Another form of the same variant (the server's conversion of an animated
+/// image): `video/mp4` (a silent loop) or, for a transparent one, `image/webp`.
+class ImageAlternate {
+  const ImageAlternate({required this.url, required this.contentType});
+
+  factory ImageAlternate.fromJson(Map<String, Object?> json) => ImageAlternate(
+    url: json['url']! as String,
+    contentType: json['contentType']! as String,
+  );
+
+  final String url;
+  final String contentType;
+}
+
 /// One converted size of a stored image (`thumb` or `display`). The [url] is a
 /// signed address that ends in minutes: never log it.
 class ImageVariant {
@@ -115,6 +129,7 @@ class ImageVariant {
     required this.width,
     required this.height,
     this.contentType,
+    this.alternates = const [],
   });
 
   factory ImageVariant.fromJson(Map<String, Object?> json) => ImageVariant(
@@ -122,12 +137,28 @@ class ImageVariant {
     width: (json['width']! as num).toInt(),
     height: (json['height']! as num).toInt(),
     contentType: json['contentType'] as String?,
+    alternates: [
+      for (final raw in (json['alternates'] as List?) ?? const [])
+        if (raw is Map<String, Object?>) ImageAlternate.fromJson(raw),
+    ],
   );
 
   final String url;
   final int width;
   final int height;
   final String? contentType;
+
+  /// Empty for an older answer, or while the conversion has not run.
+  final List<ImageAlternate> alternates;
+
+  /// The silent looping video of an animated image, if the server made one.
+  /// This is the one place that decides what is a video.
+  String? get videoUrl {
+    for (final a in alternates) {
+      if (a.contentType == 'video/mp4') return a.url;
+    }
+    return null;
+  }
 
   @override
   String toString() => 'ImageVariant(${width}x$height)';

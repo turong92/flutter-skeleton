@@ -300,7 +300,7 @@
     {
       "id": "storage",
       "kind": "package",
-      "summary": "Photo upload straight to the storage with a presigned address: presign, PUT with progress and cancel (no app token sent to the storage host), complete so the server checks the bytes; the app's own file rules (none by default), a photo field over image_picker and a widget that draws a stored picture from its address.",
+      "summary": "Photo upload straight to the storage with a presigned address: presign, PUT with progress and cancel (no app token sent to the storage host), complete so the server checks the bytes; the app's own file rules (none by default), a photo field over image_picker and a widget that draws a stored picture from its address and one that plays an animated image as a silent looping video (still picture when there is none or it fails).",
       "package": "skeleton_storage",
       "path": "packages/storage",
       "stampFlag": { "flag": "--packages storage", "included": "flag" },

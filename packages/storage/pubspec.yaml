@@ -14,7 +14,10 @@ dependencies:
   flutter_riverpod: ^3.4.3
   image_picker: ^1.1.2
   skeleton_api_client: any # workspace sibling
+  video_player: ^2.14.1
+  visibility_detector: ^0.4.0+2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  video_player_platform_interface: ^6.9.0

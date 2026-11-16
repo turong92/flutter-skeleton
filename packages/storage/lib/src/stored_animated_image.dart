@@ -52,12 +52,20 @@ class _StoredAnimatedImageState extends State<StoredAnimatedImage> {
   @override
   void didUpdateWidget(StoredAnimatedImage old) {
     super.didUpdateWidget(old);
-    if (old.display.videoUrl == widget.display.videoUrl) return;
+    // A re-signed address of the same file differs only in its query; keep
+    // the playing video instead of flashing back to the still picture.
+    if (_withoutQuery(old.display.videoUrl) ==
+        _withoutQuery(widget.display.videoUrl)) {
+      return;
+    }
     _release();
     _ready = false;
     _failed = false;
     _startFor(widget);
   }
+
+  static String? _withoutQuery(String? url) =>
+      url == null ? null : Uri.parse(url).replace(query: '').toString();
 
   void _startFor(StoredAnimatedImage w) {
     final videoUrl = w.display.videoUrl;

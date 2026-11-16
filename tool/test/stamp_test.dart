@@ -398,25 +398,28 @@ void main() {
       ]);
     });
 
-    test('picking app-control puts the gate above the app and gives it the api', () {
-      final kept = {'app-control'};
-      expect(
-        stamped('lib/main.dart', kept),
-        allOf(
-          contains('AppControlGate('),
-          contains('AppControlLabels.ko()'),
-          contains("package:skeleton_app_control/skeleton_app_control.dart"),
-        ),
-      );
-      expect(
-        stamped('lib/wiring.dart', kept),
-        contains('appControlApiProvider.overrideWith'),
-      );
-      expect(
-        stamped('pubspec.yaml', kept),
-        contains('skeleton_app_control: any'),
-      );
-    });
+    test(
+      'picking app-control puts the gate above the app and gives it the api',
+      () {
+        final kept = {'app-control'};
+        expect(
+          stamped('lib/main.dart', kept),
+          allOf(
+            contains('AppControlGate('),
+            contains('AppControlLabels.ko()'),
+            contains("package:skeleton_app_control/skeleton_app_control.dart"),
+          ),
+        );
+        expect(
+          stamped('lib/wiring.dart', kept),
+          contains('appControlApiProvider.overrideWith'),
+        );
+        expect(
+          stamped('pubspec.yaml', kept),
+          contains('skeleton_app_control: any'),
+        );
+      },
+    );
 
     test('picking board gives the screens, the routes and the entry, not the photo field', () {
       final kept = {'board'};

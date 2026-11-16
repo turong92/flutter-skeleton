@@ -139,7 +139,10 @@ class ImageVariant {
     contentType: json['contentType'] as String?,
     alternates: [
       for (final raw in (json['alternates'] as List?) ?? const [])
-        if (raw is Map<String, Object?>) ImageAlternate.fromJson(raw),
+        if (raw is Map<String, Object?> &&
+            raw['url'] is String &&
+            raw['contentType'] is String)
+          ImageAlternate.fromJson(raw),
     ],
   );
 

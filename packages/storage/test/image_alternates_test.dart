@@ -21,6 +21,18 @@ void main() {
     expect(v.videoUrl, 'https://cdn.example.com/d.mp4');
   });
 
+  test('an alternate without a string url or contentType is skipped alone', () {
+    final v = ImageVariant.fromJson(
+      variant([
+        {'url': 1, 'contentType': 'video/mp4'},
+        {'url': 'https://cdn.example.com/x'},
+        {'url': 'https://cdn.example.com/d.mp4', 'contentType': 'video/mp4'},
+      ]),
+    );
+    expect(v.alternates, hasLength(1));
+    expect(v.videoUrl, 'https://cdn.example.com/d.mp4');
+  });
+
   test(
     'an older answer without alternates, or with a webp only, has no video',
     () {

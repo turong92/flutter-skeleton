@@ -154,6 +154,42 @@ void main() {
     expect(drawnPicture(tester), 'https://api.example.com/files/d.gif');
   });
 
+  testWidgets(
+    'a late visibility callback after dispose does not touch the player',
+    (tester) async {
+      await tester.pumpWidget(host(variant('/files/d.gif', alternates: [mp4])));
+      await tester.pump();
+      initialized();
+      await tester.pump();
+      await tester.pump();
+      final detector = tester.widget<VisibilityDetector>(
+        find.byType(VisibilityDetector),
+      );
+
+      player.calls.clear();
+      await tester.pumpWidget(const SizedBox());
+      detector.onVisibilityChanged!(
+        VisibilityInfo(key: detector.key!, size: const Size(480, 270)),
+      );
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(player.calls, isNot(contains('pause')));
+    },
+  );
+
+  testWidgets('when the video appears on the same widget, the player starts', (
+    tester,
+  ) async {
+    await tester.pumpWidget(host(variant('/files/d.gif')));
+    expect(player.calls, isEmpty);
+
+    await tester.pumpWidget(host(variant('/files/d.gif', alternates: [mp4])));
+    await tester.pump();
+
+    expect(player.lastUrl, 'https://api.example.com/files/d.mp4');
+  });
+
   testWidgets('it pauses when it leaves the screen and plays when it is back', (
     tester,
   ) async {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -44,8 +46,22 @@ class _StoredAnimatedImageState extends State<StoredAnimatedImage> {
   @override
   void initState() {
     super.initState();
-    final videoUrl = widget.display.videoUrl;
-    if (videoUrl != null) _start(resolveStoredUrl(videoUrl, widget.apiBaseUrl));
+    _startFor(widget);
+  }
+
+  @override
+  void didUpdateWidget(StoredAnimatedImage old) {
+    super.didUpdateWidget(old);
+    if (old.display.videoUrl == widget.display.videoUrl) return;
+    _release();
+    _ready = false;
+    _failed = false;
+    _startFor(widget);
+  }
+
+  void _startFor(StoredAnimatedImage w) {
+    final videoUrl = w.display.videoUrl;
+    if (videoUrl != null) _start(resolveStoredUrl(videoUrl, w.apiBaseUrl));
   }
 
   Future<void> _start(String url) async {
@@ -54,13 +70,19 @@ class _StoredAnimatedImageState extends State<StoredAnimatedImage> {
     controller.addListener(_onValue);
     try {
       await controller.initialize();
-      if (!mounted) return;
+      if (!mounted || _controller != controller) return;
       await controller.setLooping(true);
       await controller.setVolume(0);
-      if (_visible) await controller.play();
-      if (mounted) setState(() => _ready = true);
+      if (_visible) {
+        await controller.play();
+        // it went off screen while play() was on its way
+        if (mounted && _controller == controller && !_visible) {
+          await controller.pause();
+        }
+      }
+      if (mounted && _controller == controller) setState(() => _ready = true);
     } catch (_) {
-      _fail();
+      if (_controller == controller) _fail();
     }
   }
 
@@ -69,10 +91,26 @@ class _StoredAnimatedImageState extends State<StoredAnimatedImage> {
   }
 
   void _fail() {
-    if (mounted && !_failed) setState(() => _failed = true);
+    if (!mounted || _failed) return;
+    final broken = _controller;
+    // dropped after the notification that told of the error has finished
+    scheduleMicrotask(() {
+      broken?.removeListener(_onValue);
+      broken?.dispose();
+    });
+    _controller = null;
+    setState(() => _failed = true);
+  }
+
+  void _release() {
+    _controller?.removeListener(_onValue);
+    _controller?.dispose();
+    _controller = null;
   }
 
   void _onVisibility(VisibilityInfo info) {
+    // the detector reports once more after its widget has gone
+    if (!mounted) return;
     _visible = info.visibleFraction > 0;
     final controller = _controller;
     if (controller == null || !_ready || _failed) return;
@@ -85,8 +123,7 @@ class _StoredAnimatedImageState extends State<StoredAnimatedImage> {
 
   @override
   void dispose() {
-    _controller?.removeListener(_onValue);
-    _controller?.dispose();
+    _release();
     super.dispose();
   }
 
@@ -103,21 +140,29 @@ class _StoredAnimatedImageState extends State<StoredAnimatedImage> {
       semanticLabel: widget.semanticLabel,
     );
 
+    // keeps the place when the size is known, like StoredImage
+    Widget sized(Widget child) => display.width > 0 && display.height > 0
+        ? AspectRatio(aspectRatio: display.width / display.height, child: child)
+        : child;
+
     final controller = _controller;
     if (controller == null || _failed) return picture(display);
     return VisibilityDetector(
       key: ObjectKey(this),
       onVisibilityChanged: _onVisibility,
       child: _ready
-          ? AspectRatio(
-              aspectRatio: display.width / display.height,
-              child: FittedBox(
-                fit: widget.fit,
-                clipBehavior: Clip.hardEdge,
-                child: SizedBox(
-                  width: controller.value.size.width,
-                  height: controller.value.size.height,
-                  child: VideoPlayer(controller),
+          ? Semantics(
+              label: widget.semanticLabel,
+              image: true,
+              child: sized(
+                FittedBox(
+                  fit: widget.fit,
+                  clipBehavior: Clip.hardEdge,
+                  child: SizedBox(
+                    width: controller.value.size.width,
+                    height: controller.value.size.height,
+                    child: VideoPlayer(controller),
+                  ),
                 ),
               ),
             )

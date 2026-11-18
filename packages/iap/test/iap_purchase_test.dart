@@ -109,26 +109,50 @@ void main() {
     );
 
     test(
-      'a product query that fails says the store is not available',
+      'a product query that fails is an error to retry, not a fixed state',
       () async {
         final h = Harness();
         addTearDown(h.dispose);
         h.store.queryFails = true;
 
-        final catalog = await h.service.loadCatalog();
-
-        expect(catalog.storeAvailable, isFalse);
+        await expectLater(h.service.loadCatalog(), throwsA(isA<StateError>()));
       },
     );
 
-    test('a product query that never answers ends at the timeout', () async {
+    test('a product query that never answers ends at the timeout as an '
+        'error to retry', () async {
       final h = Harness(storeTimeout: const Duration(milliseconds: 20));
       addTearDown(h.dispose);
       h.store.queryHangs = true;
 
+      await expectLater(
+        h.service.loadCatalog(),
+        throwsA(isA<TimeoutException>()),
+      );
+    });
+
+    test('one timeout covers isAvailable and the query together', () async {
+      final h = Harness(storeTimeout: const Duration(milliseconds: 100));
+      addTearDown(h.dispose);
+      h.store.availableDelay = const Duration(milliseconds: 70);
+      h.store.queryDelay = const Duration(milliseconds: 70);
+
+      await expectLater(
+        h.service.loadCatalog(),
+        throwsA(isA<TimeoutException>()),
+      );
+    });
+
+    test('a store country that never answers does not hold the catalog, '
+        'and the web link goes without it', () async {
+      final h = Harness(storeTimeout: const Duration(milliseconds: 20));
+      addTearDown(h.dispose);
+      h.store.countryHangs = true;
+
       final catalog = await h.service.loadCatalog();
 
-      expect(catalog.storeAvailable, isFalse);
+      expect(catalog.storeAvailable, isTrue);
+      expect(h.adapter.requests.first.queryParameters['storefront'], isNull);
     });
 
     test('Google offers only the subscription plan the server maps', () async {

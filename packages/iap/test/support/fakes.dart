@@ -133,6 +133,9 @@ class FakeStorePlatform extends InAppPurchasePlatform
   bool available = true;
   bool queryFails = false;
   bool queryHangs = false;
+  bool countryHangs = false;
+  Duration availableDelay = Duration.zero;
+  Duration queryDelay = Duration.zero;
   int queries = 0;
 
   void deliver(PurchaseDetails purchase) => _controller.add([purchase]);
@@ -155,13 +158,17 @@ class FakeStorePlatform extends InAppPurchasePlatform
   }
 
   @override
-  Future<bool> isAvailable() async => available;
+  Future<bool> isAvailable() async {
+    await Future<void>.delayed(availableDelay);
+    return available;
+  }
 
   @override
   Future<ProductDetailsResponse> queryProductDetails(
     Set<String> identifiers,
   ) async {
     queries++;
+    await Future<void>.delayed(queryDelay);
     if (queryFails) throw StateError('billing service disconnected');
     if (queryHangs) await Completer<void>().future;
     return ProductDetailsResponse(
@@ -213,7 +220,10 @@ class FakeStorePlatform extends InAppPurchasePlatform
       restoreNames.add(applicationUserName);
 
   @override
-  Future<String> countryCode() async => 'US';
+  Future<String> countryCode() async {
+    if (countryHangs) await Completer<void>().future;
+    return 'US';
+  }
 }
 
 PurchaseDetails purchase({

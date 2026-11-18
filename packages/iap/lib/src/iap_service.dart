@@ -121,22 +121,20 @@ class IapService {
     );
     if (config.store == null) return unavailable;
     _remember(config);
-    final ProductDetailsResponse found;
-    try {
-      // The store's own example checks `isAvailable` first; a device without
-      // billing can also leave the query hanging, so both end at the timeout.
-      if (!await _store.isAvailable().timeout(_storeTimeout)) {
-        return unavailable;
-      }
-      found = await _store
-          .queryProductDetails({
-            for (final p in config.products) p.storeProductId,
-          })
-          .timeout(_storeTimeout);
-    } on Object {
-      return unavailable;
-    }
-    if (found.error != null) return unavailable;
+    // The store's own example checks `isAvailable` first. A device whose
+    // billing service is gone can leave a call hanging, so one timeout covers
+    // both. `isAvailable` false is a fixed state; a timeout, a throw or a
+    // `found.error` is not: it goes up as an error the screen can retry.
+    final found = await (() async {
+      if (!await _store.isAvailable()) return null;
+      final response = await _store.queryProductDetails({
+        for (final p in config.products) p.storeProductId,
+      });
+      final error = response.error;
+      if (error != null) throw StateError('${error.code}: ${error.message}');
+      return response;
+    })().timeout(_storeTimeout);
+    if (found == null) return unavailable;
     return IapCatalog(
       config: config,
       offers: [
@@ -252,7 +250,8 @@ class IapService {
 
   Future<String?> _storefront() async {
     try {
-      return await _store.countryCode();
+      // Android reconnects without limit while billing is gone: never wait on it.
+      return await _store.countryCode().timeout(_storeTimeout);
     } on Object {
       return null;
     }

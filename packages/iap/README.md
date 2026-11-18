@@ -25,7 +25,7 @@ ProviderScope(overrides: [
 ```
 
 - Watch `iapServiceProvider` once at the app root. StoreKit hands over purchases left from the last run when someone listens, so listen early. Google Play does not: on Android `start()` reads the purchases that were never acknowledged (`queryPastPurchases`, no screen) and sends them like any other. The sample does not retry on app resume; call `retryUnfinished()` yourself if you want that.
-- Products: `ref.watch(iapCatalogProvider)`, then `service.buy(offer)`. When `catalog.storeAvailable` is false (no usable billing on the device, or no store on the server) there is nothing to buy: say so. The result arrives on `iapOutcomesProvider`, not as a return value.
+- Products: `ref.watch(iapCatalogProvider)`, then `service.buy(offer)`. When `catalog.storeAvailable` is false (`isAvailable` false, or no store on the server) there is nothing to buy: say so. The result arrives on `iapOutcomesProvider`, not as a return value.
 - Restore: `service.restore(catalog)`; the restored purchases go to the server like any other.
 - After `IapGranted`, read the entitlement from the server (`mySubscription`, orders). The package opens nothing itself.
 

@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:in_app_purchase_platform_interface/in_app_purchase_platform_interface.dart';
 import 'package:sample/screens/account_screen.dart';
 import 'package:sample/screens/store_screen.dart';
+import 'package:skeleton_api_client/skeleton_api_client.dart';
+import 'package:skeleton_api_client/testing.dart';
 import 'package:skeleton_iap/skeleton_iap.dart';
 
 IapCatalog _catalog(IapChannel channel, {bool withOffer = false}) => IapCatalog(
@@ -39,9 +41,26 @@ Widget _screen(Widget child, List<Override> overrides) => ProviderScope(
   child: MaterialApp(home: child),
 );
 
-List<Override> _store(IapCatalog catalog) => [
+/// The real subscription read against a scripted server: it answers `404`
+/// (the subscription feature is off, or no plan: not an error).
+List<Override> _store(IapCatalog catalog, {int subscriptionStatus = 404}) => [
   iapCatalogProvider.overrideWith((ref) async => catalog),
-  mySubscriptionProvider.overrideWith((ref) async => null),
+  iapSignedInProvider.overrideWithValue(true),
+  iapServiceProvider.overrideWithValue(null),
+  iapApiProvider.overrideWithValue(
+    IapApi(
+      ApiClient(
+        baseUrl: 'http://x/api/v1',
+        adapter: FakeAdapter(
+          (_) => FakeAdapter.json(subscriptionStatus, {
+            'code': 'COMMON.NOT_FOUND',
+            'title': 'Not found',
+            'status': subscriptionStatus,
+          }),
+        ),
+      ),
+    ),
+  ),
 ];
 
 void main() {
@@ -63,6 +82,17 @@ void main() {
         find.widgetWithText(OutlinedButton, 'Restore purchases'),
         findsOneWidget,
       );
+    });
+
+    testWidgets('no subscription (404) reads as none, not as a bar that never '
+        'ends', (tester) async {
+      await tester.pumpWidget(
+        _screen(const StoreScreen(), _store(_catalog(IapChannel.iapOnly))),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('No subscription.'), findsOneWidget);
+      expect(find.byType(LinearProgressIndicator), findsNothing);
     });
 
     testWidgets('a device without usable billing says so instead of loading', (

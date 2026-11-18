@@ -1,9 +1,6 @@
 import 'package:flutter_riverpod/misc.dart' show ProviderOrFamily;
 import 'package:skeleton_auth/skeleton_auth.dart';
 
-// #if iap
-import 'screens/store_screen.dart';
-// #endif
 // #if social-login
 import 'social_support.dart';
 
@@ -21,9 +18,6 @@ final userScopedProviders = <String, ProviderOrFamily>{
   // #endif
   // #if social-login-apple
   'appleRevokeCodeProvider': appleRevokeCodeProvider,
-  // #endif
-  // #if iap
-  'mySubscriptionProvider': mySubscriptionProvider,
   // #endif
 };
 

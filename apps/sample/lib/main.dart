@@ -102,7 +102,6 @@ class SampleApp extends ConsumerWidget {
     ref.listen(iapOutcomesProvider, (_, next) {
       final outcome = next.value;
       if (outcome == null) return;
-      if (outcome is IapGranted) ref.invalidate(mySubscriptionProvider);
       _messengerKey.currentState?.showSnackBar(
         SnackBar(
           content: Text(

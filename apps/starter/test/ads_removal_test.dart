@@ -344,7 +344,7 @@ void main() {
             iapEntitlementsProvider.overrideWith(
               (ref) => const IapEntitlements({'x|remove_ads'}),
             ),
-            mySubscriptionProvider.overrideWith((ref) async => null),
+            iapSubscriptionProvider.overrideWith((ref) async => null),
           ],
           child: MaterialApp(
             locale: const Locale('en'),
@@ -381,7 +381,7 @@ void main() {
           iapCatalogProvider.overrideWith((ref) => catalog),
           iapServiceProvider.overrideWithValue(null),
           iapEntitlementsProvider.overrideWith((ref) => IapEntitlements.none),
-          mySubscriptionProvider.overrideWith((ref) async => null),
+          iapSubscriptionProvider.overrideWith((ref) async => null),
         ],
         child: MaterialApp(
           locale: const Locale('en'),

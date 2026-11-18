@@ -6,12 +6,6 @@ import 'package:skeleton_ui/skeleton_ui.dart';
 
 import '../l10n/l10n.dart';
 
-/// The subscription of the account as the server has it. Read again after the
-/// server granted a purchase; the package opens nothing itself.
-final mySubscriptionProvider = FutureProvider.autoDispose<IapSubscription?>(
-  (ref) => ref.watch(iapApiProvider).mySubscription(),
-);
-
 /// What a person is told about the server's answer to a purchase.
 String iapOutcomeText(AppLocalizations l, IapOutcome outcome) =>
     switch (outcome) {
@@ -59,7 +53,7 @@ class _StoreList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final service = ref.watch(iapServiceProvider);
-    final subscription = ref.watch(mySubscriptionProvider);
+    final subscription = ref.watch(iapSubscriptionProvider);
     // What was bought once and kept: shown as bought, not as something to buy.
     final entitlements = ref.watch(iapEntitlementsProvider).forThisAccount;
     // A server that sells on the web only has no store purchase to offer.

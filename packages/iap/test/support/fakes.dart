@@ -128,6 +128,13 @@ class FakeStorePlatform extends InAppPurchasePlatform
   final restoreNames = <String?>[];
   bool completeFails = false;
 
+  /// What a device without usable billing does: `isAvailable` false, a product
+  /// query that throws, or one that never answers.
+  bool available = true;
+  bool queryFails = false;
+  bool queryHangs = false;
+  int queries = 0;
+
   void deliver(PurchaseDetails purchase) => _controller.add([purchase]);
 
   @override
@@ -148,28 +155,33 @@ class FakeStorePlatform extends InAppPurchasePlatform
   }
 
   @override
-  Future<bool> isAvailable() async => true;
+  Future<bool> isAvailable() async => available;
 
   @override
   Future<ProductDetailsResponse> queryProductDetails(
     Set<String> identifiers,
-  ) async => ProductDetailsResponse(
-    productDetails: [
-      for (final id in identifiers)
-        ...productOverrides[id] ??
-            [
-              ProductDetails(
-                id: id,
-                title: id,
-                description: '',
-                price: r'$1.00',
-                rawPrice: 1,
-                currencyCode: 'USD',
-              ),
-            ],
-    ],
-    notFoundIDs: const [],
-  );
+  ) async {
+    queries++;
+    if (queryFails) throw StateError('billing service disconnected');
+    if (queryHangs) await Completer<void>().future;
+    return ProductDetailsResponse(
+      productDetails: [
+        for (final id in identifiers)
+          ...productOverrides[id] ??
+              [
+                ProductDetails(
+                  id: id,
+                  title: id,
+                  description: '',
+                  price: r'$1.00',
+                  rawPrice: 1,
+                  currencyCode: 'USD',
+                ),
+              ],
+      ],
+      notFoundIDs: const [],
+    );
+  }
 
   @override
   Future<bool> buyConsumable({
@@ -230,6 +242,7 @@ class Harness {
     String? configStore = 'googleplay',
     this.linkUrl = 'https://example.com/pricing#handoff=SECRET-CODE',
     this.linkResponse,
+    Duration storeTimeout = const Duration(seconds: 10),
   }) {
     store = FakeStorePlatform();
     // On android/ios the first access registers the real platform and opens
@@ -271,6 +284,7 @@ class Harness {
       api: IapApi(ApiClient(baseUrl: 'http://x/api/v1', adapter: adapter)),
       store: iap,
       platform: platform,
+      storeTimeout: storeTimeout,
     );
     outcomesSub = service.outcomes.listen(outcomes.add);
   }

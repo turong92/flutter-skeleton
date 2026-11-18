@@ -65,6 +65,35 @@ void main() {
       );
     });
 
+    testWidgets('a device without usable billing says so instead of loading', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _screen(
+          const StoreScreen(),
+          _store(
+            IapCatalog(
+              config: const IapConfig(
+                channel: IapChannel.iapOnly,
+                appAccountToken: 'token-from-server',
+                products: [],
+              ),
+              offers: const [],
+              storeAvailable: false,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Purchases are not available on this device.'),
+        findsOneWidget,
+      );
+      expect(find.text('Nothing to buy right now.'), findsNothing);
+      expect(find.text('Restore purchases'), findsNothing);
+    });
+
     testWidgets('the web checkout button is not there when the channel is '
         'IAP_ONLY', (tester) async {
       await tester.pumpWidget(

@@ -361,4 +361,43 @@ void main() {
       expect(find.byType(FilledButton), findsNWidgets(2));
     },
   );
+
+  testWidgets('a device without usable billing says so instead of loading', (
+    tester,
+  ) async {
+    const catalog = IapCatalog(
+      config: IapConfig(
+        channel: IapChannel.iapOnly,
+        appAccountToken: 'token',
+        products: [],
+        store: 'googleplay',
+      ),
+      offers: [],
+      storeAvailable: false,
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          iapCatalogProvider.overrideWith((ref) => catalog),
+          iapServiceProvider.overrideWithValue(null),
+          iapEntitlementsProvider.overrideWith((ref) => IapEntitlements.none),
+          mySubscriptionProvider.overrideWith((ref) async => null),
+        ],
+        child: MaterialApp(
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const StoreScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Purchases are not available on this device.'),
+      findsOneWidget,
+    );
+    expect(find.text('Nothing to buy right now.'), findsNothing);
+    expect(find.text('Restore purchases'), findsNothing);
+  });
 }

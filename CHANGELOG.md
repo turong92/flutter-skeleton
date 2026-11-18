@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `skeleton_iap`: the store screen no longer loads forever on a device without usable billing. `loadCatalog` checks `isAvailable` and ends a failing or silent product query at `storeTimeout` (10 s); `IapCatalog.storeAvailable` is false then (and when the server has no store for the platform), and the sample and starter store screens show "Purchases are not available on this device."
+
 - `skeleton_iap`: `iapEntitlementsProvider` and `iapSubscriptionProvider` read again when the app comes back to the front and the last read is older than `iapResumeRefreshAfterProvider` (5 minutes), so a refund or an immediate cancel brings the ads back without a restart.
 - `skeleton_push`: "Open settings" uses `permission_handler`'s `openAppSettings` instead of `app_settings` (SwiftPM only, which broke CocoaPods apps such as `apps/sample`).
 - `apps/starter` (`--packages push`): the `PushPrompt` band is no longer drawn on the first screen right after sign-in (nothing valuable has happened yet); the notification settings entry stays and its switch asks for the permission when the person chooses it. The Android manifest already carries `POST_NOTIFICATIONS` for `push` (a stamp test checks it).

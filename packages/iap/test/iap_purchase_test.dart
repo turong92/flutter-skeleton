@@ -80,6 +80,55 @@ void main() {
       final catalog = await h.service.loadCatalog();
 
       expect(catalog.offers, isEmpty);
+      expect(catalog.storeAvailable, isFalse);
+    });
+
+    test('a store that works is available', () async {
+      final h = Harness();
+      addTearDown(h.dispose);
+
+      final catalog = await h.service.loadCatalog();
+
+      expect(catalog.storeAvailable, isTrue);
+      expect(catalog.offers, isNotEmpty);
+    });
+
+    test(
+      'billing that is not available says so and asks the store nothing',
+      () async {
+        final h = Harness();
+        addTearDown(h.dispose);
+        h.store.available = false;
+
+        final catalog = await h.service.loadCatalog();
+
+        expect(catalog.storeAvailable, isFalse);
+        expect(catalog.offers, isEmpty);
+        expect(h.store.queries, 0);
+      },
+    );
+
+    test(
+      'a product query that fails says the store is not available',
+      () async {
+        final h = Harness();
+        addTearDown(h.dispose);
+        h.store.queryFails = true;
+
+        final catalog = await h.service.loadCatalog();
+
+        expect(catalog.storeAvailable, isFalse);
+      },
+    );
+
+    test('a product query that never answers ends at the timeout', () async {
+      final h = Harness(storeTimeout: const Duration(milliseconds: 20));
+      addTearDown(h.dispose);
+      h.store.queryHangs = true;
+
+      final catalog = await h.service.loadCatalog();
+
+      expect(catalog.storeAvailable, isFalse);
     });
 
     test('Google offers only the subscription plan the server maps', () async {

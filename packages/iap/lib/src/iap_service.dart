@@ -33,8 +33,10 @@ class IapService {
     required this._api,
     required this._store,
     required this._platform,
+    this._storeTimeout = const Duration(seconds: 10),
   });
 
+  final Duration _storeTimeout;
   final IapApi _api;
   final InAppPurchase _store;
 
@@ -112,11 +114,29 @@ class IapService {
     );
     // No store for this platform on the server: it would answer 503 to a paid
     // purchase.
-    if (config.store == null) return IapCatalog(config: config, offers: []);
+    final unavailable = IapCatalog(
+      config: config,
+      offers: const [],
+      storeAvailable: false,
+    );
+    if (config.store == null) return unavailable;
     _remember(config);
-    final found = await _store.queryProductDetails({
-      for (final p in config.products) p.storeProductId,
-    });
+    final ProductDetailsResponse found;
+    try {
+      // The store's own example checks `isAvailable` first; a device without
+      // billing can also leave the query hanging, so both end at the timeout.
+      if (!await _store.isAvailable().timeout(_storeTimeout)) {
+        return unavailable;
+      }
+      found = await _store
+          .queryProductDetails({
+            for (final p in config.products) p.storeProductId,
+          })
+          .timeout(_storeTimeout);
+    } on Object {
+      return unavailable;
+    }
+    if (found.error != null) return unavailable;
     return IapCatalog(
       config: config,
       offers: [

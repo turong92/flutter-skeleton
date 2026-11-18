@@ -67,7 +67,9 @@ class _StoreList extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(SkeletonSpace.md),
       children: [
-        if (storeSells) ...[
+        if (storeSells && !catalog.storeAvailable)
+          ListTile(title: Text(context.l10n.purchasesNotAvailable))
+        else if (storeSells) ...[
           Text(
             context.l10n.products,
             style: Theme.of(context).textTheme.titleMedium,

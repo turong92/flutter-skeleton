@@ -109,9 +109,19 @@ class IapOffer {
 }
 
 class IapCatalog {
-  const IapCatalog({required this.config, required this.offers});
+  const IapCatalog({
+    required this.config,
+    required this.offers,
+    this.storeAvailable = true,
+  });
 
   final IapConfig config;
+
+  /// False when nothing can be bought in a store here: the device has no
+  /// usable billing (`isAvailable` false, a store call that fails or does not
+  /// answer in time) or the server has no store for this platform. [offers]
+  /// is empty then, and the screen says so instead of waiting.
+  final bool storeAvailable;
 
   /// The server's products that the store also lists.
   final List<IapOffer> offers;

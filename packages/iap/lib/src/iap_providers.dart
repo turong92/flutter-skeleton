@@ -50,6 +50,9 @@ final iapServiceProvider = Provider<IapService?>((ref) {
 
 final iapCatalogProvider = FutureProvider<IapCatalog?>(
   (ref) => ref.watch(iapServiceProvider)?.loadCatalog(),
+  // no automatic retry: a store that times out must reach the error view (and
+  // its retry button) at once, not stay "loading" through the waits
+  retry: (_, _) => null,
 );
 
 /// What the server said to each purchase.

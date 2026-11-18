@@ -169,7 +169,7 @@ class FakeStorePlatform extends InAppPurchasePlatform
   ) async {
     queries++;
     await Future<void>.delayed(queryDelay);
-    if (queryFails) throw StateError('billing service disconnected');
+    if (queryFails) throw Exception('billing service disconnected');
     if (queryHangs) await Completer<void>().future;
     return ProductDetailsResponse(
       productDetails: [

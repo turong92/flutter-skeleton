@@ -115,7 +115,7 @@ void main() {
         addTearDown(h.dispose);
         h.store.queryFails = true;
 
-        await expectLater(h.service.loadCatalog(), throwsA(isA<StateError>()));
+        await expectLater(h.service.loadCatalog(), throwsA(isA<Exception>()));
       },
     );
 
@@ -143,17 +143,19 @@ void main() {
       );
     });
 
-    test('a store country that never answers does not hold the catalog, '
-        'and the web link goes without it', () async {
-      final h = Harness(storeTimeout: const Duration(milliseconds: 20));
-      addTearDown(h.dispose);
-      h.store.countryHangs = true;
+    test(
+      'a store country that never answers does not hold the catalog',
+      () async {
+        final h = Harness(storeTimeout: const Duration(milliseconds: 20));
+        addTearDown(h.dispose);
+        h.store.countryHangs = true;
 
-      final catalog = await h.service.loadCatalog();
+        final catalog = await h.service.loadCatalog();
 
-      expect(catalog.storeAvailable, isTrue);
-      expect(h.adapter.requests.first.queryParameters['storefront'], isNull);
-    });
+        expect(catalog.storeAvailable, isTrue);
+        expect(h.adapter.requests.first.queryParameters['storefront'], isNull);
+      },
+    );
 
     test('Google offers only the subscription plan the server maps', () async {
       final h = Harness();

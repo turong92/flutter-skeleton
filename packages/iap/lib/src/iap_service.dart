@@ -18,6 +18,16 @@ class IapWebLinkException implements Exception {
       'IapWebLinkException: the web checkout could not be opened';
 }
 
+/// The store answered the product query with an error.
+class IapStoreException implements Exception {
+  const IapStoreException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => 'IapStoreException: $message';
+}
+
 /// Sells through the store and lets the server decide.
 ///
 /// One service belongs to one signed-in account (the provider makes a new one
@@ -131,7 +141,9 @@ class IapService {
         for (final p in config.products) p.storeProductId,
       });
       final error = response.error;
-      if (error != null) throw StateError('${error.code}: ${error.message}');
+      if (error != null) {
+        throw IapStoreException('${error.code}: ${error.message}');
+      }
       return response;
     })().timeout(_storeTimeout);
     if (found == null) return unavailable;
